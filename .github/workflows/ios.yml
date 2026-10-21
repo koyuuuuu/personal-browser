@@ -38,11 +38,21 @@ jobs:
           path: dist/*
           retention-days: 1
           if-no-files-found: error
+      - name: Export UI failure attachments
+        if: failure()
+        run: |
+          for result in build/UI-*.xcresult; do
+            if [ -d "$result" ]; then
+              xcrun xcresulttool export attachments --path "$result" --output-path build/test-attachments --only-failures || true
+            fi
+          done
       - name: Upload failure logs
         if: failure()
         uses: actions/upload-artifact@v4
         with:
           name: ios-failure-logs-${{ github.run_number }}
-          path: build/*.log
+          path: |
+            build/*.log
+            build/test-attachments/**
           retention-days: 1
           if-no-files-found: ignore

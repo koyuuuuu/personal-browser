@@ -16,7 +16,9 @@ xcodebuild -showsdks
 python3 scripts/generate_project.py --check
 swift test --scratch-path .build/macos 2>&1 | tee build/core-tests.log
 
-simulator_id="$(xcrun simctl list devices available --json | python3 scripts/select_simulator.py)"
+simulator_sdk="$(xcodebuild -version -sdk iphonesimulator SDKVersion)"
+simulator_id="$(xcrun simctl list devices available --json | python3 scripts/select_simulator.py --sdk-version "$simulator_sdk")"
+echo "Selected Simulator ${simulator_id} for SDK ${simulator_sdk}"
 build_number="${GITHUB_RUN_NUMBER:-1}"
 bundle_id="${BROWSER_BUNDLE_ID:-local.personalbrowser.app}"
 signing=(CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO 'CODE_SIGN_IDENTITY=')

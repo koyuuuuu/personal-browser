@@ -40,6 +40,26 @@ class ProjectTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             select_device({"devices": {}})
 
+    def test_newer_runtime_than_xcode_sdk_is_excluded(self):
+        def device(udid):
+            return [{"name": "iPhone", "isAvailable": True, "udid": udid}]
+        data = {"devices": {
+            "com.apple.CoreSimulator.SimRuntime.iOS-26-2": device("unsupported"),
+            "com.apple.CoreSimulator.SimRuntime.iOS-18-5": device("supported"),
+            "com.apple.CoreSimulator.SimRuntime.iOS-18-4": device("older"),
+        }}
+        self.assertEqual(select_device(data, "18.5"), "supported")
+        with self.assertRaises(ValueError):
+            select_device(data, "17.0")
+
+    def test_runtime_versions_sort_numerically(self):
+        data = {"devices": {
+            f"com.apple.CoreSimulator.SimRuntime.iOS-{version}": [
+                {"name": "iPhone", "isAvailable": True, "udid": version}
+            ] for version in ["9-3", "18-5", "18-10"]
+        }}
+        self.assertEqual(select_device(data, "18.10"), "18-10")
+
 
 if __name__ == "__main__":
     unittest.main()

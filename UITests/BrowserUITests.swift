@@ -11,6 +11,12 @@ final class BrowserUITests: XCTestCase {
         XCTAssertTrue(app.textFields["addressField"].waitForExistence(timeout: 15))
     }
 
+    override func tearDownWithError() throws {
+        if let run = testRun, run.failureCount > 0 {
+            print("UI failure accessibility tree:\n\(app.debugDescription)")
+        }
+    }
+
     func testWebKitRendersAndExecutesOfflinePage() {
         let page = app.webViews.firstMatch
         XCTAssertTrue(page.waitForExistence(timeout: 15))
