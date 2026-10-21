@@ -1,0 +1,56 @@
+{
+  "checked_at": "2026-10-21",
+  "target_device": {
+    "model": "iPhone 12",
+    "ios": "18.4.1"
+  },
+  "selected_base": {
+    "kind": "new",
+    "ui": "SwiftUI",
+    "engine": "WKWebView",
+    "decided_at_japan": "2026-10-22"
+  },
+  "repositories": [
+    {
+      "repository": "mozilla-mobile/firefox-ios",
+      "url": "https://github.com/mozilla-mobile/firefox-ios",
+      "default_branch": "main",
+      "reviewed_commit": "d051e7e844992d153a93e8786f5a1fdba20a82c0",
+      "commit_date": "2026-10-21T15:09:21Z",
+      "license_identifier": "MPL-2.0",
+      "archived": false
+    },
+    {
+      "repository": "duckduckgo/apple-browsers",
+      "url": "https://github.com/duckduckgo/apple-browsers",
+      "default_branch": "main",
+      "reviewed_commit": "cf5f29d0e50223f5597b0e88ccfab81fb53711dd",
+      "commit_date": "2026-10-21T17:20:03Z",
+      "license_identifier": "Apache-2.0",
+      "archived": false
+    },
+    {
+      "repository": "duckduckgo/BareBonesBrowser",
+      "url": "https://github.com/duckduckgo/BareBonesBrowser",
+      "default_branch": "main",
+      "reviewed_commit": "fb4b7d592d8cd2d2450877eca6c3f131bd817f0c",
+      "commit_date": "2024-02-29T11:15:51Z",
+      "license_identifier": "Apache-2.0",
+      "archived": false
+    },
+    {
+      "repository": "brave/brave-core",
+      "url": "https://github.com/brave/brave-core",
+      "default_branch": "master",
+      "reviewed_commit": "1be046a44537900c7b14a8d3b04de4c572df1870",
+      "commit_date": "2026-10-21T16:03:53Z",
+      "license_identifier": "MPL-2.0",
+      "archived": false
+    }
+  ],
+  "notes": [
+    "Public upstream research only; no user repository changed.",
+    "Commits record source inspection, not build or installation validation.",
+    "A main branch commit is not automatically selected as the implementation baseline."
+  ]
+}

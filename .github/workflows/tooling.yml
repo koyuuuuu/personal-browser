@@ -1,0 +1,37 @@
+name: Tooling checks
+
+# Manual execution until account-level spending controls are checked.
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: tooling-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Test IPA artifact inspection
+        run: python3 -W error -m unittest discover -s scripts -p 'test_*.py' -v
+      - name: Check generated Xcode project
+        run: python3 scripts/generate_project.py --check
+  core:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    container:
+      image: swift:6.0.3@sha256:f19aea3f9a889df5884e1186e60be74869613477d99656b598c115a4b91af8a1
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Test platform independent browser logic
+        run: swift test --scratch-path .build/linux
