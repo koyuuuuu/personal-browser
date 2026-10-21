@@ -195,7 +195,7 @@ final class BrowserStore: ObservableObject {
         captureSession()
         do {
             try storage.save(snapshot)
-            try FileManager.default.setAttributes([.protectionKey: FileProtectionType.completeUntilFirstUserAuthentication], atPath: storage.fileURL.path)
+            try FileManager.default.setAttributes([.protectionKey: FileProtectionType.completeUntilFirstUserAuthentication], ofItemAtPath: storage.fileURL.path)
         } catch {
             persistenceBlocked = true
             notice = "保存できませんでした。\(error.localizedDescription) 設定画面から保存先を再作成できます。"
