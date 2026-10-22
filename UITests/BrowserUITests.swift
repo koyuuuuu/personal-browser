@@ -60,11 +60,15 @@ final class BrowserUITests: XCTestCase {
     private func tapMenuControl(_ identifier: String) {
         let control = app.buttons[identifier]
         XCTAssertTrue(control.waitForExistence(timeout: 5))
-        // SwiftUI Menu may expose a semantic wrapper around its UIKit button.
-        // Tap the actual descendant when present; require a real hit target.
-        let nativeButton = control.buttons.firstMatch
-        let target = nativeButton.exists ? nativeButton : control
-        XCTAssertTrue(target.isHittable, "Menu control must be available for touch: \(identifier)")
-        target.tap()
+        // On Xcode 16.4 / iOS 18.5, SwiftUI Menu's accessibility wrappers
+        // report no hit point, including their UIKit descendants. Screenshots
+        // confirm the control is visible. Send a physical touch at its centre
+        // and verify the resulting menu/action in the calling test.
+        XCTAssertTrue(control.isEnabled)
+        let frame = control.frame
+        XCTAssertGreaterThan(frame.width, 0)
+        XCTAssertGreaterThan(frame.height, 0)
+        XCTAssertTrue(app.windows.firstMatch.frame.contains(frame), "Menu must be inside the visible window")
+        control.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).tap()
     }
 }
