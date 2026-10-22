@@ -1,6 +1,6 @@
 name: Tooling checks
 
-# Manual execution until account-level spending controls are checked.
+# Manual execution controls use of the shared free allowance.
 
 on:
   workflow_dispatch:

@@ -4,7 +4,7 @@
 
 ## 結論
 
-Windowsで編集し、GitHub ActionsのmacOSでテスト・未署名IPA生成、WindowsとiPhoneでSideStoreを初期設定し、以後iPhoneで再署名する構成は実現可能。ただし本環境ではmacOSも実機も使えていないため、エンドツーエンドの成功を検証済みとはしない。
+Windowsで編集し、GitHub ActionsのmacOSでテスト・未署名IPA生成、WindowsとiPhoneでSideStoreを初期設定し、以後iPhoneで再署名する構成は実現可能。macOSでのビルド・テストはGitHub Actionsで検証し、署名と実機動作は本人のiPhoneで検証する。エンドツーエンドの成功を検証済みとはしない。
 
 「無料で利用できる」と「完全放置で必ず動き続ける」は別の条件。後者はiOSの実行制御、Apple認証、SideStoreの互換性に左右される。失効時のWindowsからの復旧経路が必要。
 
@@ -23,7 +23,7 @@ Windowsで編集し、GitHub ActionsのmacOSでテスト・未署名IPA生成、
 
 ## ベースと技術の比較
 
-以下は採用提案。ユーザーの確認前にFirefox等のコードを取り込まない。
+詳細なOSS比較後、ユーザーの選択により新規SwiftUI＋WKWebViewを採用した。Firefox等のコードは本体に取り込んでいない。
 
 | 案 | 利点 | この用途の負担 | 推奨 |
 |---|---|---|---|
@@ -33,7 +33,7 @@ Windowsで編集し、GitHub ActionsのmacOSでテスト・未署名IPA生成、
 | Flutter / React Native | 他OSにもUIを展開しやすい | iOSビルドには結局macOSが必要。WKWebView連携のための層が増える | iPhone専用では利点が小さい |
 | PWA | インストール・署名更新が簡単 | 任意サイトを自由に表示する汎用ブラウザにはiframe等の制約がある | 不適 |
 
-技術選定の判断: UI変更の自由度を最優先するなら新規SwiftUI/WKWebView構成が有利。ユーザーの希望により既存OSSの詳細比較を追加し、既存OSSを採る場合はFirefox iOS / Fennecを第一候補とした。[詳細比較](oss-comparison.ja.md)を参照。ベースは未決定。どちらの案もOSのWebKitを使い、描画エンジン自作は行わない。
+技術選定の判断: UI変更の自由度を最優先するなら新規SwiftUI/WKWebView構成が有利。ユーザーの希望により既存OSSの詳細比較を追加し、既存OSSを採る場合はFirefox iOS / Fennecを第一候補とした。[詳細比較](oss-comparison.ja.md)を参照。ベースは新規実装に決定済み。どちらの案もOSのWebKitを使い、描画エンジン自作は行わない。
 
 ## 無料運用の設計
 

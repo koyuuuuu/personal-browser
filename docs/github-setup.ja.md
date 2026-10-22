@@ -1,7 +1,7 @@
-# 非公開GitHubへの配置前の設定
+# 非公開GitHubの設定と実行
 
 2026-10-22（日本時間）。非公開・無料枠内・超過時停止の方針に決定済み。
-ユーザーが作成した[koyuuuuu/personal-browser](https://github.com/koyuuuuu/personal-browser)のPrivate設定と読み書き権限を確認済み。アカウントの利用量・課金停止設定は確認待ち。クラウドCIはまだ実行していない。
+ユーザーが作成した[koyuuuuu/personal-browser](https://github.com/koyuuuuu/personal-browser)のPrivate設定と読み書き権限を確認済み。ソース配置と[macOS CI run #6](https://github.com/koyuuuuu/personal-browser/actions/runs/39704611315)が完了し、UIテスト・未署名IPA生成に成功。本人から支払い方法未登録と回答を得た。アカウントの利用量・予算をAPIで確認したものではない。
 
 ## 実際の連携確認結果
 
@@ -9,13 +9,13 @@
 
 連携はリポジトリ選択式（`selected`）。ユーザーによる作成後、対象の非公開リポジトリへアクセスできることを確認した。全リポジトリへのアクセス許可は必要ない。
 
-配置先は`https://github.com/koyuuuuu/personal-browser`。パスワードやトークンをチャットに貼る必要はない。リポジトリ作成は完了しており、CI実行と実機検証はこれから。
+配置先は`https://github.com/koyuuuuu/personal-browser`。パスワードやトークンをチャットに貼る必要はない。リポジトリ作成・ソース配置は完了。CIのログを確認して修正し、ビルド・テスト・IPA生成に成功した。実機検証はこれから。
 
 参考: [リポジトリ作成APIと必要な権限](https://docs.github.com/en/rest/repos/repos#create-a-repository-for-the-authenticated-user)。
 
 ## 配置先
 
-既存の専用リポジトリがあれば、そのURLを指定する。まだない場合の名前は`personal-browser`を提案する。
+今回の配置先は作成済みの`koyuuuuu/personal-browser`。以下は別環境へ作り直す場合の手順。
 
 GitHub画面で新規作成する場合は[New repository](https://github.com/new)を開き、以下を指定する。
 
@@ -33,7 +33,7 @@ GitHubの本人のアカウント設定でBillingのUsageとBudgetsを確認す�
 1. 契約プランと今月のActions無料枠の残りを確認する。他リポジトリの使用も含む。
 2. 支払い方法がある場合は、Actionsと関連ストレージについて、有料の追加利用を許可しない予算設定を確認する。通知だけでなく、`Stop usage when budget limit is reached`を有効にする。
 3. 支払い方法がなく、GitHubが無料枠の超過使用をブロックする状態なら、その状態を維持する。有料化するためのカード登録はこの開発手順に含めない。
-4. 設定を確認したことを共有する。パスワード、トークン、カード番号、Apple Accountの認証情報をチャットに貼る必要はない。
+4. 今回は支払い方法未登録という本人の回答に基づきCIを実行する。パスワード、トークン、カード番号、Apple Accountの認証情報をチャットに貼る必要はない。
 
 停止設定はGitHubアカウント側で行う。リポジトリのワークフローだけで、月の残り枠や課金停止設定を検証・変更することはできない。GitHubの現在の予算画面で利用できる設定に従い、追加有料利用が許可されている間はCIを実行しない。
 
@@ -41,7 +41,7 @@ GitHubの本人のアカウント設定でBillingのUsageとBudgetsを確認す�
 
 ## 初回配置と実行
 
-Privateであることとアクセス権を確認し、ソースを配置する。停止設定の確認は、その後のCI実行前に必要。
+Privateであることとアクセス権を確認し、ソースを配置する。今回は支払い方法未登録との回答を受け、CI実行へ進んだ。
 現在のワークフローはLinux・macOSとも手動起動だけに限定し、コードを置いただけでは実行しない。
 
 最初に軽量チェックを手動実行し、その後macOSの`iOS tests and unsigned IPA`を1回実行する。エラー修正はログを確認し、必要な再実行だけ行う。使用時間と成果物容量を測定し、残り無料枠に応じて頻度を決める。

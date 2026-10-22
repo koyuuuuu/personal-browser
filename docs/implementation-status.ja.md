@@ -29,7 +29,7 @@
 | `App/SettingsView.swift` | UIと操作のカスタマイズ |
 | `PersonalBrowser.xcodeproj` | アプリ本体とUIテストの2ターゲット。配布するのは本体だけ |
 | `scripts/generate_project.py` | 外部ジェネレーター不要の決定的なプロジェクト生成 |
-| `.github/workflows/tooling.yml` | 軽量な検査・Coreテスト。課金停止設定の確認後にLinux自動実行へ切替可能 |
+| `.github/workflows/tooling.yml` | 軽量な検査・Coreテスト。無料枠を抑える手動実行。必要に応じてLinux自動実行へ切替可能 |
 | `.github/workflows/ios.yml` | 手動実行のmacOSテスト・実機用未署名IPA生成 |
 
 アプリ本体に第三者ブラウザのコードや外部パッケージを組み込んでいない。CoreはSwift Packageとして別にテストし、iOSアプリでは同じソースファイルをコンパイルする。
@@ -39,14 +39,17 @@
 | 項目 | 状態 |
 |---|---|
 | Linux / Swift 6.0.3でCoreテスト | 16件成功 |
-| PythonのIPA検査・プロジェクト検査 | 18件成功 |
+| PythonのIPA検査・プロジェクト検査（ローカル） | 20件成功 |
 | Swiftの構文検査 | App・Core・UIテストの構文検査に成功 |
-| XcodeによるiOS型検査・ビルド | 未実施。クラウドmacOSが必要 |
-| SimulatorでのUIテスト | 4件作成、未実行 |
-| IPA生成・Apple署名・実機起動 | 未実施 |
+| XcodeによるiOS型検査・ビルド | Xcode 16.4でDebug Simulator / Release実機arm64の両方に成功 |
+| SimulatorでのUIテスト | iPhone 16 Pro / iOS 18.5で4件成功 |
+| IPA生成・構造検査 | 0.1.0（build 6）、330,871 bytes。取得後にも構造とSHA-256一致を確認 |
+| Apple署名・iPhoneでの実機起動 | 未実施 |
 | 7日をまたぐ再署名 | 未実施 |
 
-LinuxでのSwift構文検査では、UIKit/SwiftUI/WebKitのAPIの型整合性までは確認できない。最初のmacOS実行でそのエラーが出る可能性があり、ログを取得して修正する。
+GitHub Actions [run #6](https://github.com/koyuuuuu/personal-browser/actions/runs/39704611315)、ビルド元`438292f5622801bf56525381576b789f65e4d203`で成功。macOS上でもCore 16件に成功した。UIテストは危険なURLの拒否、プライベートタブの追加と一覧、設定によるバーの上下配置、オフラインHTML表示とJavaScriptによるページ内操作を確認する。
+
+初回のFileManager API引数ラベル、SDKより新しいSimulatorの選択を修正した。SwiftUI MenuのAXタップ位置取得の問題には、スクリーンショットで配置を確認し、画面内のボタン中央への物理タッチと操作結果の検査で対応した。iOS 18.4.1の実機で同じテストを完了した意味ではない。詳細は[検証記録](validation-2026-10-22.json)を参照。
 
 ## 既知の制約と次の段階
 
@@ -58,11 +61,10 @@ LinuxでのSwift構文検査では、UIKit/SwiftUI/WebKitのAPIの型整合性�
 - 既定ブラウザ、Share Extension、Widget、Sync、Pushは含めていない。
 - 保存データの全面的な暗号化やバックアップ機能は実装していない。通常データはアプリのサンドボックスとiOSのファイル保護を使用する。
 
-## GitHubを使う前に必要な確認
+## GitHubと次の実機検証
 
-1. 非公開・無料枠内・超過時停止に決定済み。アカウント側の停止設定は未確認。
-2. 配置先は`koyuuuuu/personal-browser`。非公開設定と読み書き権限を確認済み。
-3. 本人のBilling画面で無料枠と超過時停止を確認。
-4. 最初の実機導入前にBundle IDを固定する。現在の`local.personalbrowser.app`は仮の初期値で、Repository Variablesの`BROWSER_BUNDLE_ID`で変更できる。
-
-GitHubアカウントの課金設定変更、CIの実行、Apple Accountの操作はまだ行っていない。
+- 非公開の`koyuuuuu/personal-browser`へ配置済み。
+- 本人から支払い方法未登録と回答を得て、必要なCIを実行した。利用残高や予算設定をAPIで確認・変更したものではない。
+- Linux・macOSとも手動実行のみ。成果物は1日保持し、毎週の再署名のためにビルドしない。
+- 初回IPAのBundle IDは`local.personalbrowser.app`で固定する。以後、同じApple AccountとアプリIDで更新する。
+- 次はSideStoreでの署名・インストール、実機起動、保存と上書き更新、14日間の再署名継続を検証する。[導入手順](operations.ja.md)を参照。

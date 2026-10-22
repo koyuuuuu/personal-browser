@@ -1,21 +1,33 @@
 # Windows・iPhoneでの導入と運用
 
-対象: iPhone 12 / iOS 18.4.1。新規SwiftUI＋WKWebViewの初期ソースを実装済み。初回macOSビルドはまだ。以下は公式資料に基づく導入設計で、実機での完了記録ではない。
+対象: iPhone 12 / iOS 18.4.1。初期版0.1.0（build 6）はmacOSでのビルド・UIテスト・実機用未署名IPA生成に成功した。以下の署名・導入手順は公式資料に基づくもので、iPhoneでの完了記録ではない。
 
-## 事前に決めること
+## 現在の構成
 
 - ベースは新規SwiftUI＋WKWebViewに決定済み。現在の実装範囲は[実装状況](implementation-status.ja.md)。
-- GitHubの公開可否・配置先を確認する。公開でも履歴・Cookie・認証情報・ペアリング情報は入れない。
-- 以後変えない個人用Bundle IDを決める。アプリ更新でIDや署名アカウントを変えると別アプリ扱いになり、データを引き継げないことがある。
-- GitHubのBillingで他の利用を含む無料枠と、超過時に停止する予算設定を確認する。アカウント全体の有料設定はCIのYAMLだけでは制御できない。
+- GitHubは非公開の`koyuuuuu/personal-browser`を使用する。履歴・Cookie・認証情報・ペアリング情報は入れない。
+- 初回IPAのBundle IDは`local.personalbrowser.app`。更新では同じIDを維持する。アプリ更新でIDや署名アカウントを変えると別アプリ扱いになり、データを引き継げないことがある。
+- 支払い方法未登録との本人の回答に基づき、無料枠内でCIを実行する。他の利用を含む残り枠はGitHubのBillingで確認できる。アカウント全体の有料設定はCIのYAMLだけでは制御できない。
+
+## IPAの取得
+
+[成功したCI run #6](https://github.com/koyuuuuu/personal-browser/actions/runs/39704611315)のArtifactsにある`PersonalBrowser-6`を保存し、ZIPを展開する。GitHubにログインする必要がある。保持期限は2026-10-23 10:17（日本時間）。署名の更新期限とは別で、ダウンロード後にZIPやIPAが勝手に失効するわけではない。
+
+Windowsでは、同梱の`build-info.json`のSHA-256と次の出力を照合できる。
+
+```powershell
+Get-FileHash .\PersonalBrowser.ipa -Algorithm SHA256
+```
+
+初回IPAのSHA-256は`76b4a17e0fd381b27680f5807a0acffb2be4c25167f1767f3486bd6b35eb2b99`。未署名なので、ファイルをタップするだけではiPhoneへインストールできない。
 
 ## 初回導入
 
-1. WindowsへGitと必要な編集環境を入れる。本体の採用後、リポジトリを準備する。GitHubのアカウント操作は本人への確認後に行う。
+1. ソースは非公開リポジトリへ配置済み。Windowsで変更する場合はGitと編集環境を用意し、リポジトリをcloneする。
 2. ActionsでSimulatorビルドとテストを実行し、実機用arm64の未署名IPAを取得する。ActionsアーティファクトはZIPなので展開して、中の`.ipa`を選ぶ。SHA-256がビルド記録と一致することを確認する。
-3. [SideStoreの最新Prerequisites](https://docs.sidestore.io/docs/installation/prerequisites)に従い、WindowsにiloaderとAppleの端末接続ソフトを準備する。古い手順のWireGuard前提を混ぜない。現在の公式手順ではLocalDevVPNを使う。
+3. [SideStoreの最新Prerequisites](https://docs.sidestore.io/docs/installation/prerequisites)に従い、Windowsにiloader（MSI推奨）とApple公式配布版のiTunesを準備する。接続できない場合は公式手順に従いApple Devicesを試す。古い手順のWireGuard前提を混ぜない。現在の公式手順ではLocalDevVPNを使う。
 4. iPhoneにLocalDevVPNを入れ、WindowsへUSB接続して信頼する。[Install](https://docs.sidestore.io/docs/installation/install)に従ってiloaderでSideStore Stableをインストールする。Apple Accountの入力・2FAは本人が行う。
-5. iPhone側で開発元を信頼し、Developer Modeを有効にする。Wi-FiとLocalDevVPNを有効にしてSideStoreへログインし、SideStore自身の最初の手動更新を成功させる。
+5. iPhoneの「設定 → 一般 → VPNとデバイス管理」で自分のApple Accountを選び、iOS 18では「許可して再起動」を実行する。「設定 → プライバシーとセキュリティ → デベロッパモード」も有効にする。Wi-FiとLocalDevVPNを有効にしてSideStoreへログインし、SideStore自身の最初の手動更新を成功させる。
 6. IPAをiPhoneの「ファイル」に移す。SideStoreのMy Appsから追加し、署名・インストールする。Apple AccountやペアリングファイルはGitHubに送らない。
 7. 起動・HTTPS閲覧・検索・タブ・履歴等を確認し、端末再起動後と同じBundle IDでの上書き更新後にもデータが残るか確認する。
 

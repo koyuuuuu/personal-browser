@@ -1,0 +1,56 @@
+{
+  "verified_at_utc": "2026-10-22T01:19:34.439806+00:00",
+  "source_commit": "438292f5622801bf56525381576b789f65e4d203",
+  "repository": "koyuuuuu/personal-browser",
+  "visibility": "private",
+  "ci": {
+    "run_id": 39704611315,
+    "run_number": 6,
+    "url": "https://github.com/koyuuuuu/personal-browser/actions/runs/39704611315",
+    "conclusion": "success",
+    "runner": "macos-15",
+    "xcode": "16.4",
+    "simulator_model": "iPhone 16 Pro",
+    "simulator_ios": "18.5",
+    "core_tests_passed": 16,
+    "ui_tests_passed": 4,
+    "job_duration_seconds": 151
+  },
+  "local_validation": {
+    "python_tests_passed": 20,
+    "downloaded_ipa_structure_check": "passed",
+    "downloaded_ipa_sha256_matches_ci": true
+  },
+  "artifact": {
+    "id": 12394386981,
+    "url": "https://github.com/koyuuuuu/personal-browser/actions/runs/39704611315/artifacts/12394386981",
+    "name": "PersonalBrowser-6",
+    "archive_bytes": 328506,
+    "ipa_bytes": 330871,
+    "expires_at_utc": "2026-10-23T01:17:49Z",
+    "file": "PersonalBrowser.ipa",
+    "sha256": "76b4a17e0fd381b27680f5807a0acffb2be4c25167f1767f3486bd6b35eb2b99",
+    "bundle_id": "local.personalbrowser.app",
+    "version": "0.1.0",
+    "build": "6",
+    "minimum_ios": "17.0",
+    "target_ios": "18.4.1",
+    "architecture": "arm64",
+    "platform": "iOS device",
+    "embedded_profile": false,
+    "signature_resources": false,
+    "installation_verified": false
+  },
+  "billing": {
+    "user_reported_no_payment_method": true,
+    "account_usage_or_budgets_read_via_api": false,
+    "billing_settings_changed": false
+  },
+  "device_acceptance": {
+    "model": "iPhone 12",
+    "ios": "18.4.1",
+    "apple_signing_verified": false,
+    "installation_verified": false,
+    "fourteen_day_refresh_verified": false
+  }
+}

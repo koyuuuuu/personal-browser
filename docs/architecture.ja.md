@@ -49,9 +49,9 @@ UIの再描画でWKWebViewを作り直したりreloadしたりしない。通常
 
 ## CI設計
 
-Linuxのツール検査・Coreテストと、macOSテスト・IPA生成を実装した。非公開の`koyuuuuu/personal-browser`を使用し、無料枠内・超過時停止で開始する方針。現在はLinux・macOSとも手動起動だけに限定し、push/PRでは実行しない。課金停止設定の確認後、Linuxのpush/PRトリガーを追加して自動化する。macOSは引き続き手動実行とする。
+Linuxのツール検査・Coreテストと、macOSテスト・IPA生成を実装した。非公開の`koyuuuuu/personal-browser`を使用し、無料枠内・超過時停止で開始する方針。現在はLinux・macOSとも手動起動だけに限定し、push/PRでは実行しない。必要に応じてLinuxのpush/PRトリガーを追加できる。macOSは引き続き手動実行とする。
 
-1. push/PR: Linuxで生成済み設定・検査ツール・Coreの単体テストを実行する。
+1. 軽量検査（現在は手動）: Linuxで生成済み設定・検査ツール・Coreの単体テストを実行する。
 2. 手動: macOSでCoreテストとSimulatorでの短いUIスモークテストを通し、任意でRelease相当の実機arm64ビルドを署名なしで生成する。Webページのテストはローカルの固定HTMLを使い、ネットワーク障害による不安定さを避ける。
 3. IPA化: `Payload/<product>.app`へコピーして圧縮。個人用構成で拡張をビルド・埋め込み対象から除外する。生成後に削除するだけでコード側の依存が消えるとは考えない。
 4. 検査: `scripts/inspect_ipa.py --target-ios 18.4.1 --unsigned`。SHA-256、Bundle ID、バージョン、対象プラットフォームを記録。
@@ -59,9 +59,11 @@ Linuxのツール検査・Coreテストと、macOSテスト・IPA生成を実装
 
 `pull_request_target`で外部PRのコードを高権限実行しない。通常のワークフローは`contents: read`、同じブランチの古い実行はキャンセル、無限リトライや常時定期ビルドを置かない。
 
+Simulatorは選択中のXcodeのSimulator SDK以下で、利用可能な最新のiPhoneを選ぶ。ランナーに新しいOSが同居していても、SDKより新しいRuntimeは選ばない。失敗時はログとUIテストの添付（スクリーンショットを含む）を1日保存する。Xcode 16.4 / iOS 18.5ではSwiftUI MenuのAXタップ位置が取得できなかったため、該当UIテストは画面内のボタン中央への実際のタッチを送り、メニュー表示後の操作結果まで検査する。
+
 新規実装の標準macOSランナーは`macos-15`、Xcodeは初期値ではそのランナーの既定版を使用し、バージョンとSDK一覧をログに残す。Swift 6のCoreテストとiOS 17以上のアプリをビルドするため、Xcode 16以上が必要。必要ならRepository Variablesの`BROWSER_XCODE_PATH`で搭載済みのXcodeを選ぶ。iOS 18.4.1の実機互換性と、CIで利用可能なSimulatorのOSは別に管理する。
 
-参考: [GitHub標準ランナー](https://docs.github.com/en/actions/reference/runners/github-hosted-runners)、[Xcode 27搭載ソフトウェア](https://github.com/actions/runner-images/blob/main/images/macos/xcode-27-arm64-Readme.md)。ランナーに存在しないバージョンを指定して待ち続ける設定はしない。
+参考: [GitHub標準ランナー](https://docs.github.com/en/actions/reference/runners/github-hosted-runners)、[macOS 15搭載ソフトウェア](https://github.com/actions/runner-images/blob/main/images/macos/macos-15-arm64-Readme.md)。ランナーに存在しないバージョンを指定して待ち続ける設定はしない。
 
 ## Codexでの開発・修復
 
