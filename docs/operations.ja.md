@@ -11,6 +11,8 @@
 
 ## IPAの取得
 
+通常はCodexが連携経由でIPAを取得・検査し、ファイルを渡す。[毎回のログインを省く運用](github-automation.ja.md)を参照。以下はGitHub画面から自分で取得する場合の代替手順。
+
 [成功したCI run #6](https://github.com/koyuuuuu/personal-browser/actions/runs/39704611315)のArtifactsにある`PersonalBrowser-6`を保存し、ZIPを展開する。GitHubにログインする必要がある。保持期限は2026-10-23 10:17（日本時間）。署名の更新期限とは別で、ダウンロード後にZIPやIPAが勝手に失効するわけではない。
 
 Windowsでは、同梱の`build-info.json`のSHA-256と次の出力を照合できる。

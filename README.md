@@ -9,6 +9,7 @@ iPhone 12 / iOS 18.4.1向けの個人用ブラウザ。SwiftUIとWKWebViewで新
 - [実現性と無料運用の条件](docs/feasibility.ja.md)
 - [GitHubの無料利用枠でできること](docs/free-tier.ja.md)
 - [非公開GitHubリポジトリと超過時停止の設定](docs/github-setup.ja.md)
+- [毎回のGitHubログインを省くCodex運用](docs/github-automation.ja.md)
 - [実装範囲・検証状況・既知の制約](docs/implementation-status.ja.md)
 - [OSSの詳細比較・Firefox採用時の改修箇所](docs/oss-comparison.ja.md)
 - [アーキテクチャとCI・Codexの運用設計](docs/architecture.ja.md)

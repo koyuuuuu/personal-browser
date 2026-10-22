@@ -5,6 +5,8 @@
 
 ## 実際の連携確認結果
 
+毎回のログインは不要。現在の連携とCLI認証で、追加ログインなしに対象リポジトリへアクセスできることを再確認した。以後はCodexが必要なCI起動・修正・IPA取得まで担当する。[継続運用](github-automation.ja.md)を参照。非公開のActions URLをブラウザで開く際のログインと、Codexの接続認証は別である。
+
 `koyuuuuu`へのGitHub連携と、GitHub CLIでの同アカウントへの認証を確認した。非公開の`personal-browser`作成をCLIで実行したが、GitHubの作成APIが`403: Resource not accessible by integration`を返し、作成できなかった。ユーザーの許可不足ではなく、現在の連携に与えられたGitHub側の権限による制限である。
 
 連携はリポジトリ選択式（`selected`）。ユーザーによる作成後、対象の非公開リポジトリへアクセスできることを確認した。全リポジトリへのアクセス許可は必要ない。
