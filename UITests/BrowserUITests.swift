@@ -14,6 +14,9 @@ final class BrowserUITests: XCTestCase {
     override func tearDownWithError() throws {
         if let run = testRun, run.failureCount > 0 {
             print("UI failure accessibility tree:\n\(app.debugDescription)")
+            let screenshot = XCTAttachment(screenshot: app.screenshot())
+            screenshot.lifetime = .keepAlways
+            add(screenshot)
         }
     }
 

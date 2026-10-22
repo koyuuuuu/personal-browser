@@ -202,9 +202,11 @@ struct TabBrowserView: View {
                     Divider()
                     Button("設定", systemImage: "slider.horizontal.3") { showSheet(.settings) }
                 } label: {
-                    Image(systemName: "ellipsis.circle").frame(maxWidth: .infinity, minHeight: 44)
+                    Label("メニュー", systemImage: "ellipsis.circle")
+                        .labelStyle(.iconOnly)
+                        .frame(maxWidth: .infinity, minHeight: 44)
+                        .contentShape(Rectangle())
                 }
-                .accessibilityLabel("メニュー")
                 .accessibilityIdentifier("menuButton")
             }
             .font(.system(size: 20))
