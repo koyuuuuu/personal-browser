@@ -30,7 +30,7 @@ final class BrowserUITests: XCTestCase {
     }
 
     func testNewTabAndPrivateMode() {
-        app.buttons["menuButton"].tap()
+        tapMenuControl("menuButton")
         app.buttons["新しいプライベートタブ"].tap()
         XCTAssertTrue(app.staticTexts["プライベートブラウズ"].waitForExistence(timeout: 5))
         app.buttons["tabsButton"].tap()
@@ -38,13 +38,14 @@ final class BrowserUITests: XCTestCase {
     }
 
     func testSettingsCanBeReachedAndToolbarPositionChanged() {
-        app.buttons["menuButton"].tap()
+        tapMenuControl("menuButton")
         app.buttons["設定"].tap()
         XCTAssertTrue(app.navigationBars["設定"].waitForExistence(timeout: 5))
-        app.buttons["toolbarPositionPicker"].tap()
+        tapMenuControl("toolbarPositionPicker")
         app.buttons["上"].tap()
         app.navigationBars["設定"].buttons["閉じる"].tap()
         XCTAssertTrue(app.buttons["menuButton"].exists)
+        XCTAssertLessThan(app.textFields["addressField"].frame.maxY, app.webViews.firstMatch.frame.minY)
     }
 
     func testAddressBarRejectsExecutableScheme() {
@@ -54,5 +55,16 @@ final class BrowserUITests: XCTestCase {
         field.typeText("javascript:alert(1)\n")
         XCTAssertTrue(app.alerts["お知らせ"].waitForExistence(timeout: 5))
         XCTAssertTrue(app.alerts.staticTexts["アドレス欄ではHTTP・HTTPSのURLを開けます。"].exists)
+    }
+
+    private func tapMenuControl(_ identifier: String) {
+        let control = app.buttons[identifier]
+        XCTAssertTrue(control.waitForExistence(timeout: 5))
+        // SwiftUI Menu may expose a semantic wrapper around its UIKit button.
+        // Tap the actual descendant when present; require a real hit target.
+        let nativeButton = control.buttons.firstMatch
+        let target = nativeButton.exists ? nativeButton : control
+        XCTAssertTrue(target.isHittable, "Menu control must be available for touch: \(identifier)")
+        target.tap()
     }
 }

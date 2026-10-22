@@ -43,7 +43,7 @@ jobs:
         run: |
           for result in build/UI-*.xcresult; do
             if [ -d "$result" ]; then
-              xcrun xcresulttool export attachments --path "$result" --output-path build/test-attachments --only-failures || true
+              xcrun xcresulttool export attachments --path "$result" --output-path build/test-attachments || true
             fi
           done
       - name: Upload failure logs
