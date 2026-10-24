@@ -80,3 +80,7 @@
 ## 版の保存
 
 初期版を`v0.1.0`タグと非公開リリースで固定した。ビルド元は上記のCI成功コミット。実際の未署名IPAとハッシュを非公開の`ipa-archive`ブランチへ保存済み。[版管理・復旧手順](versioning.ja.md)を参照。
+
+## 公開配信の完了
+
+2026-10-24、run #10でSecret名BROWSER_DISTRIBUTION_TOKENの参照を修正し、0.2.0 build 10と旧版3件のIPAを公開配布先へ保存した。全参照URLの取得とハッシュ・版番号・Bundle IDを確認済み。公開ツリーはREADME.md・icon.png・source.jsonのみ。本体ソースはPrivateのまま。公開後の実機更新・データ保持は本人のiPhoneで確認する。[配信検証記録](delivery-validation-2026-10-24.json)。

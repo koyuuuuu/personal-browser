@@ -40,7 +40,7 @@ SideStoreのSourcesから次のURLを追加する。
 
 https://raw.githubusercontent.com/koyuuuuu/personal-browser-distribution/main/source.json
 
-公開配信の検証完了前はこのURLが未配置の場合がある。完了記録を確認してから登録する。既存アプリの削除は不要。同じApple Account・元のBundle IDで更新する。
+2026-10-24に公開配信を検証済み。0.2.0 build 10を先頭に、build 9・8と初期版0.1.0 build 6を保持する。全IPAとアイコンを認証情報を付けないHTTPリクエストで取得し、SHA-256・サイズ・Bundle ID・版番号を照合した。公開ツリーはREADME.md・icon.png・source.jsonのみで、ソース側はPrivateのまま。[配信検証記録](delivery-validation-2026-10-24.json)を参照。既存アプリの削除は不要。同じApple Account・元のBundle IDで更新する。
 
 ブラウザ0.2.0以降の「設定 → アプリの更新」から、通知をオン・オフできる。初期値はオフ。オンの場合は起動中・アプリへ戻った時に最大1日1回確認し、新しい版があれば画面内で案内する。OSのプッシュ通知や常駐処理は使わない。「今すぐ更新を確認」は手動で使え、SideStoreを開く操作とソースURLのコピーもできる。
 

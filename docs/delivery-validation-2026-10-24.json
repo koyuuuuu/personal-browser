@@ -1,0 +1,74 @@
+{
+  "recorded_at": "2026-10-24",
+  "source_commit": "4eff6acc7609a3f337401df62fea8c7afa14400c",
+  "workflow_run": "https://github.com/koyuuuuu/personal-browser/actions/runs/40094049156",
+  "release_tag": "v0.2.0-build.10",
+  "checks": {
+    "python": 30,
+    "macos_core": 19,
+    "simulator_ui": 5,
+    "latest_data_roundtrip": "old -> new -> old -> new: passed",
+    "all_public_ipas_locally_inspected": true
+  },
+  "artifact": {
+    "file": "PersonalBrowser-0.2.0-build.10.ipa",
+    "sha256": "72439533eba9884be23f82117e8bf5930b7df7a4a0c59eee1b6e8c3e8b335717",
+    "bundle_id": "local.personalbrowser.app",
+    "version": "0.2.0",
+    "build": "10",
+    "minimum_ios": "17.0",
+    "target_ios": "18.4.1",
+    "architecture": "arm64",
+    "platform": "iOS device",
+    "embedded_profile": false,
+    "signature_resources": false,
+    "installation_verified": false,
+    "size": 376835,
+    "data_schema": 1
+  },
+  "distribution": {
+    "source_url": "https://raw.githubusercontent.com/koyuuuuu/personal-browser-distribution/main/source.json",
+    "versions": [
+      {
+        "version": "0.2.0",
+        "build": "10",
+        "sha256": "72439533eba9884be23f82117e8bf5930b7df7a4a0c59eee1b6e8c3e8b335717",
+        "size": 376835
+      },
+      {
+        "version": "0.2.0",
+        "build": "9",
+        "sha256": "a052ef77a81a1e26d160cfa1cc9093894b63ac3c4283440c0000032eb8e76d7c",
+        "size": 376835
+      },
+      {
+        "version": "0.2.0",
+        "build": "8",
+        "sha256": "bc79930e5f2286260d7a1411f4d05487d8f928ec28a1a80937e04a90d44b85fc",
+        "size": 376835
+      },
+      {
+        "version": "0.1.0",
+        "build": "6",
+        "sha256": "76b4a17e0fd381b27680f5807a0acffb2be4c25167f1767f3486bd6b35eb2b99",
+        "size": 330871
+      }
+    ],
+    "icon_http": 200,
+    "no_request_authentication_supplied": true,
+    "public_deployment_verified": true,
+    "source_repository_private": true,
+    "public_git_files": [
+      "README.md",
+      "icon.png",
+      "source.json"
+    ],
+    "repository_secret_name": "BROWSER_DISTRIBUTION_TOKEN",
+    "publisher_environment_name": "DISTRIBUTION_TOKEN"
+  },
+  "device": {
+    "initial_launch": "user-reported 2026-10-24",
+    "sidestore_upgrade": "awaiting device acceptance",
+    "sidestore_downgrade": "awaiting device acceptance"
+  }
+}

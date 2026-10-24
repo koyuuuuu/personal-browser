@@ -33,3 +33,5 @@ mainへのアプリ・テスト・ビルド・配信コードのpushで、Linux�
 アプリ本体に第三者のブラウザソースや外部パッケージを組み込んでいない。0.2.0ではCore 19件（LinuxとmacOS）、Simulator UI 5件、Python検査30件、新旧版を往復するデータ互換性検査に成功。アカウントの課金設定変更やAppleの署名操作は行っていない。
 
 0.2.0では更新通知設定とSideStore配信パイプラインを実装した。mainへのアプリ関連pushでテスト・IPA生成・Release保存・配信JSON更新を行う。公開するのは承認された配布専用リポジトリのIPA・JSON・アイコンのみ。非公開の本体ソースと最新の端末内データは維持する。公開配信の初回認証設定は[配信手順](docs/distribution.ja.md)を参照。
+
+2026-10-24: [run #10](https://github.com/koyuuuuu/personal-browser/actions/runs/40094049156)で0.2.0 build 10の公開配信まで成功。SideStoreのSourcesに `https://raw.githubusercontent.com/koyuuuuu/personal-browser-distribution/main/source.json` を一度追加する。公開するのはIPA・JSON・アイコンと説明文のみ。最新データの新旧版互換性はCI成功、実機での上書き更新は初回受け入れ確認待ち。[配信検証記録](docs/delivery-validation-2026-10-24.json)。
