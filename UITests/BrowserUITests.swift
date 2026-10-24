@@ -313,7 +313,7 @@ final class BrowserUITests: XCTestCase {
         app.textFields["addressField"].swipeLeft()
         XCTAssertTrue(app.staticTexts["お気に入り"].waitForExistence(timeout: 5))
         tapMenuControl("menuButton")
-        app.buttons["タブ一覧"].tap()
+        app.buttons.matching(NSPredicate(format: "label == 'タブ一覧' AND identifier != 'addressRight-tabs' AND identifier != 'addressLeft-tabs' AND identifier != 'tabsButton'")).firstMatch.tap()
         XCTAssertTrue(app.navigationBars["タブ 2"].waitForExistence(timeout: 5))
         for orientation in [UIDeviceOrientation.landscapeRight, .portrait] {
             XCUIDevice.shared.orientation = orientation
