@@ -44,8 +44,8 @@ GitHubの本人のアカウント設定でBillingのUsageとBudgetsを確認す�
 ## 初回配置と実行
 
 Privateであることとアクセス権を確認し、ソースを配置する。今回は支払い方法未登録との回答を受け、CI実行へ進んだ。
-現在のワークフローはLinux・macOSとも手動起動だけに限定し、コードを置いただけでは実行しない。
+2026-10-24の自動配信要件により、mainへのアプリ・ビルド・配信コードのpushでLinux検査とmacOS検証・IPA生成を開始する。文書だけの変更や保管・配布ブランチの変更では開始しない。手動実行も可能だが、同じSHAのpush実行と重複させない。
 
-最初に軽量チェックを手動実行し、その後macOSの`iOS tests and unsigned IPA`を1回実行する。エラー修正はログを確認し、必要な再実行だけ行う。使用時間と成果物容量を測定し、残り無料枠に応じて頻度を決める。
+公開するのは専用のpersonal-browser-distributionに置くIPA・JSON・アイコンのみ。ソース側はPrivateを維持する。公開配布先へのContents書き込みだけを許可したDISTRIBUTION_TOKENを非公開側のActions Secretsへ保存する。[配信構成と初回設定](distribution.ja.md)を参照。
 
-課金停止設定が確認できたら、必要に応じてLinux検査にpush/PRトリガーを追加して自動化する。macOSは手動実行、成果物保持は1日のまま。
+成果物の一時保持は1日。配布版のIPAはReleaseに残す。毎週の署名RefreshにはmacOSビルドもGitHubログインも不要。

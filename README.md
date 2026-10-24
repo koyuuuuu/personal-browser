@@ -28,8 +28,8 @@ python3 scripts/inspect_ipa.py browser.ipa --target-ios 18.4.1 --unsigned
 
 Swiftファイルを追加・削除したら`python3 scripts/generate_project.py`でプロジェクトを再生成する。Windowsでは`py -3`を利用でき、CoreのSwiftテストはWSL等のSwift環境かCIで実行する。
 
-以後のコード変更時は、Actionsの「iOS tests and unsigned IPA」を手動実行する。標準`macos-15`ランナーでCore/UIテストを通してから未署名IPAを生成する。成果物の保存は1日。現在はLinux・macOSとも手動起動だけに限定し、push/PRでは実行しない。必要に応じてLinux検査の自動実行を追加できる。macOSとXcodeがある場合は`bash scripts/ios_ci.sh`でも実行できる。
+mainへのアプリ・テスト・ビルド・配信コードのpushで、Linux検査、標準`macos-15`でのCore/UIテスト、新旧版のデータ互換性検査、未署名IPA生成、Release保存、SideStoreソース更新を自動実行する。文書のみの変更はビルドしない。手動実行も可能だがpushと重複して起動しない。Actions成果物は1日保持し、配布版のIPAはReleaseへ残す。macOSとXcodeがある場合は`bash scripts/ios_ci.sh`でも実行できる。
 
-アプリ本体に第三者のブラウザソースや外部パッケージを組み込んでいない。Core 16件（LinuxとmacOS）、Simulator UI 4件、ローカルPython検査20件に成功。アカウントの課金設定変更やAppleの署名操作は行っていない。
+アプリ本体に第三者のブラウザソースや外部パッケージを組み込んでいない。0.2.0ではCore 19件（LinuxとmacOS）、Simulator UI 5件、Python検査30件、新旧版を往復するデータ互換性検査に成功。アカウントの課金設定変更やAppleの署名操作は行っていない。
 
-0.2.0では更新通知設定とSideStore配信パイプラインを追加する。mainへのアプリ関連pushでテスト・IPA生成・Release保存・配信JSON更新を行う。公開するのは承認された配布専用リポジトリのIPA・JSON・アイコンのみ。非公開の本体ソースと最新の端末内データは維持する。公開配信の初回認証設定は[配信手順](docs/distribution.ja.md)を参照。
+0.2.0では更新通知設定とSideStore配信パイプラインを実装した。mainへのアプリ関連pushでテスト・IPA生成・Release保存・配信JSON更新を行う。公開するのは承認された配布専用リポジトリのIPA・JSON・アイコンのみ。非公開の本体ソースと最新の端末内データは維持する。公開配信の初回認証設定は[配信手順](docs/distribution.ja.md)を参照。

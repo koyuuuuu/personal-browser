@@ -49,15 +49,16 @@ UIの再描画でWKWebViewを作り直したりreloadしたりしない。通常
 
 ## CI設計
 
-Linuxのツール検査・Coreテストと、macOSテスト・IPA生成を実装した。非公開の`koyuuuuu/personal-browser`を使用し、無料枠内・超過時停止で開始する方針。現在はLinux・macOSとも手動起動だけに限定し、push/PRでは実行しない。必要に応じてLinuxのpush/PRトリガーを追加できる。macOSは引き続き手動実行とする。
+非公開のkoyuuuuu/personal-browserで、mainへのアプリ・ビルド・配信コードのpushから検証と配信までを自動化する。文書のみの変更ではビルドしない。無料枠内・超過時停止を維持し、定期ビルドは設けない。
 
-1. 軽量検査（現在は手動）: Linuxで生成済み設定・検査ツール・Coreの単体テストを実行する。
-2. 手動: macOSでCoreテストとSimulatorでの短いUIスモークテストを通し、任意でRelease相当の実機arm64ビルドを署名なしで生成する。Webページのテストはローカルの固定HTMLを使い、ネットワーク障害による不安定さを避ける。
-3. IPA化: `Payload/<product>.app`へコピーして圧縮。個人用構成で拡張をビルド・埋め込み対象から除外する。生成後に削除するだけでコード側の依存が消えるとは考えない。
-4. 検査: `scripts/inspect_ipa.py --target-ios 18.4.1 --unsigned`。SHA-256、Bundle ID、バージョン、対象プラットフォームを記録。
-5. 保存: IPAと失敗ログは1日保存。巨大なDerivedDataやxcresultをアップロードしない。公開Releaseへのアップロードは別途確認してから追加する。
+1. LinuxでPython検査と生成プロジェクトの整合性を検査。
+2. macOSでCore 19件、Simulator UI 5件、v0.1.0と現在版の保存処理を別々にコンパイルしたデータ互換性検査を実行。UIは固定HTMLを使用する。
+3. 実機arm64 Releaseを署名なしで生成し、固定Bundle ID、バージョン、最低OS、Mach-O、拡張混入、SHA-256を検査。
+4. contents:writeを持つLinuxのpublishジョブが、非公開ReleaseにIPA・build-info.json・SHA256SUMS.txtを保存。タグは検証したソースSHAに固定。
+5. 配布専用の公開リポジトリにIPA Releaseを公開し、全参照ファイルの検査後にSideStore source.jsonを更新。公開先のGitツリーにはREADME・JSON・アイコンだけを置き、本体のソースツリーはコピーしない。
+6. iPhoneはSideStoreから既存アプリへ上書き更新する。7日間の署名Refreshとは別であり、新版のインストール操作はユーザーが行う。
 
-`pull_request_target`で外部PRのコードを高権限実行しない。通常のワークフローは`contents: read`、同じブランチの古い実行はキャンセル、無限リトライや常時定期ビルドを置かない。
+通常ジョブはcontents:read、publishジョブだけcontents:write。別リポジトリ用トークンは公開先だけに限定し、非公開側のActions Secretsからpublishジョブへ渡す。pull_request_targetや外部PRからの公開処理は使わない。同一ブランチの実行は直列化し、配信途中のキャンセルを避ける。巨大なDerivedDataやxcresultは保存せず、一時成果物・失敗画面は1日保持する。詳細は[自動配信](distribution.ja.md)。
 
 Simulatorは選択中のXcodeのSimulator SDK以下で、利用可能な最新のiPhoneを選ぶ。ランナーに新しいOSが同居していても、SDKより新しいRuntimeは選ばない。失敗時はログとUIテストの添付（スクリーンショットを含む）を1日保存する。Xcode 16.4 / iOS 18.5ではSwiftUI MenuのAXタップ位置が取得できなかったため、該当UIテストは画面内のボタン中央への実際のタッチを送り、メニュー表示後の操作結果まで検査する。
 

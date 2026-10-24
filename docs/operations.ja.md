@@ -1,6 +1,6 @@
 # Windows・iPhoneでの導入と運用
 
-対象: iPhone 12 / iOS 18.4.1。初期版0.1.0（build 6）はmacOSでのビルド・UIテスト・実機用未署名IPA生成に成功した。以下の署名・導入手順は公式資料に基づくもので、iPhoneでの完了記録ではない。
+対象: iPhone 12 / iOS 18.4.1。初期版0.1.0（build 6）はmacOSでのビルド・UIテスト・実機用未署名IPA生成に成功した。2026-10-24に本人がiPhoneで利用できたと報告した。以下の各機能・自動再署名がすべて実機確認済みという意味ではない。
 
 ## 現在の構成
 
@@ -11,11 +11,11 @@
 
 ## IPAの取得
 
-通常はCodexが連携経由でIPAを取得・検査し、ファイルを渡す。[毎回のログインを省く運用](github-automation.ja.md)を参照。以下はGitHub画面から自分で取得する場合の代替手順。
+0.2.0以降は[配信手順](distribution.ja.md)のソースURLをSideStoreへ一度追加し、SideStore内から更新する。GitHubへのログインは不要。既存アプリを削除せず、同じApple Accountで更新する。必要に応じてCodexもIPAを取得・検査して渡せる。[毎回のログインを省く運用](github-automation.ja.md)を参照。以下はGitHub画面から自分で取得する場合の代替手順。
 
 [保存済みリリース v0.1.0](https://github.com/koyuuuuu/personal-browser/releases/tag/v0.1.0)にあるIPA保管先のリンクから`PersonalBrowser.ipa`と`build-info.json`を取得する。非公開のため、ブラウザで取得する場合はGitHubへのログインが必要。通常はCodexが取得する。
 
-現在の連携ではRelease assetのアップロード先だけ認証エラーとなるため、IPAは同じリポジトリの`ipa-archive`ブランチへ保管している。Actions run #6の一時成果物は2026-10-23 10:17（日本時間）に保持期限を迎えたが、この保管先には1日の自動削除期限を設けていない。署名期限とは別で、未署名IPA自体が7日で失効するわけではない。
+初期IPAは同じ非公開リポジトリの`ipa-archive`ブランチへ保管している。0.2.0以降はCIがRelease assetsに保存し、配布専用の公開リポジトリへIPAだけを複製する。Actions run #6の一時成果物は2026-10-23 10:17（日本時間）に保持期限を迎えたが、この保管先には1日の自動削除期限を設けていない。署名期限とは別で、未署名IPA自体が7日で失効するわけではない。
 
 Windowsでは、同梱の`build-info.json`のSHA-256と次の出力を照合できる。
 

@@ -1,6 +1,6 @@
-# 初期実装の状態
+# 実装と検証の状態
 
-2026-10-22（日本時間）。ユーザーの選択により、新規SwiftUI＋WKWebViewを採用した。
+2026-10-24更新。ユーザーの選択により、新規SwiftUI＋WKWebViewを採用した。初期版の利用報告と0.2.0のCI検証を分けて記録する。
 
 ## 実装した範囲
 
@@ -14,6 +14,9 @@
 - 履歴消去、全タブを閉じてCookie等のWebデータ消去。
 - 保存データのバージョン検証・atomic書き込み。壊れた保存ファイルを勝手に上書きせず、退避して再作成できる。
 - Xcodeプロジェクト、オリジナルの仮アイコン、UIテスト、CI、未署名IPAの検査。
+- mainへのpushからIPA生成・Release保存・SideStoreソース生成までの自動化。別の公開リポジトリにはIPA・JSON・アイコンのみを配布する。
+- 初期値オフのアプリ内更新通知、設定のオン・オフ、手動確認、SideStoreを開く操作。
+- schema 1と保存先を維持し、新旧版で最新のブックマーク・履歴を読み書きする互換性検査。
 
 これはソースコード上の実装範囲で、すべての機能が実機検証済みという意味ではない。
 
@@ -30,7 +33,9 @@
 | `PersonalBrowser.xcodeproj` | アプリ本体とUIテストの2ターゲット。配布するのは本体だけ |
 | `scripts/generate_project.py` | 外部ジェネレーター不要の決定的なプロジェクト生成 |
 | `.github/workflows/tooling.yml` | 軽量な検査・Coreテスト。無料枠を抑える手動実行。必要に応じてLinux自動実行へ切替可能 |
-| `.github/workflows/ios.yml` | 手動実行のmacOSテスト・実機用未署名IPA生成 |
+| `.github/workflows/ios.yml` | mainへのアプリ関連pushで検査・macOSテスト・IPA生成・配信。手動も可能 |
+| `App/UpdateChecker.swift` / `UpdateSettingsView.swift` | 更新通知・設定。schema 1のデータと分離 |
+| `scripts/distribution.py` / `publish_release.py` | Release保管・公開バイナリ配信・SideStoreソース生成 |
 
 アプリ本体に第三者ブラウザのコードや外部パッケージを組み込んでいない。CoreはSwift Packageとして別にテストし、iOSアプリでは同じソースファイルをコンパイルする。
 
@@ -38,16 +43,19 @@
 
 | 項目 | 状態 |
 |---|---|
-| Linux / Swift 6.0.3でCoreテスト | 16件成功 |
-| PythonのIPA検査・プロジェクト検査（ローカル） | 20件成功 |
+| Linux / Swift 6.0.3でCoreテスト | 19件成功 |
+| PythonのIPA検査・プロジェクト検査・配信検査（ローカル） | 30件成功 |
 | Swiftの構文検査 | App・Core・UIテストの構文検査に成功 |
 | XcodeによるiOS型検査・ビルド | Xcode 16.4でDebug Simulator / Release実機arm64の両方に成功 |
-| SimulatorでのUIテスト | iPhone 16 Pro / iOS 18.5で4件成功 |
-| IPA生成・構造検査 | 0.1.0（build 6）、330,871 bytes。取得後にも構造とSHA-256一致を確認 |
+| SimulatorでのUIテスト | 0.2.0で5件成功。更新通知の初期値オフとオン・オフを追加 |
+| IPA生成・構造検査 | 0.2.0 build 9、376,835 bytesの生成・取得後検査に成功。初期版build 6のIPAも保持 |
+| 最新データの互換性 | 旧版→新版→旧版→新版で追記し、すべての最新ブックマーク・履歴の保持を確認 |
 | Apple署名・iPhoneでの実機起動 | 2026-10-24に本人がブラウザを利用できたと報告。個別機能の受け入れ試験は別途 |
 | 7日をまたぐ再署名 | 未実施 |
 
-GitHub Actions [run #6](https://github.com/koyuuuuu/personal-browser/actions/runs/39704611315)、ビルド元`438292f5622801bf56525381576b789f65e4d203`で成功。macOS上でもCore 16件に成功した。UIテストは危険なURLの拒否、プライベートタブの追加と一覧、設定によるバーの上下配置、オフラインHTML表示とJavaScriptによるページ内操作を確認する。
+0.2.0は[run #9](https://github.com/koyuuuuu/personal-browser/actions/runs/40091434579)、ソース`5f13a56089c19c70293e55c5eb6ee7292fcc1b67`でPython 30件・Core 19件・UI 5件・互換性検査・Release生成に成功。取得したIPAの構造とSHA-256一致も確認済み。[新しい検証記録](validation-2026-10-24.json)を参照。公開配信の最終状態は[配信手順](distribution.ja.md)を参照。
+
+初期版のGitHub Actions [run #6](https://github.com/koyuuuuu/personal-browser/actions/runs/39704611315)、ビルド元`438292f5622801bf56525381576b789f65e4d203`で成功。macOS上でもCore 16件に成功した。UIテストは危険なURLの拒否、プライベートタブの追加と一覧、設定によるバーの上下配置、オフラインHTML表示とJavaScriptによるページ内操作を確認する。
 
 初回のFileManager API引数ラベル、SDKより新しいSimulatorの選択を修正した。SwiftUI MenuのAXタップ位置取得の問題には、スクリーンショットで配置を確認し、画面内のボタン中央への物理タッチと操作結果の検査で対応した。iOS 18.4.1の実機で同じテストを完了した意味ではない。詳細は[検証記録](validation-2026-10-22.json)を参照。
 
@@ -65,7 +73,7 @@ GitHub Actions [run #6](https://github.com/koyuuuuu/personal-browser/actions/run
 
 - 非公開の`koyuuuuu/personal-browser`へ配置済み。
 - 本人から支払い方法未登録と回答を得て、必要なCIを実行した。利用残高や予算設定をAPIで確認・変更したものではない。
-- Linux・macOSとも手動実行のみ。成果物は1日保持し、毎週の再署名のためにビルドしない。
+- mainへのアプリ関連pushで検査・ビルド・配信を自動実行。文書のみの変更では起動しない。一時成果物は1日保持し、IPAはReleaseへ残す。毎週の再署名ではビルドしない。
 - 初回IPAのBundle IDは`local.personalbrowser.app`で固定する。以後、同じApple AccountとアプリIDで更新する。
 - 署名・インストール・実機起動後の利用開始を本人が報告。次は保存と上書き更新、14日間の再署名継続を検証する。[導入手順](operations.ja.md)を参照。
 

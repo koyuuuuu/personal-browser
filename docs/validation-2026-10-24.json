@@ -1,0 +1,40 @@
+{
+  "recorded_at": "2026-10-24",
+  "source_commit": "5f13a56089c19c70293e55c5eb6ee7292fcc1b67",
+  "workflow_run": "https://github.com/koyuuuuu/personal-browser/actions/runs/40091434579",
+  "release_tag": "v0.2.0-build.9",
+  "checks": {
+    "python": 30,
+    "macos_core": 19,
+    "simulator_ui": 5,
+    "latest_data_roundtrip": "old -> new -> old -> new: passed",
+    "ipa_local_inspection": "passed"
+  },
+  "artifact": {
+    "file": "PersonalBrowser.ipa",
+    "sha256": "a052ef77a81a1e26d160cfa1cc9093894b63ac3c4283440c0000032eb8e76d7c",
+    "bundle_id": "local.personalbrowser.app",
+    "version": "0.2.0",
+    "build": "9",
+    "minimum_ios": "17.0",
+    "target_ios": "18.4.1",
+    "architecture": "arm64",
+    "platform": "iOS device",
+    "embedded_profile": false,
+    "signature_resources": false,
+    "installation_verified": false,
+    "size": 376835,
+    "data_schema": 1
+  },
+  "distribution": {
+    "repository": "koyuuuuu/personal-browser-distribution",
+    "source_repository_private": true,
+    "public_deployment_verified": false,
+    "reason": "publish attempts 1 and 2 received an empty DISTRIBUTION_TOKEN; awaiting repository secret correction"
+  },
+  "device": {
+    "initial_launch": "user-reported on 2026-10-24",
+    "sidestore_upgrade": "not yet verified",
+    "sidestore_downgrade": "not yet verified"
+  }
+}

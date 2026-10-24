@@ -12,15 +12,15 @@
 | 変更内容と制約 | 非公開GitHub Releaseの説明文 |
 | iPhone内のデータ | ソース履歴とは別。形式変更時にバックアップ・移行方法を実装・検証 |
 
-現在の版は[v0.1.0 / build 6](https://github.com/koyuuuuu/personal-browser/releases/tag/v0.1.0)。タグのビルド元は`438292f5622801bf56525381576b789f65e4d203`、保存形式はschema 1。2026-10-24に本人がiPhoneで利用できたと報告した。
+実機での利用報告がある初期版は[v0.1.0 / build 6](https://github.com/koyuuuuu/personal-browser/releases/tag/v0.1.0)。タグのビルド元は`438292f5622801bf56525381576b789f65e4d203`、保存形式はschema 1。2026-10-24に本人がiPhoneで利用できたと報告した。
 
 ## IPAの保管先
 
-現在のGitHub連携では、通常のリポジトリAPIが使えても`uploads.github.com`へのRelease assetアップロードが401になる。そのため[非公開のipa-archiveブランチ](https://github.com/koyuuuuu/personal-browser/tree/ipa-archive/v0.1.0)をIPA保管専用に使う。ソース用のmainとは分け、保管ブランチをmainへマージしない。
+初期版の保存時は、会話側のGitHub連携から`uploads.github.com`へのアップロードが401になった。そのため初期IPAは[非公開のipa-archiveブランチ](https://github.com/koyuuuuu/personal-browser/tree/ipa-archive/v0.1.0)をIPA保管専用に使う。ソース用のmainとは分け、保管ブランチをmainへマージしない。
 
-`v0.1.0/`に`PersonalBrowser.ipa`、`build-info.json`、`SHA256SUMS.txt`、説明を保存した。初期IPAは330,871 bytesと小さいため通常のGit blobで保存する。履歴は上書きせず、将来容量が増える場合は別の無料保管方法かRelease assetの利用可否を再評価する。Git LFSや有料ストレージを自動追加しない。
+`v0.1.0/`に`PersonalBrowser.ipa`、`build-info.json`、`SHA256SUMS.txt`、説明を保存した。初期IPAは330,871 bytesと小さいため通常のGit blobで保存する。初期版の履歴は上書きしない。0.2.0以降はActionsのGITHUB_TOKENで非公開Release assetsへの保存に成功しており、新版はReleaseに保存する。公開配布先には承認済みのIPAだけを複製する。Git LFSや有料ストレージを自動追加しない。
 
-Actions成果物は一時保管として1日で失効するが、この保管ブランチにはその自動削除期限はない。リポジトリ・ブランチ等を削除しない限り保存できる。公開範囲は非公開のまま。秘密鍵、Apple Account認証情報、端末内の履歴・Cookieは保存しない。
+Actions成果物は一時保管として1日で失効するが、この保管ブランチにはその自動削除期限はない。リポジトリ・ブランチ等を削除しない限り保存できる。初期版の保管ブランチは非公開のまま。秘密鍵、Apple Account認証情報、端末内の履歴・Cookieは保存しない。
 
 ## 今後の版の付け方
 
@@ -34,7 +34,7 @@ Actions成果物は一時保管として1日で失効するが、この保管ブ
 
 1. ユーザーが「0.1.0へ戻したい」等と指定する。
 2. Codexが該当タグとIPAハッシュを確認し、保存済みのIPAを取得する。IPAが保持されていれば再ビルドは不要。
-3. 現在のデータ形式を旧版が読めるか確認する。必要なバックアップ・変換を検討してから進める。
+3. 旧版が現在のschema 1の最新データを読めることを互換性検査で確認する。古いデータのスナップショットには戻さない。互換性が失われる変更は配信を止めて先に設計を修正する。
 4. 同じApple Account・Bundle IDのまま、SideStoreで旧IPAを上書きする。アプリを削除することを標準手順にしない。
 5. 起動と保存データの読み取りを確認する。
 
