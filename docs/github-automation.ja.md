@@ -17,7 +17,7 @@ GitHubのブラウザログインと、Codexに接続済みのGitHub認証は別
 | 現在のGitHub連携＋設定済みCLI認証 | 通常の開発作業はCodex側。接続失効等の場合のみ再接続 | 採用。追加の認証情報は不要 |
 | Actions内の`GITHUB_TOKEN` | ジョブごとにGitHubが発行。ブラウザログイン不要 | 既存CIが利用。会話側の認証とは別 |
 | 専用GitHub App | 初回のApp作成・権限・秘密鍵の管理が必要 | 現在の連携で足りているので追加しない |
-| 公開配布先だけに限定したFine-grained token | 初回作成と期限切れ時の交換 | DISTRIBUTION_TOKENとして非公開側のActions Secretsに保存。コードやチャットには保存しない |
+| 公開配布先だけに限定したFine-grained token | 初回作成と期限切れ時の交換 | BROWSER_DISTRIBUTION_TOKENとして非公開側のActions Secretsに保存。コードやチャットには保存しない |
 | 非公開成果物をブラウザで直接取得 | GitHubのブラウザセッションが必要 | 代替手段として残す |
 
 Actionsの`GITHUB_TOKEN`はジョブ用の認証であり、会話が終了した後もCodexが常駐して修正し続ける仕組みではない。現在は依頼を受けて作業を実行する方式。イベント駆動のAI修復や常駐実行を追加する場合は、対応機能、認証、AIの利用枠と費用を別に検討する。公式Codex Actionを無料で無制限の自動修復とみなさない。

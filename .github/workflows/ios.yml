@@ -101,5 +101,5 @@ jobs:
       - name: Publish private Release and public binary-only SideStore source
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          DISTRIBUTION_TOKEN: ${{ secrets.DISTRIBUTION_TOKEN }}
+          DISTRIBUTION_TOKEN: ${{ secrets.BROWSER_DISTRIBUTION_TOKEN }}
         run: python3 scripts/publish_release.py

@@ -24,15 +24,15 @@
 
 ## 初回だけ必要な設定
 
-公開リポジトリは作成済み。次のSecretだけはGitHubの本人の画面で設定する。現在の連携は新規リポジトリ作成APIとActions Secret設定APIで403になるため、こちらから設定したことにはできない。
+公開リポジトリは作成済み。本人はSecret名をBROWSER_DISTRIBUTION_TOKENとして保存した。ワークフローはそのSecretをプログラム内のDISTRIBUTION_TOKEN環境変数へ渡す。作り直す場合は次の手順で設定する。現在の連携は新規リポジトリ作成APIとActions Secret設定APIで403になるため、こちらから設定したことにはできない。
 
 1. https://github.com/settings/personal-access-tokens/new でFine-grained tokenを作成。
 2. Resource ownerはkoyuuuuu、Repository accessはOnly select repositoriesで **personal-browser-distributionのみ** を選ぶ。
 3. Repository permissionsのContentsをRead and writeにする。ソース側の非公開リポジトリへの権限は付けない。
-4. トークン値を https://github.com/koyuuuuu/personal-browser/settings/secrets/actions/new で、名前 **DISTRIBUTION_TOKEN** のSecretとして保存する。
+4. トークン値を https://github.com/koyuuuuu/personal-browser/settings/secrets/actions/new で、名前 **BROWSER_DISTRIBUTION_TOKEN** のSecretとして保存する。
 5. トークン値をチャットやソースへ貼らない。期限が切れたときは、このSecretを更新する。
 
-非公開側のRelease保存にはGitHubがジョブごとに発行するGITHUB_TOKENを使う。DISTRIBUTION_TOKENは公開配布先への書き込み専用。公開用トークンが未設定なら、非公開Releaseと配信JSONの生成まで進み、公開配信が未設定であることをCIに表示する。設定後はpublishジョブだけの再実行で配信でき、macOSの再ビルドは不要。
+非公開側のRelease保存にはGitHubがジョブごとに発行するGITHUB_TOKENを使う。BROWSER_DISTRIBUTION_TOKENは公開配布先への書き込み専用。公開用トークンが未設定なら、非公開Releaseと配信JSONの生成まで進み、公開配信が未設定であることをCIに表示する。設定後はpublishジョブだけの再実行で配信でき、macOSの再ビルドは不要。
 
 ## iPhone側の初回設定
 

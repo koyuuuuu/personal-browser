@@ -46,6 +46,6 @@ GitHubの本人のアカウント設定でBillingのUsageとBudgetsを確認す�
 Privateであることとアクセス権を確認し、ソースを配置する。今回は支払い方法未登録との回答を受け、CI実行へ進んだ。
 2026-10-24の自動配信要件により、mainへのアプリ・ビルド・配信コードのpushでLinux検査とmacOS検証・IPA生成を開始する。文書だけの変更や保管・配布ブランチの変更では開始しない。手動実行も可能だが、同じSHAのpush実行と重複させない。
 
-公開するのは専用のpersonal-browser-distributionに置くIPA・JSON・アイコンのみ。ソース側はPrivateを維持する。公開配布先へのContents書き込みだけを許可したDISTRIBUTION_TOKENを非公開側のActions Secretsへ保存する。[配信構成と初回設定](distribution.ja.md)を参照。
+公開するのは専用のpersonal-browser-distributionに置くIPA・JSON・アイコンのみ。ソース側はPrivateを維持する。公開配布先へのContents書き込みだけを許可したBROWSER_DISTRIBUTION_TOKENを非公開側のActions Secretsへ保存する。[配信構成と初回設定](distribution.ja.md)を参照。
 
 成果物の一時保持は1日。配布版のIPAはReleaseに残す。毎週の署名RefreshにはmacOSビルドもGitHubログインも不要。
