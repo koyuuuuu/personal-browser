@@ -52,3 +52,14 @@ See `docs/github-automation.ja.md` and `docs/operations.ja.md`.
 - The private distribution branch contains derived metadata only. The public mirror may contain only README.md, source.json, icon.png (and a license), plus unsigned IPA Release assets. Do not copy the private source commit tree into it.
 - App update notices are foreground-only, opt-in, and checked at most daily automatically. Disabling them stops future automatic checks and hides the notice. Refreshing signatures and installing a new app version remain separate SideStore operations.
 - See docs/distribution.ja.md for one-time token setup and the feed URL. A missing token must be reported as incomplete public deployment, not a successful live feed.
+
+## Browser 0.3 feature invariants
+
+- Tab records are capped at 500. BrowserTab creates WKWebView lazily; never read every tab.webView when rendering settings or the overview. Use existingWebView/isLive to inspect residency. Keep media/PiP and active downloads out of eviction.
+- WebSurface stays mounted across selected-tab changes. Do not detach or hide a playing WebView on scene backgrounding. The audio background mode does not guarantee every site's PiP behavior; require device verification for video regressions.
+- Keep a share URL inside the presented route's payload, not in separately updated sheet state. UI tests verify the share sheet's copy cell and a second presentation.
+- Favorites/folder metadata live in library-extras.json; feature preferences in features.json. Keep the shared browser.json schema 1 compatible with baseline bookmark/history code. Old builds still cap sessions at 12, so do not promise 500-tab preservation when downgrading to them.
+- Never add unknown enum cases to the legacy BrowserSettings.actions persistence without an old-reader strategy. The existing toolbar reorder/add/delete editor remains available.
+- Watch HTML's personal origin stays in on-device settings/history. Do not embed the user's private video-server hostname or tunnel credentials into the public IPA/feed. Use a single URLComponents query item named url to pass the selected video link. Both /watch and /watch.html are supported.
+- Safari ZIP transfer reads selected library entries in memory, skips password files before decompression, caps input and expanded data at 20MB, validates CRC, and uses Apple's Compression framework. Run the deflated-ZIP test on macOS. Password management remains Apple Passwords/iCloud Keychain, as explicitly chosen by the user.
+- This version uses original built-in ad-domain rules, not Brave's engine or a licensed external filter subscription. Make filtering scope clear and preserve the site-exception toggle. Do not silently import a third-party filter list without checking its license and the user's source-selection preference.

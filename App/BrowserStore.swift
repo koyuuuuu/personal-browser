@@ -129,6 +129,8 @@ final class BrowserStore: ObservableObject {
     }
 
     func select(_ tab: BrowserTab) {
+        // A drag can finish a tile's button action after that tile was removed.
+        guard tabs.contains(where: { $0.id == tab.id }) else { return }
         selectedTab?.capturePreview()
         selectedID = tab.id
         activationOrder.removeAll { $0 == tab.id }; activationOrder.append(tab.id)

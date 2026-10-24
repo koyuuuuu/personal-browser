@@ -7,6 +7,8 @@ struct HomePageView: View {
     @State private var editing: Bookmark?
     var body: some View {
         GeometryReader { geometry in
+            let columns = store.features.favoriteColumns
+            let iconSize = min(50, max(28, (geometry.size.width - 40 - CGFloat(columns - 1) * 12) / CGFloat(columns) - 12))
             ZStack {
                 if store.features.showHomeBackground, let image = store.homeBackground {
                     Image(uiImage: image).resizable().scaledToFill()
@@ -25,7 +27,7 @@ struct HomePageView: View {
                             ForEach(store.extras.favorites) { item in
                                 Button { store.open(item.url) } label: {
                                     VStack(spacing: 6) {
-                                        SiteIcon(url: item.url, size: 50)
+                                        SiteIcon(url: item.url, size: iconSize)
                                         Text(item.title).font(.caption2).lineLimit(2).multilineTextAlignment(.center)
                                             .frame(height: 30).frame(maxWidth: .infinity)
                                     }

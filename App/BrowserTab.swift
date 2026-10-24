@@ -194,25 +194,30 @@ final class BrowserTab: NSObject, ObservableObject, Identifiable, WKNavigationDe
     func updateMedia(_ payload: [String: Any]) {
         guard let frame = payload["frame"] as? String else { return }
         mediaFrames[frame] = payload["playing"] as? Bool ?? false
-        hasActiveMedia = mediaFrames.values.contains(true)
-        if hasActiveMedia {
+        pipFrames[frame] = payload["pip"] as? Bool ?? false
+        let active = mediaFrames.values.contains(true), pip = pipFrames.values.contains(true)
+        guard active != hasActiveMedia || pip != isPictureInPicture else { return }
+        hasActiveMedia = active; isPictureInPicture = pip
+        if active {
             try? AVAudioSession.sharedInstance().setCategory(.playback, mode: .moviePlayback, options: [.mixWithOthers])
             try? AVAudioSession.sharedInstance().setActive(true)
         }
-        pipFrames[frame] = payload["pip"] as? Bool ?? false
-        isPictureInPicture = pipFrames.values.contains(true)
         onStateChange?()
     }
 
     private static let mediaScript = """
     (() => {
       const frame = Math.random().toString(36).slice(2), players = new Set();
+      let lastStatus = '';
       const report = () => {
         let playing = false, pip = false;
         players.forEach(v => { if (!v.isConnected) players.delete(v); else {
           playing ||= !v.paused && !v.ended;
           pip ||= v.webkitPresentationMode === 'picture-in-picture' || document.pictureInPictureElement === v;
         }});
+        const status = (playing||pip) + ':' + pip;
+        if (status === lastStatus) return;
+        lastStatus = status;
         window.webkit.messageHandlers.personalBrowserMedia.postMessage({frame,playing:playing||pip,pip});
       };
       const scan = () => { document.querySelectorAll('video,audio').forEach(v => {

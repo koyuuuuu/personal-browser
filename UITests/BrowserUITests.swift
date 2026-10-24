@@ -139,6 +139,8 @@ final class BrowserUITests: XCTestCase {
         let tile = app.buttons["新しいタブ、選択中"]
         XCTAssertTrue(tile.waitForExistence(timeout: 5)); tile.swipeLeft()
         XCTAssertTrue(app.navigationBars["タブ 1"].waitForExistence(timeout: 5))
+        tapMenuControl("閉じる")
+        XCTAssertTrue(app.webViews.firstMatch.staticTexts["オフラインのテストページ"].waitForExistence(timeout: 5), "The remaining tab must still be selected after a swipe close")
     }
 
 }

@@ -12,7 +12,10 @@ struct TabsView: View {
             ScrollView {
                 LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 16) {
                     ForEach(filtered) { tab in
-                        TabTile(tab: tab, selected: store.selectedID == tab.id, select: { store.select(tab); dismiss() }, close: { store.close(tab) })
+                        TabTile(tab: tab, selected: store.selectedID == tab.id, select: {
+                            guard store.tabs.contains(where: { $0.id == tab.id }) else { return }
+                            store.select(tab); dismiss()
+                        }, close: { store.close(tab) })
                     }
                 }.padding()
             }
@@ -53,7 +56,10 @@ struct TabTile: View {
                 Button("タブを閉じる", systemImage: "xmark", action: close).labelStyle(.iconOnly)
                     .padding(8).accessibilityIdentifier("closeTab-" + tab.id.uuidString)
             }.padding(.leading, 8).background(.regularMaterial)
-            Button(action: select) {
+            Button {
+                guard abs(translation) < 8 else { return }
+                select()
+            } label: {
                 ZStack {
                     Color(uiColor: .secondarySystemBackground)
                     if let data = tab.previewData, let image = UIImage(data: data) {
