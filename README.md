@@ -2,15 +2,16 @@
 
 iPhone 12 / iOS 18.4.1向けの個人用ブラウザ。SwiftUIとWKWebViewで新規実装し、Windowsで編集、クラウドmacOSでビルド、SideStoreで実機へ導入・再署名する。
 
-**初期版0.1.0（build 6）のビルド・UIテスト・未署名IPA生成に成功。iPhone実機での署名・起動は未検証。** 非公開の[koyuuuuu/personal-browser](https://github.com/koyuuuuu/personal-browser)で無料枠内・超過時停止の方針。支払い方法は未登録との本人回答を受けてCIを実行した。
+**初期版0.1.0（build 6）のビルド・UIテスト・未署名IPA生成に成功。2026-10-24に本人がiPhoneで利用できたと報告。全機能・継続再署名の検証はこれから。** 非公開の[koyuuuuu/personal-browser](https://github.com/koyuuuuu/personal-browser)で無料枠内・超過時停止の方針。支払い方法は未登録との本人回答を受けてCIを実行した。
 
-[成功したCIとIPA](https://github.com/koyuuuuu/personal-browser/actions/runs/39704611315)のArtifactsから`PersonalBrowser-6`をダウンロードし、ZIPを展開して`PersonalBrowser.ipa`を取り出す。GitHub側の保持期限は2026-10-23 10:17（日本時間）。IPAは約323 KiB、arm64実機用、最低iOS 17.0。SideStoreで個人用に署名して導入する。[検証記録](docs/validation-2026-10-22.json)にハッシュとビルド元を記録した。
+[v0.1.0の保存済みリリース](https://github.com/koyuuuuu/personal-browser/releases/tag/v0.1.0)から、ビルド元のソースとIPA保管先を参照できる。IPAは非公開の`ipa-archive`ブランチに保存し、Actionsの1日保持期限が過ぎても取得できる。約323 KiB、arm64実機用、最低iOS 17.0。SideStoreで個人用に署名して導入する。[検証記録](docs/validation-2026-10-22.json)にハッシュとビルド元を記録した。
 
 - [実現性と無料運用の条件](docs/feasibility.ja.md)
 - [GitHubの無料利用枠でできること](docs/free-tier.ja.md)
 - [非公開GitHubリポジトリと超過時停止の設定](docs/github-setup.ja.md)
 - [毎回のGitHubログインを省くCodex運用](docs/github-automation.ja.md)
 - [実装範囲・検証状況・既知の制約](docs/implementation-status.ja.md)
+- [バージョン管理と旧版へ戻す手順](docs/versioning.ja.md)
 - [OSSの詳細比較・Firefox採用時の改修箇所](docs/oss-comparison.ja.md)
 - [アーキテクチャとCI・Codexの運用設計](docs/architecture.ja.md)
 - [Windows・SideStoreの導入・更新・復旧手順](docs/operations.ja.md)

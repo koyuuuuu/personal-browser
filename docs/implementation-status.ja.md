@@ -44,7 +44,7 @@
 | XcodeによるiOS型検査・ビルド | Xcode 16.4でDebug Simulator / Release実機arm64の両方に成功 |
 | SimulatorでのUIテスト | iPhone 16 Pro / iOS 18.5で4件成功 |
 | IPA生成・構造検査 | 0.1.0（build 6）、330,871 bytes。取得後にも構造とSHA-256一致を確認 |
-| Apple署名・iPhoneでの実機起動 | 未実施 |
+| Apple署名・iPhoneでの実機起動 | 2026-10-24に本人がブラウザを利用できたと報告。個別機能の受け入れ試験は別途 |
 | 7日をまたぐ再署名 | 未実施 |
 
 GitHub Actions [run #6](https://github.com/koyuuuuu/personal-browser/actions/runs/39704611315)、ビルド元`438292f5622801bf56525381576b789f65e4d203`で成功。macOS上でもCore 16件に成功した。UIテストは危険なURLの拒否、プライベートタブの追加と一覧、設定によるバーの上下配置、オフラインHTML表示とJavaScriptによるページ内操作を確認する。
@@ -67,4 +67,8 @@ GitHub Actions [run #6](https://github.com/koyuuuuu/personal-browser/actions/run
 - 本人から支払い方法未登録と回答を得て、必要なCIを実行した。利用残高や予算設定をAPIで確認・変更したものではない。
 - Linux・macOSとも手動実行のみ。成果物は1日保持し、毎週の再署名のためにビルドしない。
 - 初回IPAのBundle IDは`local.personalbrowser.app`で固定する。以後、同じApple AccountとアプリIDで更新する。
-- 次はSideStoreでの署名・インストール、実機起動、保存と上書き更新、14日間の再署名継続を検証する。[導入手順](operations.ja.md)を参照。
+- 署名・インストール・実機起動後の利用開始を本人が報告。次は保存と上書き更新、14日間の再署名継続を検証する。[導入手順](operations.ja.md)を参照。
+
+## 版の保存
+
+初期版を`v0.1.0`タグと非公開リリースで固定した。ビルド元は上記のCI成功コミット。実際の未署名IPAとハッシュを非公開の`ipa-archive`ブランチへ保存済み。[版管理・復旧手順](versioning.ja.md)を参照。

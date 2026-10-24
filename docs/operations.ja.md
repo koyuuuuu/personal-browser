@@ -13,7 +13,9 @@
 
 通常はCodexが連携経由でIPAを取得・検査し、ファイルを渡す。[毎回のログインを省く運用](github-automation.ja.md)を参照。以下はGitHub画面から自分で取得する場合の代替手順。
 
-[成功したCI run #6](https://github.com/koyuuuuu/personal-browser/actions/runs/39704611315)のArtifactsにある`PersonalBrowser-6`を保存し、ZIPを展開する。GitHubにログインする必要がある。保持期限は2026-10-23 10:17（日本時間）。署名の更新期限とは別で、ダウンロード後にZIPやIPAが勝手に失効するわけではない。
+[保存済みリリース v0.1.0](https://github.com/koyuuuuu/personal-browser/releases/tag/v0.1.0)にあるIPA保管先のリンクから`PersonalBrowser.ipa`と`build-info.json`を取得する。非公開のため、ブラウザで取得する場合はGitHubへのログインが必要。通常はCodexが取得する。
+
+現在の連携ではRelease assetのアップロード先だけ認証エラーとなるため、IPAは同じリポジトリの`ipa-archive`ブランチへ保管している。Actions run #6の一時成果物は2026-10-23 10:17（日本時間）に保持期限を迎えたが、この保管先には1日の自動削除期限を設けていない。署名期限とは別で、未署名IPA自体が7日で失効するわけではない。
 
 Windowsでは、同梱の`build-info.json`のSHA-256と次の出力を照合できる。
 
@@ -35,6 +37,8 @@ Get-FileHash .\PersonalBrowser.ipa -Algorithm SHA256
 
 SideStoreと個人ブラウザで無料署名の同時アプリ枠を2つ使う。App Storeから入れるLocalDevVPNはこの無料開発署名のアプリ枠とは別。追加のShare ExtensionやWidgetは初期構成に含めない。
 
+旧版へ戻す手順とデータ互換性は[バージョン管理](versioning.ja.md)を参照。
+
 ## 署名を保つ運用
 
 7日の期限直前ではなく、毎日更新を試みる。SideStoreのバックグラウンド更新を有効にし、必要なら「ショートカット」アプリの個人用オートメーションで自宅Wi-Fi接続時や日次に更新を実行する。インストールしたバージョンが提供する「Refresh All Apps」等のアクションを実機で確認する。存在しないアクション名やURLスキームを前提に配布しない。
@@ -55,7 +59,7 @@ SideStoreと個人ブラウザで無料署名の同時アプリ枠を2つ使う�
 
 | 試験 | 合格条件 | 状態 |
 |---|---|---|
-| 初回起動 | iPhone 12 / iOS 18.4.1で起動する | 未実施 |
+| 初回起動 | 対象iPhoneで起動する | 2026-10-24に本人がブラウザを利用できたと報告 |
 | Web互換性 | 日常サイト、ログイン、戻る/進むが使える | 未実施 |
 | 保存 | 強制終了・端末再起動後にも通常データが残る | 未実施 |
 | 上書き更新 | 同一IDの新IPAでブックマーク・設定等を維持 | 未実施 |

@@ -29,6 +29,16 @@
 
 ## Device boundary
 
-Apple Account login, 2FA, USB trust, Developer Mode, VPN permissions, SideStore installation, and actual refresh acceptance require the user's device. The user will install SideStore after returning home. Do not request those steps while they are away or claim device acceptance is complete.
+Apple Account login, 2FA, USB trust, Developer Mode, VPN permissions, SideStore installation, and actual refresh acceptance require the user's device. On 2026-10-24 the user reported that the browser is usable on their iPhone. Treat installation and launch as user-reported success, not proof that every feature or long-term re-signing has passed. Do not ask them to repeat initial installation without a specific need.
 
 See `docs/github-automation.ja.md` and `docs/operations.ja.md`.
+
+## Versioned releases and rollback
+
+- Follow `docs/versioning.ja.md`. Keep version tags fixed at the actual successfully tested source commit. Record marketing version, build number, source SHA, CI run, IPA SHA-256, and data schema.
+- Preserve every delivered version's unsigned IPA and build records. Do not rely on one-day Actions artifacts or the lifetime of the workspace.
+- Initial `v0.1.0` points to `438292f5622801bf56525381576b789f65e4d203`, build 6. Its exact IPA is under `v0.1.0/` on the private `ipa-archive` branch.
+- Release asset upload returned 401 on `uploads.github.com` while normal repository API authentication remained valid. Until that capability is available, keep small IPA binaries on the private archive branch using the Git blob/tree API, and link them from private release notes. Do not request an extra login for this known endpoint limitation.
+- Never merge `ipa-archive` into main or overwrite a historical version's files. Read its current head/tree before appending another version. Check binary/repository size before adding larger artifacts; do not introduce paid storage or public distribution.
+- When reverting a delivered app, preserve the current source history; use the old release or a new corrective commit. Re-sign through the same Apple Account and bundle ID. Do not delete the installed app as a default step.
+- App rollback is separate from on-device data rollback. Before any incompatible persistence change, implement and test a backup/migration plan. Do not claim that old apps can read newer data formats.
