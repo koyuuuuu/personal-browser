@@ -281,7 +281,9 @@ final class BrowserUITests: XCTestCase {
         XCTAssertTrue(stepper.label.contains("3列") || app.staticTexts["タブ一覧：3列"].waitForExistence(timeout: 5))
         let add = app.buttons["addAddressLeftButton"]
         for _ in 0..<4 { if add.exists && add.isHittable { break }; app.swipeUp() }
-        tapMenuControl("addAddressLeftButton"); app.buttons["ページ内を検索"].tap()
+        tapMenuControl("addAddressLeftButton")
+        XCTAssertTrue(app.buttons["ページ内を検索"].waitForExistence(timeout: 5))
+        app.buttons["ページ内を検索"].tap()
         app.navigationBars["表示・操作"].buttons["設定"].tap()
         app.navigationBars["設定"].buttons["閉じる"].tap()
         XCTAssertTrue(app.buttons["addressLeft-find"].waitForExistence(timeout: 5))

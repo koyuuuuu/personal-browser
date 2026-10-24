@@ -70,8 +70,12 @@ struct PresentationSettingsView: View {
                 .onDelete { offsets in editAddress(left: left) { $0.remove(atOffsets: offsets) } }
             let missing = AddressBarAction.allCases.filter { !values.contains($0) }
             if !missing.isEmpty {
-                Menu("ボタンを追加", systemImage: "plus") {
+                Menu {
                     ForEach(missing) { action in Button(action.label, systemImage: action.symbol) { editAddress(left: left) { $0.append(action) } } }
+                } label: {
+                    Label("ボタンを追加", systemImage: "plus")
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .contentShape(Rectangle())
                 }
                 .accessibilityIdentifier(left ? "addAddressLeftButton" : "addAddressRightButton")
             }
