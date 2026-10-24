@@ -2,6 +2,34 @@
   "releases": [
     {
       "file": "PersonalBrowser.ipa",
+      "sha256": "0fec29654dd75e5311b9bc0da215e496c0e3a5561fdd965be2bc42846951f31f",
+      "bundle_id": "local.personalbrowser.app",
+      "version": "0.4.0",
+      "build": "20",
+      "minimum_ios": "17.0",
+      "target_ios": "18.4.1",
+      "architecture": "arm64",
+      "platform": "iOS device",
+      "embedded_profile": false,
+      "signature_resources": false,
+      "installation_verified": false,
+      "source_commit": "12401948095c0507107f63c9dadf110fd8864802",
+      "data_schema": 1,
+      "size": 858640,
+      "date": "2026-10-24T21:00:41.015676+00:00",
+      "description": "横画面のバーを自動的に隠し、上側へ戻るスクロールで細い1行バーを表示。縦横のバー非表示、アドレスバー左右のボタン編集、タブの列数・文字サイズ・ページ倍率、背景の位置・ズーム調整を追加。通常タブの画像を再起動後も保存し、一覧をアクティブタブの位置で開くように変更。下部の＋で直接新規タブを追加し、末尾スワイプでも新規作成。タブ切替・削除のアニメーションを改善。バックグラウンド音声を優先し、ホームインジケータに自動非表示を要求。接続確認と、チェックした場合だけ保存する接続先・証明書別の例外、ローカルHTTPへの切替確認を追加。既存のブックマーク・履歴形式とアプリIDを維持。",
+      "appPermissions": {
+        "entitlements": [],
+        "privacy": {
+          "NSCameraUsageDescription": "閲覧中のWebサイトでカメラを使用するために必要です。",
+          "NSLocalNetworkUsageDescription": "自宅のネットワークにある自作アプリや動画サーバーへ接続するために使用します。",
+          "NSMicrophoneUsageDescription": "閲覧中のWebサイトでマイクを使用するために必要です。"
+        }
+      },
+      "tag": "v0.4.0-build.20"
+    },
+    {
+      "file": "PersonalBrowser.ipa",
       "sha256": "5e17e41c229bb3f6097cc26522e3d58969198db8e2301467664086e87bcf2125",
       "bundle_id": "local.personalbrowser.app",
       "version": "0.3.0",
@@ -164,6 +192,7 @@
         "entitlements": [],
         "privacy": {
           "NSCameraUsageDescription": "閲覧中のWebサイトでカメラを使用するために必要です。",
+          "NSLocalNetworkUsageDescription": "自宅のネットワークにある自作アプリや動画サーバーへ接続するために使用します。",
           "NSMicrophoneUsageDescription": "閲覧中のWebサイトでマイクを使用するために必要です。"
         }
       }

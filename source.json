@@ -12,6 +12,16 @@
       "iconURL": "https://raw.githubusercontent.com/koyuuuuu/personal-browser-distribution/main/icon.png",
       "versions": [
         {
+          "version": "0.4.0",
+          "buildVersion": "20",
+          "date": "2026-10-24T21:00:41.015676+00:00",
+          "localizedDescription": "横画面のバーを自動的に隠し、上側へ戻るスクロールで細い1行バーを表示。縦横のバー非表示、アドレスバー左右のボタン編集、タブの列数・文字サイズ・ページ倍率、背景の位置・ズーム調整を追加。通常タブの画像を再起動後も保存し、一覧をアクティブタブの位置で開くように変更。下部の＋で直接新規タブを追加し、末尾スワイプでも新規作成。タブ切替・削除のアニメーションを改善。バックグラウンド音声を優先し、ホームインジケータに自動非表示を要求。接続確認と、チェックした場合だけ保存する接続先・証明書別の例外、ローカルHTTPへの切替確認を追加。既存のブックマーク・履歴形式とアプリIDを維持。",
+          "downloadURL": "https://github.com/koyuuuuu/personal-browser-distribution/releases/download/v0.4.0-build.20/PersonalBrowser.ipa",
+          "size": 858640,
+          "minOSVersion": "17.0",
+          "sha256": "0fec29654dd75e5311b9bc0da215e496c0e3a5561fdd965be2bc42846951f31f"
+        },
+        {
           "version": "0.3.0",
           "buildVersion": "14",
           "date": "2026-10-24T17:23:50.712572+00:00",
@@ -76,6 +86,7 @@
         "entitlements": [],
         "privacy": {
           "NSCameraUsageDescription": "閲覧中のWebサイトでカメラを使用するために必要です。",
+          "NSLocalNetworkUsageDescription": "自宅のネットワークにある自作アプリや動画サーバーへ接続するために使用します。",
           "NSMicrophoneUsageDescription": "閲覧中のWebサイトでマイクを使用するために必要です。"
         }
       }
