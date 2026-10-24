@@ -55,6 +55,26 @@
 			"isa" = "PBXBuildFile";
 			"fileRef" = "E56E49BA23317991582BFD23";
 		};
+		"48ABF3013B03F02D15283AAA" = {
+			"isa" = "PBXFileReference";
+			"lastKnownFileType" = "sourcecode.swift";
+			"path" = "UpdateChecker.swift";
+			"sourceTree" = "<group>";
+		};
+		"7D00D18171494CA00E5DD24C" = {
+			"isa" = "PBXBuildFile";
+			"fileRef" = "48ABF3013B03F02D15283AAA";
+		};
+		"2CFC0C6B77C472415C669D8B" = {
+			"isa" = "PBXFileReference";
+			"lastKnownFileType" = "sourcecode.swift";
+			"path" = "UpdateSettingsView.swift";
+			"sourceTree" = "<group>";
+		};
+		"116295B764339DFF363B4838" = {
+			"isa" = "PBXBuildFile";
+			"fileRef" = "2CFC0C6B77C472415C669D8B";
+		};
 		"75B13235D681EFADD9C29A79" = {
 			"isa" = "PBXFileReference";
 			"lastKnownFileType" = "text.plist.xml";
@@ -75,6 +95,8 @@
 				"E7A2536D3C797A21F68AD776",
 				"6F9F31D3C004020DBE918D32",
 				"E56E49BA23317991582BFD23",
+				"48ABF3013B03F02D15283AAA",
+				"2CFC0C6B77C472415C669D8B",
 				"75B13235D681EFADD9C29A79",
 				"3A94BB07224E6FBA2B7113D3",
 			);
@@ -111,12 +133,23 @@
 			"isa" = "PBXBuildFile";
 			"fileRef" = "3FB677C06874B7AF4A9D1DEF";
 		};
+		"8B4758279FF832AA45C1A5B4" = {
+			"isa" = "PBXFileReference";
+			"lastKnownFileType" = "sourcecode.swift";
+			"path" = "UpdateFeed.swift";
+			"sourceTree" = "<group>";
+		};
+		"000BB7D1ED578BD248A461DD" = {
+			"isa" = "PBXBuildFile";
+			"fileRef" = "8B4758279FF832AA45C1A5B4";
+		};
 		"E531CAEC0C1F33507375558A" = {
 			"isa" = "PBXGroup";
 			"children" = (
 				"27B6E2C91F424C774DA534BC",
 				"0258D0175D953E32562EF129",
 				"3FB677C06874B7AF4A9D1DEF",
+				"8B4758279FF832AA45C1A5B4",
 			);
 			"path" = "Sources/BrowserCore";
 			"sourceTree" = "<group>";
@@ -179,6 +212,7 @@
 				"IPHONEOS_DEPLOYMENT_TARGET" = "17.0";
 				"SWIFT_VERSION" = "5.0";
 				"BROWSER_BUNDLE_ID" = "local.personalbrowser.app";
+				"BROWSER_UPDATE_SOURCE_URL" = "https://raw.githubusercontent.com/koyuuuuu/personal-browser-distribution/main/source.json";
 				"CLANG_ENABLE_MODULES" = "YES";
 				"CLANG_ENABLE_OBJC_ARC" = "YES";
 				"DEBUG_INFORMATION_FORMAT" = "dwarf-with-dsym";
@@ -197,6 +231,7 @@
 				"IPHONEOS_DEPLOYMENT_TARGET" = "17.0";
 				"SWIFT_VERSION" = "5.0";
 				"BROWSER_BUNDLE_ID" = "local.personalbrowser.app";
+				"BROWSER_UPDATE_SOURCE_URL" = "https://raw.githubusercontent.com/koyuuuuu/personal-browser-distribution/main/source.json";
 				"CLANG_ENABLE_MODULES" = "YES";
 				"CLANG_ENABLE_OBJC_ARC" = "YES";
 				"DEBUG_INFORMATION_FORMAT" = "dwarf-with-dsym";
@@ -223,7 +258,7 @@
 				"INFOPLIST_FILE" = "App/Info.plist";
 				"GENERATE_INFOPLIST_FILE" = "NO";
 				"CURRENT_PROJECT_VERSION" = "1";
-				"MARKETING_VERSION" = "0.1.0";
+				"MARKETING_VERSION" = "0.2.0";
 				"CODE_SIGN_STYLE" = "Automatic";
 				"TARGETED_DEVICE_FAMILY" = "1";
 				"SUPPORTED_PLATFORMS" = "iphoneos iphonesimulator";
@@ -248,7 +283,7 @@
 				"INFOPLIST_FILE" = "App/Info.plist";
 				"GENERATE_INFOPLIST_FILE" = "NO";
 				"CURRENT_PROJECT_VERSION" = "1";
-				"MARKETING_VERSION" = "0.1.0";
+				"MARKETING_VERSION" = "0.2.0";
 				"CODE_SIGN_STYLE" = "Automatic";
 				"TARGETED_DEVICE_FAMILY" = "1";
 				"SUPPORTED_PLATFORMS" = "iphoneos iphonesimulator";
@@ -330,9 +365,12 @@
 				"C6150AF80F394D78175E2EEB",
 				"9F347C723944C0DAC55AB56C",
 				"C733C6442A281599567C6C83",
+				"7D00D18171494CA00E5DD24C",
+				"116295B764339DFF363B4838",
 				"24503D32E1FAF4AE42A87DBE",
 				"DA9C3EB926325121D508F8D5",
 				"89486FF53386963565AE6659",
+				"000BB7D1ED578BD248A461DD",
 			);
 			"runOnlyForDeploymentPostprocessing" = 0;
 		};

@@ -1,0 +1,10 @@
+{
+  "version": "0.2.0",
+  "bundle_id": "local.personalbrowser.app",
+  "data_schema": 1,
+  "public_repository": "koyuuuuu/personal-browser-distribution",
+  "name": "Personal Browser",
+  "developer_name": "Personal Browser",
+  "description": "自分専用のブラウザ。タブ、履歴、ブックマーク、プライベート閲覧、UIカスタマイズに対応。",
+  "release_notes": "更新通知のオン・オフ設定とSideStore配信に対応。履歴・ブックマークの保存形式とアプリIDは維持しています。"
+}

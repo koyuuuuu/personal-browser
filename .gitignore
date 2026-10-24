@@ -17,3 +17,5 @@ xcuserdata/
 *.pem
 auth.json
 docs/github-connection-status.json
+# Unpublished hosting experiment; retained locally, never part of the app/release.
+delivery/

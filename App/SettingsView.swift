@@ -10,6 +10,10 @@ struct SettingsView: View {
     var body: some View {
         NavigationStack {
             Form {
+                Section {
+                    NavigationLink("アプリの更新") { UpdateSettingsView() }
+                        .accessibilityIdentifier("updateSettingsLink")
+                }
                 Section("操作") {
                     Picker("バーの位置", selection: setting(\.toolbarPosition)) {
                         Text("上").tag(ToolbarPosition.top)

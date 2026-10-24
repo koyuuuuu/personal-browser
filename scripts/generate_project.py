@@ -31,6 +31,7 @@ def encode(value, indent=0):
 
 def generate():
     objects = {}
+    release = json.loads((ROOT / "distribution/release.json").read_text())
 
     def add(label, isa, **fields):
         key = identifier(label)
@@ -70,13 +71,14 @@ def generate():
     project_configs = configurations("project", {
         "SDKROOT": "iphoneos", "IPHONEOS_DEPLOYMENT_TARGET": "17.0", "SWIFT_VERSION": "5.0",
         "BROWSER_BUNDLE_ID": "local.personalbrowser.app",
+        "BROWSER_UPDATE_SOURCE_URL": "https://raw.githubusercontent.com/" + release["public_repository"] + "/main/source.json",
         "CLANG_ENABLE_MODULES": "YES", "CLANG_ENABLE_OBJC_ARC": "YES", "DEBUG_INFORMATION_FORMAT": "dwarf-with-dsym",
         "SWIFT_STRICT_CONCURRENCY": "targeted", "ENABLE_USER_SCRIPT_SANDBOXING": "YES"
     })
     app_configs = configurations("app", {
         "PRODUCT_BUNDLE_IDENTIFIER": "$(BROWSER_BUNDLE_ID)", "PRODUCT_NAME": "$(TARGET_NAME)",
         "INFOPLIST_FILE": "App/Info.plist", "GENERATE_INFOPLIST_FILE": "NO",
-        "CURRENT_PROJECT_VERSION": "1", "MARKETING_VERSION": "0.1.0", "CODE_SIGN_STYLE": "Automatic",
+        "CURRENT_PROJECT_VERSION": "1", "MARKETING_VERSION": release["version"], "CODE_SIGN_STYLE": "Automatic",
         "TARGETED_DEVICE_FAMILY": "1", "SUPPORTED_PLATFORMS": "iphoneos iphonesimulator",
         "SUPPORTS_MACCATALYST": "NO", "SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD": "NO",
         "ASSETCATALOG_COMPILER_APPICON_NAME": "AppIcon",

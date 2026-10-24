@@ -3,7 +3,7 @@
 ## Established project decisions
 
 - Native SwiftUI + WKWebView, iPhone 12 / iOS 18.4.1; no third-party browser fork.
-- Private repository: `koyuuuuu/personal-browser`. Keep it private.
+- Private source repository: `koyuuuuu/personal-browser`. Keep it private. The user explicitly approved publishing only unsigned IPAs, the required app icon, and SideStore source JSON to the separate public `koyuuuuu/personal-browser-distribution` repository. Never publish Swift source, private build logs, credentials, or browsing data there.
 - Free allowance only. The user reported no registered payment method. Do not enable paid usage, add paid AI services, or change billing settings.
 - The user wants the assistant to perform routine development, commits, CI dispatch, log inspection, fixes, and artifact retrieval without asking them to log into GitHub for each step. This does not authorize unrelated changes or publishing the source.
 
@@ -13,7 +13,7 @@
 - Check access with a small repository read, such as `gh api repos/koyuuuuu/personal-browser --jq '{full_name,private}'`. Never print tokens, inspect credential values, or ask for passwords/PATs in chat.
 - A 403 on one endpoint does not establish an expired login. Distinguish endpoint permissions, network failures, and actual authentication failure. Request reconnection only when existing authorized access is demonstrably unavailable.
 - Prefer a commit based on the current remote tree and update the branch with an expected-head lease. Preserve concurrent user changes.
-- Both workflows currently use `workflow_dispatch`. The assistant should initiate necessary builds; the user does not need to open Actions and click Run workflow. Do not introduce scheduled macOS builds or rebuild for weekly SideStore signing.
+- The iOS workflow now runs automatically for app/build/distribution changes pushed to main, and also supports workflow_dispatch. Do not dispatch a duplicate build when a push run exists. Documentation-only changes do not build. Keep the tooling workflow manual. Do not introduce scheduled macOS builds or rebuild for weekly SideStore signing.
 
 ## Validation and delivery
 
@@ -38,7 +38,17 @@ See `docs/github-automation.ja.md` and `docs/operations.ja.md`.
 - Follow `docs/versioning.ja.md`. Keep version tags fixed at the actual successfully tested source commit. Record marketing version, build number, source SHA, CI run, IPA SHA-256, and data schema.
 - Preserve every delivered version's unsigned IPA and build records. Do not rely on one-day Actions artifacts or the lifetime of the workspace.
 - Initial `v0.1.0` points to `438292f5622801bf56525381576b789f65e4d203`, build 6. Its exact IPA is under `v0.1.0/` on the private `ipa-archive` branch.
-- Release asset upload returned 401 on `uploads.github.com` while normal repository API authentication remained valid. Until that capability is available, keep small IPA binaries on the private archive branch using the Git blob/tree API, and link them from private release notes. Do not request an extra login for this known endpoint limitation.
+- Conversation-side Release asset upload returned 401 on uploads.github.com; CI publishes private assets with its own ephemeral GITHUB_TOKEN. Public publishing uses DISTRIBUTION_TOKEN, a fine-grained token scoped only to the dedicated public repository. Never request its value in chat; it belongs in the private repository Actions Secrets. The initial v0.1.0 remains on ipa-archive.
 - Never merge `ipa-archive` into main or overwrite a historical version's files. Read its current head/tree before appending another version. Check binary/repository size before adding larger artifacts; do not introduce paid storage or public distribution.
 - When reverting a delivered app, preserve the current source history; use the old release or a new corrective commit. Re-sign through the same Apple Account and bundle ID. Do not delete the installed app as a default step.
 - App rollback is separate from on-device data rollback. Before any incompatible persistence change, implement and test a backup/migration plan. Do not claim that old apps can read newer data formats.
+
+## Automatic updates and latest user data
+
+- The user's explicit policy is to keep the latest bookmarks/history/settings while updating or rolling back app functionality. Never restore an old user-data snapshot just because app code is reverted.
+- Preserve `local.personalbrowser.app`, the existing application-support path, default WebKit data store, and schema 1. Keep feature-specific additions outside browser.json if older apps must ignore them safely. Refuse incompatible schema/identity changes in the release pipeline.
+- `scripts/check_data_compatibility.sh` builds v0.1.0 and current persistence code separately, and checks old → new → old → new reads/writes against the latest library data. This does not replace device acceptance for actual SideStore signing and sandbox retention.
+- Release versions come from distribution/release.json; build numbers come from the iOS workflow run counter. Tags use vVERSION-build.NUMBER and bind to the tested source SHA. Published files are immutable.
+- The private distribution branch contains derived metadata only. The public mirror may contain only README.md, source.json, icon.png (and a license), plus unsigned IPA Release assets. Do not copy the private source commit tree into it.
+- App update notices are foreground-only, opt-in, and checked at most daily automatically. Disabling them stops future automatic checks and hides the notice. Refreshing signatures and installing a new app version remain separate SideStore operations.
+- See docs/distribution.ja.md for one-time token setup and the feed URL. A missing token must be reported as incomplete public deployment, not a successful live feed.

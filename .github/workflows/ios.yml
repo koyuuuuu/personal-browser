@@ -1,11 +1,22 @@
 name: iOS tests and unsigned IPA
 
-# Manual execution controls macOS usage in the private, free-tier-only setup.
 on:
+  push:
+    branches: [main]
+    paths:
+      - 'App/**'
+      - 'Sources/**'
+      - 'Tests/**'
+      - 'UITests/**'
+      - 'PersonalBrowser.xcodeproj/**'
+      - 'Package.swift'
+      - 'scripts/**'
+      - 'distribution/**'
+      - '.github/workflows/ios.yml'
   workflow_dispatch:
     inputs:
       build_ipa:
-        description: 'Create an unsigned device IPA after tests pass'
+        description: 'Create and publish an unsigned device IPA after tests pass'
         type: boolean
         default: true
 
@@ -14,24 +25,39 @@ permissions:
 
 concurrency:
   group: ios-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 jobs:
-  ios:
-    runs-on: macos-15
-    timeout-minutes: 30
-    env:
-      BROWSER_BUNDLE_ID: ${{ vars.BROWSER_BUNDLE_ID || 'local.personalbrowser.app' }}
-      BROWSER_XCODE_PATH: ${{ vars.BROWSER_XCODE_PATH }}
-      BUILD_IPA: ${{ inputs.build_ipa && '1' || '0' }}
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
     steps:
       - uses: actions/checkout@v4
         with:
           persist-credentials: false
-      - name: Test and build
+      - name: Validate build and release tooling
+        run: |
+          python3 -W error -m unittest discover -s scripts -p 'test_*.py' -v
+          python3 scripts/generate_project.py --check
+
+  ios:
+    needs: check
+    runs-on: macos-15
+    timeout-minutes: 30
+    env:
+      BROWSER_BUNDLE_ID: local.personalbrowser.app
+      BROWSER_XCODE_PATH: ${{ vars.BROWSER_XCODE_PATH }}
+      BUILD_IPA: ${{ (github.event_name == 'push' || inputs.build_ipa) && '1' || '0' }}
+      CHECK_DATA_COMPATIBILITY: '1'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - name: Test, verify latest-data compatibility, and build
         run: bash scripts/ios_ci.sh
       - name: Upload unsigned IPA and build information
-        if: success() && inputs.build_ipa
+        if: success() && (github.event_name == 'push' || inputs.build_ipa)
         uses: actions/upload-artifact@v4
         with:
           name: PersonalBrowser-${{ github.run_number }}
@@ -56,3 +82,24 @@ jobs:
             build/test-attachments/**
           retention-days: 1
           if-no-files-found: ignore
+
+  publish:
+    needs: ios
+    if: github.ref == 'refs/heads/main' && (github.event_name == 'push' || inputs.build_ipa)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/download-artifact@v4
+        with:
+          name: PersonalBrowser-${{ github.run_number }}
+          path: dist
+      - name: Publish private Release and public binary-only SideStore source
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          DISTRIBUTION_TOKEN: ${{ secrets.DISTRIBUTION_TOKEN }}
+        run: python3 scripts/publish_release.py

@@ -8,6 +8,7 @@ enum BrowserSheet: String, Identifiable {
 
 @MainActor
 struct BrowserRootView: View {
+    @EnvironmentObject private var updates: UpdateChecker
     @ObservedObject var store: BrowserStore
     @State private var sheet: BrowserSheet?
     @State private var sharingURL: URL?
@@ -19,6 +20,18 @@ struct BrowserRootView: View {
                     .id(tab.id)
             } else {
                 ProgressView("Webサイトデータを消去中…")
+            }
+        }
+        .safeAreaInset(edge: .top, spacing: 0) {
+            if updates.shouldPresent, let update = updates.available {
+                HStack {
+                    Text("新しいバージョン \(update.displayVersion)").font(.callout)
+                    Spacer()
+                    Button("SideStore") { updates.openSideStore() }
+                    Button("閉じる", systemImage: "xmark") { updates.dismissedVersion = update.displayVersion }
+                        .labelStyle(.iconOnly)
+                }
+                .padding(10).background(.thinMaterial)
             }
         }
         .tint(store.selectedTab?.isPrivate == true ? .purple : .blue)

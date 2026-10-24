@@ -71,4 +71,18 @@ final class BrowserUITests: XCTestCase {
         XCTAssertTrue(app.windows.firstMatch.frame.contains(frame), "Menu must be inside the visible window")
         control.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).tap()
     }
+
+    func testUpdateNotificationPreferenceCanBeTurnedOnAndOff() {
+        tapMenuControl("menuButton")
+        app.buttons["設定"].tap()
+        app.buttons["updateSettingsLink"].tap()
+        XCTAssertTrue(app.navigationBars["アプリの更新"].waitForExistence(timeout: 5))
+        let toggle = app.switches["updateNotificationsToggle"]
+        XCTAssertTrue(toggle.waitForExistence(timeout: 5))
+        XCTAssertEqual(toggle.value as? String, "0")
+        toggle.coordinate(withNormalizedOffset: CGVector(dx: 0.9, dy: 0.5)).tap()
+        XCTAssertEqual(toggle.value as? String, "1")
+        toggle.coordinate(withNormalizedOffset: CGVector(dx: 0.9, dy: 0.5)).tap()
+        XCTAssertEqual(toggle.value as? String, "0")
+    }
 }
