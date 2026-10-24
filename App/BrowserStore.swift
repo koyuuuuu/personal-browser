@@ -6,13 +6,25 @@ final class BrowserStore: ObservableObject {
     @Published private(set) var tabs: [BrowserTab] = []
     @Published var selectedID: UUID?
     @Published private(set) var snapshot = BrowserSnapshot()
+    @Published private(set) var extras = LibraryExtras()
+    @Published private(set) var features = FeaturePreferences()
+    @Published var shareRequest: ShareRequest?
+    @Published var tabAddedID: UUID?
+    @Published var homeBackground: UIImage?
+    @Published private(set) var extraStorageBlocked = false
     @Published var notice: String?
     @Published var externalURL: URL?
     @Published private(set) var persistenceBlocked = false
     @Published private(set) var isClearingData = false
     let storage: SnapshotStore
     private var saveTask: Task<Void, Never>?
-    static let maximumTabs = 12
+    static let maximumTabs = 500
+    private var activationOrder: [UUID] = []
+    private var memoryObserver: NSObjectProtocol?
+    private var restoring = true
+    var directory: URL { storage.fileURL.deletingLastPathComponent() }
+    var downloadDirectory: URL { FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0].appendingPathComponent("Downloads", isDirectory: true) }
+    var downloadedFiles: [URL] { ((try? FileManager.default.contentsOfDirectory(at: downloadDirectory, includingPropertiesForKeys: [.creationDateKey])) ?? []).sorted { $0.lastPathComponent < $1.lastPathComponent } }
 
     var selectedTab: BrowserTab? { tabs.first { $0.id == selectedID } }
 
@@ -37,6 +49,7 @@ final class BrowserStore: ObservableObject {
             persistenceBlocked = true
             notice = "保存データを読み込めませんでした。元のファイルは保持しています。設定画面から退避・再作成できます。"
         }
+        loadAdditionalData()
         let records = snapshot.session.tabs
         if records.isEmpty {
             _ = newTab()
@@ -46,7 +59,11 @@ final class BrowserStore: ObservableObject {
             }
             selectedID = snapshot.session.selectedID ?? tabs.first?.id
         }
+        restoring = false
         if testing { selectedTab?.loadTestFixture() }
+        memoryObserver = NotificationCenter.default.addObserver(forName: UIApplication.didReceiveMemoryWarningNotification, object: nil, queue: .main) { [weak self] _ in
+            Task { @MainActor in self?.trimLiveTabs(limit: 1) }
+        }
     }
 
     @discardableResult
@@ -62,7 +79,7 @@ final class BrowserStore: ObservableObject {
             return nil
         }
         let tab = BrowserTab(id: id, isPrivate: isPrivate, configuration: configuration)
-        tab.webView.allowsBackForwardNavigationGestures = snapshot.settings.swipeNavigation
+        tab.applyPreferences(features, swipe: snapshot.settings.swipeNavigation)
         tab.onVisit = { [weak self, weak tab] url, title in
             guard let self, let tab else { return }
             self.snapshot.recordVisit(url: url, title: title, isPrivate: tab.isPrivate)
@@ -70,6 +87,10 @@ final class BrowserStore: ObservableObject {
         }
         tab.onStateChange = { [weak self] in self?.scheduleSave() }
         tab.onExternalURL = { [weak self] url in self?.externalURL = url }
+        tab.onOpenLink = { [weak self] url, isPrivate in _ = self?.newTab(isPrivate: isPrivate, url: url) }
+        tab.onShareLink = { [weak self] url in self?.shareRequest = ShareRequest(url: url) }
+        tab.onOpenInBrowser = { [weak self] url in self?.externalURL = url }
+        tab.onDownload = { [weak self] _ in self?.notice = "ダウンロードしました。メニューの「ダウンロード」から共有・保存できます。" }
         tab.onClose = { [weak self, weak tab] in
             if let tab { self?.close(tab) }
         }
@@ -80,14 +101,23 @@ final class BrowserStore: ObservableObject {
             return popup?.webView
         }
         tabs.append(tab)
-        if select { selectedID = tab.id }
+        if select {
+            selectedTab?.capturePreview()
+            selectedID = tab.id
+            activationOrder.removeAll { $0 == tab.id }; activationOrder.append(tab.id)
+            if !restoring { tabAddedID = tab.id }
+        }
         if let url { tab.load(url) }
+        if !restoring { trimLiveTabs() }
         scheduleSave()
         return tab
     }
 
     func select(_ tab: BrowserTab) {
+        selectedTab?.capturePreview()
         selectedID = tab.id
+        activationOrder.removeAll { $0 == tab.id }; activationOrder.append(tab.id)
+        trimLiveTabs()
         scheduleSave()
     }
 
@@ -138,7 +168,7 @@ final class BrowserStore: ObservableObject {
     func updateSettings(_ settings: BrowserSettings) {
         snapshot.settings = settings.normalized()
         for tab in tabs {
-            tab.webView.allowsBackForwardNavigationGestures = settings.swipeNavigation
+            tab.applyPreferences(features, swipe: settings.swipeNavigation)
         }
         scheduleSave()
     }
@@ -172,6 +202,151 @@ final class BrowserStore: ObservableObject {
         } catch { notice = error.localizedDescription }
     }
 
+    func switchTab(towardNext: Bool) {
+        guard let current = tabs.firstIndex(where: { $0.id == selectedID }) else { return }
+        let next = current + (towardNext ? 1 : -1)
+        if tabs.indices.contains(next) { select(tabs[next]) }
+    }
+
+    private func trimLiveTabs(limit: Int? = nil) {
+        let allowed = limit ?? features.maximumLiveTabs
+        var live = tabs.filter(\.isLive)
+        let candidates = live.filter { $0.id != selectedID && !$0.hasActiveMedia && !$0.isPictureInPicture }.sorted {
+            (activationOrder.firstIndex(of: $0.id) ?? -1) < (activationOrder.firstIndex(of: $1.id) ?? -1)
+        }
+        for tab in candidates where live.count >= allowed {
+            tab.suspend()
+            live = tabs.filter(\.isLive)
+        }
+    }
+
+    func showHome() {
+        // Keep any current media WebView alive; home is a new lightweight tab.
+        _ = newTab(isPrivate: selectedTab?.isPrivate ?? false)
+    }
+
+    func updateFeatures(_ value: FeaturePreferences) {
+        features = value
+        features.favoriteColumns = min(6, max(3, value.favoriteColumns))
+        features.maximumLiveTabs = min(8, max(2, value.maximumLiveTabs))
+        for tab in tabs { tab.applyPreferences(features, swipe: snapshot.settings.swipeNavigation) }
+        trimLiveTabs(); saveAdditionalData()
+    }
+
+    func addFavorite() {
+        guard let tab = selectedTab, let url = tab.url, WebURLPolicy.allows(url) else { return }
+        guard !extras.favorites.contains(where: { $0.url == url }) else { notice = "お気に入りに登録済みです。"; return }
+        extras.favorites.append(Bookmark(title: tab.title, url: url)); saveAdditionalData()
+    }
+    func deleteFavorite(_ id: UUID) { extras.favorites.removeAll { $0.id == id }; saveAdditionalData() }
+    func updateFavorite(_ item: Bookmark) {
+        guard WebURLPolicy.allows(item.url), let index = extras.favorites.firstIndex(where: { $0.id == item.id }) else { return }
+        extras.favorites[index] = item; saveAdditionalData()
+    }
+    func moveFavorite(_ id: UUID, by distance: Int) {
+        guard let i = extras.favorites.firstIndex(where: { $0.id == id }) else { return }
+        let j = i + distance; guard extras.favorites.indices.contains(j) else { return }
+        extras.favorites.swapAt(i, j); saveAdditionalData()
+    }
+    func createFolder(name: String, parent: UUID?) {
+        let value = name.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !value.isEmpty else { return }
+        extras.folders.append(BookmarkFolder(name: value, parentID: parent)); saveAdditionalData()
+    }
+    func updateFolder(_ item: BookmarkFolder) {
+        guard !item.name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
+              extras.canMoveFolder(item.id, to: item.parentID), let i = extras.folders.firstIndex(where: { $0.id == item.id }) else { notice = "フォルダを自分自身の中に移動できません。"; return }
+        extras.folders[i] = item; saveAdditionalData()
+    }
+    func deleteFolder(_ id: UUID) { extras.removeFolder(id); saveAdditionalData() }
+    func moveFolders(_ ids: [UUID], source: IndexSet, destination: Int) {
+        var visible = extras.folders.filter { ids.contains($0.id) }
+        visible.move(fromOffsets: source, toOffset: destination)
+        var iterator = visible.makeIterator()
+        for index in extras.folders.indices where ids.contains(extras.folders[index].id) { extras.folders[index] = iterator.next()! }
+        saveAdditionalData()
+    }
+    func moveBookmark(_ id: UUID, folder: UUID?) { extras.bookmarkFolders[id.uuidString] = folder; saveAdditionalData() }
+    func updateBookmark(_ bookmark: Bookmark) {
+        guard WebURLPolicy.allows(bookmark.url), let i = snapshot.bookmarks.firstIndex(where: { $0.id == bookmark.id }) else { return }
+        snapshot.bookmarks[i] = bookmark; scheduleSave()
+    }
+    func deleteBookmark(_ id: UUID) {
+        snapshot.bookmarks.removeAll { $0.id == id }; extras.bookmarkFolders.removeValue(forKey: id.uuidString)
+        scheduleSave(); saveAdditionalData()
+    }
+    func reorderBookmarks(_ ids: [UUID], source: IndexSet, destination: Int) {
+        var visible = snapshot.bookmarks.filter { ids.contains($0.id) }; visible.move(fromOffsets: source, toOffset: destination)
+        var iterator = visible.makeIterator()
+        for index in snapshot.bookmarks.indices where ids.contains(snapshot.bookmarks[index].id) { snapshot.bookmarks[index] = iterator.next()! }
+        scheduleSave()
+    }
+
+    func importPages(_ pages: [ImportedPage], kind: LibraryImportKind) -> Int {
+        var count = 0
+        var bookmarkURLs = Set(snapshot.bookmarks.map(\.url))
+        var favoriteURLs = Set(extras.favorites.map(\.url))
+        var historyURLs = Set(snapshot.history.map(\.url))
+        for page in pages {
+            switch kind {
+            case .bookmarks:
+                guard bookmarkURLs.insert(page.url).inserted else { continue }
+                let bookmark = Bookmark(title: page.title, url: page.url)
+                snapshot.bookmarks.append(bookmark)
+                var parent: UUID?
+                for name in page.folders {
+                    if let folder = extras.folders.first(where: { $0.name == name && $0.parentID == parent }) { parent = folder.id }
+                    else { let folder = BookmarkFolder(name: name, parentID: parent); extras.folders.append(folder); parent = folder.id }
+                }
+                extras.bookmarkFolders[bookmark.id.uuidString] = parent
+            case .favorites:
+                guard favoriteURLs.insert(page.url).inserted else { continue }
+                extras.favorites.append(Bookmark(title: page.title, url: page.url))
+            case .history:
+                guard historyURLs.insert(page.url).inserted else { continue }
+                snapshot.history.append(HistoryEntry(title: page.title, url: page.url, visitedAt: page.date))
+            }
+            count += 1
+        }
+        snapshot.history.sort { $0.visitedAt > $1.visitedAt }; snapshot.history = Array(snapshot.history.prefix(1000))
+        flush(); return count
+    }
+
+    func setHomeBackground(_ data: Data?) {
+        let file = directory.appendingPathComponent("home-background.jpg")
+        do {
+            if let data {
+                guard let image = UIImage(data: data) else { return }
+                let ratio = min(1, 1800 / max(image.size.width, image.size.height))
+                let size = CGSize(width: image.size.width * ratio, height: image.size.height * ratio)
+                let compressed = UIGraphicsImageRenderer(size: size).image { _ in image.draw(in: CGRect(origin: .zero, size: size)) }.jpegData(compressionQuality: 0.8)
+                guard let compressed else { return }
+                try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+                try compressed.write(to: file, options: [.atomic, .completeFileProtectionUntilFirstUserAuthentication])
+                homeBackground = UIImage(data: compressed)
+            } else { if FileManager.default.fileExists(atPath: file.path) { try FileManager.default.removeItem(at: file) }; homeBackground = nil }
+        } catch { notice = "背景画像を保存できませんでした。" }
+    }
+
+    private func loadAdditionalData() {
+        do {
+            let file = directory.appendingPathComponent("library-extras.json")
+            if FileManager.default.fileExists(atPath: file.path) { extras = try JSONDecoder().decode(LibraryExtras.self, from: Data(contentsOf: file)).validated() }
+            let prefs = directory.appendingPathComponent("features.json")
+            if FileManager.default.fileExists(atPath: prefs.path) { features = try JSONDecoder().decode(FeaturePreferences.self, from: Data(contentsOf: prefs)) }
+            homeBackground = UIImage(contentsOfFile: directory.appendingPathComponent("home-background.jpg").path)
+        } catch { extraStorageBlocked = true; notice = "追加データを読み込めませんでした。元のファイルを保持し、上書きを停止しています。" }
+    }
+    private func saveAdditionalData() {
+        guard !extraStorageBlocked, !persistenceBlocked else { return }
+        do {
+            try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+            let encoder = JSONEncoder(); encoder.outputFormatting = [.sortedKeys]
+            try encoder.encode(extras).write(to: directory.appendingPathComponent("library-extras.json"), options: [.atomic, .completeFileProtectionUntilFirstUserAuthentication])
+            try encoder.encode(features).write(to: directory.appendingPathComponent("features.json"), options: [.atomic, .completeFileProtectionUntilFirstUserAuthentication])
+        } catch { extraStorageBlocked = true; notice = "追加データを保存できませんでした。空き容量を確認してください。" }
+    }
+
     private func captureSession() {
         let states = tabs.map { tab in
             let url = tab.url.flatMap { WebURLPolicy.allows($0) ? $0 : nil }
@@ -195,6 +370,7 @@ final class BrowserStore: ObservableObject {
         captureSession()
         do {
             try storage.save(snapshot)
+            saveAdditionalData()
             try FileManager.default.setAttributes([.protectionKey: FileProtectionType.completeUntilFirstUserAuthentication], ofItemAtPath: storage.fileURL.path)
         } catch {
             persistenceBlocked = true

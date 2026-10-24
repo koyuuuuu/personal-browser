@@ -13,6 +13,9 @@ struct SettingsView: View {
                 Section {
                     NavigationLink("アプリの更新") { UpdateSettingsView() }
                         .accessibilityIdentifier("updateSettingsLink")
+                    NavigationLink("ブラウザ機能") { FeatureSettingsView(store: store) }
+                        .accessibilityIdentifier("featureSettingsLink")
+                    NavigationLink("データの取り込み・書き出し") { LibraryTransferView(store: store) }
                 }
                 Section("操作") {
                     Picker("バーの位置", selection: setting(\.toolbarPosition)) {

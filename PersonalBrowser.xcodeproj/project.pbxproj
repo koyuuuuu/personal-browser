@@ -35,6 +35,46 @@
 			"isa" = "PBXBuildFile";
 			"fileRef" = "E7A2536D3C797A21F68AD776";
 		};
+		"9AB7B064CE0B98587CD37030" = {
+			"isa" = "PBXFileReference";
+			"lastKnownFileType" = "sourcecode.swift";
+			"path" = "ContentBlocking.swift";
+			"sourceTree" = "<group>";
+		};
+		"6A29F5F7C6BA8B045ADE92C3" = {
+			"isa" = "PBXBuildFile";
+			"fileRef" = "9AB7B064CE0B98587CD37030";
+		};
+		"8C5B487D86FCE088DB72D7EF" = {
+			"isa" = "PBXFileReference";
+			"lastKnownFileType" = "sourcecode.swift";
+			"path" = "FeatureSettingsView.swift";
+			"sourceTree" = "<group>";
+		};
+		"0539191F016B3AF6021E9DE8" = {
+			"isa" = "PBXBuildFile";
+			"fileRef" = "8C5B487D86FCE088DB72D7EF";
+		};
+		"25F24719363985F7CAED328B" = {
+			"isa" = "PBXFileReference";
+			"lastKnownFileType" = "sourcecode.swift";
+			"path" = "HomePageView.swift";
+			"sourceTree" = "<group>";
+		};
+		"C8EFF5B7D307612D29CB2DB3" = {
+			"isa" = "PBXBuildFile";
+			"fileRef" = "25F24719363985F7CAED328B";
+		};
+		"1238188354BD19180AF05EE7" = {
+			"isa" = "PBXFileReference";
+			"lastKnownFileType" = "sourcecode.swift";
+			"path" = "LibraryView.swift";
+			"sourceTree" = "<group>";
+		};
+		"E82967650E1C993CC0CA32FF" = {
+			"isa" = "PBXBuildFile";
+			"fileRef" = "1238188354BD19180AF05EE7";
+		};
 		"6F9F31D3C004020DBE918D32" = {
 			"isa" = "PBXFileReference";
 			"lastKnownFileType" = "sourcecode.swift";
@@ -54,6 +94,16 @@
 		"C733C6442A281599567C6C83" = {
 			"isa" = "PBXBuildFile";
 			"fileRef" = "E56E49BA23317991582BFD23";
+		};
+		"9D3A59ED9A0F3BFC527ABF4E" = {
+			"isa" = "PBXFileReference";
+			"lastKnownFileType" = "sourcecode.swift";
+			"path" = "TabOverview.swift";
+			"sourceTree" = "<group>";
+		};
+		"2FDCB63F20D91EA6C97BE6BA" = {
+			"isa" = "PBXBuildFile";
+			"fileRef" = "9D3A59ED9A0F3BFC527ABF4E";
 		};
 		"48ABF3013B03F02D15283AAA" = {
 			"isa" = "PBXFileReference";
@@ -93,8 +143,13 @@
 				"CCE61BA7C015A9311FAA2AA1",
 				"D8BC5E1C0733829E9AE90818",
 				"E7A2536D3C797A21F68AD776",
+				"9AB7B064CE0B98587CD37030",
+				"8C5B487D86FCE088DB72D7EF",
+				"25F24719363985F7CAED328B",
+				"1238188354BD19180AF05EE7",
 				"6F9F31D3C004020DBE918D32",
 				"E56E49BA23317991582BFD23",
+				"9D3A59ED9A0F3BFC527ABF4E",
 				"48ABF3013B03F02D15283AAA",
 				"2CFC0C6B77C472415C669D8B",
 				"75B13235D681EFADD9C29A79",
@@ -112,6 +167,26 @@
 		"24503D32E1FAF4AE42A87DBE" = {
 			"isa" = "PBXBuildFile";
 			"fileRef" = "27B6E2C91F424C774DA534BC";
+		};
+		"AE82A4788118E76A82B54F3B" = {
+			"isa" = "PBXFileReference";
+			"lastKnownFileType" = "sourcecode.swift";
+			"path" = "LibraryExtras.swift";
+			"sourceTree" = "<group>";
+		};
+		"37533709DD86F68E142AF6A4" = {
+			"isa" = "PBXBuildFile";
+			"fileRef" = "AE82A4788118E76A82B54F3B";
+		};
+		"569E783A45A9624CE9A07852" = {
+			"isa" = "PBXFileReference";
+			"lastKnownFileType" = "sourcecode.swift";
+			"path" = "LibraryTransfer.swift";
+			"sourceTree" = "<group>";
+		};
+		"F2301E9DF7FCD0E1655D50A0" = {
+			"isa" = "PBXBuildFile";
+			"fileRef" = "569E783A45A9624CE9A07852";
 		};
 		"0258D0175D953E32562EF129" = {
 			"isa" = "PBXFileReference";
@@ -147,6 +222,8 @@
 			"isa" = "PBXGroup";
 			"children" = (
 				"27B6E2C91F424C774DA534BC",
+				"AE82A4788118E76A82B54F3B",
+				"569E783A45A9624CE9A07852",
 				"0258D0175D953E32562EF129",
 				"3FB677C06874B7AF4A9D1DEF",
 				"8B4758279FF832AA45C1A5B4",
@@ -258,7 +335,7 @@
 				"INFOPLIST_FILE" = "App/Info.plist";
 				"GENERATE_INFOPLIST_FILE" = "NO";
 				"CURRENT_PROJECT_VERSION" = "1";
-				"MARKETING_VERSION" = "0.2.0";
+				"MARKETING_VERSION" = "0.3.0";
 				"CODE_SIGN_STYLE" = "Automatic";
 				"TARGETED_DEVICE_FAMILY" = "1";
 				"SUPPORTED_PLATFORMS" = "iphoneos iphonesimulator";
@@ -283,7 +360,7 @@
 				"INFOPLIST_FILE" = "App/Info.plist";
 				"GENERATE_INFOPLIST_FILE" = "NO";
 				"CURRENT_PROJECT_VERSION" = "1";
-				"MARKETING_VERSION" = "0.2.0";
+				"MARKETING_VERSION" = "0.3.0";
 				"CODE_SIGN_STYLE" = "Automatic";
 				"TARGETED_DEVICE_FAMILY" = "1";
 				"SUPPORTED_PLATFORMS" = "iphoneos iphonesimulator";
@@ -363,11 +440,18 @@
 				"FA681C460B87F6F2D1B13460",
 				"C14B9745C3326C0F7C9BC809",
 				"C6150AF80F394D78175E2EEB",
+				"6A29F5F7C6BA8B045ADE92C3",
+				"0539191F016B3AF6021E9DE8",
+				"C8EFF5B7D307612D29CB2DB3",
+				"E82967650E1C993CC0CA32FF",
 				"9F347C723944C0DAC55AB56C",
 				"C733C6442A281599567C6C83",
+				"2FDCB63F20D91EA6C97BE6BA",
 				"7D00D18171494CA00E5DD24C",
 				"116295B764339DFF363B4838",
 				"24503D32E1FAF4AE42A87DBE",
+				"37533709DD86F68E142AF6A4",
+				"F2301E9DF7FCD0E1655D50A0",
 				"DA9C3EB926325121D508F8D5",
 				"89486FF53386963565AE6659",
 				"000BB7D1ED578BD248A461DD",

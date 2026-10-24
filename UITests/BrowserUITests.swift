@@ -86,4 +86,40 @@ final class BrowserUITests: XCTestCase {
         toggle.coordinate(withNormalizedOffset: CGVector(dx: 0.9, dy: 0.5)).tap()
         XCTAssertEqual(toggle.value as? String, "0")
     }
+    func testShareSheetContainsActionsRatherThanBlankContent() {
+        XCTAssertTrue(app.webViews.firstMatch.waitForExistence(timeout: 10))
+        tapMenuControl("menuButton")
+        app.buttons["共有"].tap()
+        let copy = app.buttons.matching(NSPredicate(format: "label == 'Copy' OR label == 'コピー'")).firstMatch
+        XCTAssertTrue(copy.waitForExistence(timeout: 10), "Share sheet must contain a copy action for the current page URL")
+    }
+
+    func testFavoriteHomeAndBookmarkFolders() {
+        XCTAssertTrue(app.webViews.firstMatch.staticTexts["オフラインのテストページ"].waitForExistence(timeout: 10))
+        tapMenuControl("menuButton"); app.buttons["ブックマークに追加"].tap()
+        tapMenuControl("menuButton"); app.buttons["お気に入りに追加"].tap()
+        tapMenuControl("menuButton"); app.buttons["ホーム"].tap()
+        XCTAssertTrue(app.staticTexts["お気に入り"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.staticTexts["テストページ"].exists)
+        app.buttons["bookmarksButton"].tap()
+        XCTAssertTrue(app.navigationBars["ブックマーク"].waitForExistence(timeout: 5))
+        tapMenuControl("createFolderButton")
+        let alert = app.alerts["新しいフォルダ"]
+        XCTAssertTrue(alert.waitForExistence(timeout: 5))
+        alert.textFields.firstMatch.tap(); alert.textFields.firstMatch.typeText("Saved")
+        alert.buttons["作成"].tap()
+        XCTAssertTrue(app.staticTexts["Saved"].waitForExistence(timeout: 5))
+    }
+
+    func testAdBlockingCanBeConfigured() {
+        tapMenuControl("menuButton"); app.buttons["設定"].tap()
+        XCTAssertTrue(app.navigationBars["設定"].waitForExistence(timeout: 5))
+        tapMenuControl("featureSettingsLink")
+        XCTAssertTrue(app.navigationBars["ブラウザ機能"].waitForExistence(timeout: 5))
+        let toggle = app.switches["adBlockingToggle"]
+        XCTAssertTrue(toggle.waitForExistence(timeout: 5)); XCTAssertEqual(toggle.value as? String, "1")
+        toggle.coordinate(withNormalizedOffset: CGVector(dx: 0.9, dy: 0.5)).tap()
+        XCTAssertEqual(toggle.value as? String, "0")
+    }
+
 }

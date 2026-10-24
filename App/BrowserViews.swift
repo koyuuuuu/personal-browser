@@ -1,9 +1,20 @@
 import SwiftUI
 import WebKit
 
-enum BrowserSheet: String, Identifiable {
-    case tabs, bookmarks, history, settings, share
-    var id: String { rawValue }
+struct ShareRequest: Identifiable {
+    let id = UUID()
+    let url: URL
+}
+
+enum BrowserSheet: Identifiable {
+    case tabs, bookmarks, history, settings, downloads
+    case share(ShareRequest)
+    var id: String {
+        switch self {
+        case .tabs: "tabs"; case .bookmarks: "bookmarks"; case .history: "history"
+        case .settings: "settings"; case .downloads: "downloads"; case .share(let payload): "share-" + payload.id.uuidString
+        }
+    }
 }
 
 @MainActor
@@ -11,13 +22,13 @@ struct BrowserRootView: View {
     @EnvironmentObject private var updates: UpdateChecker
     @ObservedObject var store: BrowserStore
     @State private var sheet: BrowserSheet?
-    @State private var sharingURL: URL?
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
         Group {
             if let tab = store.selectedTab {
                 TabBrowserView(store: store, tab: tab, showSheet: { sheet = $0 }, share: share)
-                    .id(tab.id)
+
             } else {
                 ProgressView("Webサイトデータを消去中…")
             }
@@ -41,9 +52,28 @@ struct BrowserRootView: View {
             case .bookmarks: LibraryView(store: store, showHistory: false)
             case .history: LibraryView(store: store, showHistory: true)
             case .settings: SettingsView(store: store)
-            case .share:
-                if let sharingURL { ActivityView(items: [sharingURL]) }
+            case .downloads: DownloadsView(store: store)
+            case .share(let payload): ActivityView(items: [payload.url])
             }
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .closeBrowserLibrary)) { _ in sheet = nil }
+        .onChange(of: store.shareRequest?.id) { _, _ in
+            if let payload = store.shareRequest { sheet = .share(payload) }
+        }
+        .overlay(alignment: .top) {
+            if store.tabAddedID != nil {
+                Label("タブを追加しました（\(store.tabs.count)）", systemImage: "plus.square.on.square")
+                    .font(.callout.bold()).padding(12).background(.regularMaterial, in: Capsule())
+                    .padding(.top, 8).allowsHitTesting(false)
+                    .accessibilityIdentifier("tabAddedNotice")
+                    .transition(.move(edge: .top).combined(with: .opacity))
+            }
+        }
+        .animation(store.features.animateNewTabs && !reduceMotion ? .snappy(duration: 0.25) : nil, value: store.tabAddedID)
+        .task(id: store.tabAddedID) {
+            guard store.tabAddedID != nil else { return }
+            try? await Task.sleep(for: .seconds(1.3))
+            if !Task.isCancelled { store.tabAddedID = nil }
         }
         .alert("お知らせ", isPresented: Binding(
             get: { store.notice != nil },
@@ -65,8 +95,7 @@ struct BrowserRootView: View {
 
     private func share() {
         guard let url = store.selectedTab?.url, WebURLPolicy.allows(url) else { return }
-        sharingURL = url
-        sheet = .share
+        sheet = .share(ShareRequest(url: url))
     }
 }
 
@@ -98,16 +127,18 @@ struct TabBrowserView: View {
                 }
                 .padding().background(Color.orange.opacity(0.12))
             }
-            if tab.hasContent {
-                WebViewHost(webView: tab.webView)
+            ZStack {
+                WebSurface(store: store)
                     .accessibilityIdentifier("webContent")
-            } else {
-                startPage
+                    .accessibilityHidden(!tab.hasContent)
+                if !tab.hasContent { HomePageView(store: store, isPrivate: tab.isPrivate) }
             }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
             if store.snapshot.settings.toolbarPosition == .bottom { chrome }
         }
         .background(Color(uiColor: .systemBackground))
         .onAppear { address = tab.url?.absoluteString ?? "" }
+        .onChange(of: tab.id) { _, _ in address = tab.url?.absoluteString ?? ""; addressFocused = false }
         .onChange(of: tab.url) { _, url in
             if !addressFocused { address = url?.absoluteString ?? "" }
         }
@@ -129,39 +160,6 @@ struct TabBrowserView: View {
                 Button("キャンセル", role: .cancel) { finishDialog(nil) }
             }
         } message: { dialog in Text(dialog.message) }
-    }
-
-    private var startPage: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 24) {
-                Image(systemName: tab.isPrivate ? "hand.raised.circle" : "globe.asia.australia")
-                    .font(.system(size: 52)).foregroundStyle(tab.isPrivate ? .purple : .blue)
-                Text(tab.isPrivate ? "プライベートブラウズ" : "あなたのブラウザ")
-                    .font(.largeTitle.bold())
-                Text("アドレス欄にURLや検索語を入力して始めましょう。")
-                    .foregroundStyle(.secondary)
-                if !store.snapshot.bookmarks.isEmpty {
-                    Text("ブックマーク").font(.headline)
-                    ForEach(store.snapshot.bookmarks.prefix(8)) { bookmark in
-                        Button { store.open(bookmark.url) } label: {
-                            HStack {
-                                Image(systemName: "bookmark")
-                                VStack(alignment: .leading) {
-                                    Text(bookmark.title).lineLimit(1)
-                                    Text(bookmark.url.host ?? "").font(.caption).foregroundStyle(.secondary)
-                                }
-                                Spacer()
-                                Image(systemName: "arrow.up.right")
-                            }
-                            .padding().background(.quaternary, in: RoundedRectangle(cornerRadius: 14))
-                        }
-                        .buttonStyle(.plain)
-                    }
-                }
-            }
-            .frame(maxWidth: .infinity, alignment: .leading).padding(28)
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 
     private var chrome: some View {
@@ -188,6 +186,12 @@ struct TabBrowserView: View {
                         .labelStyle(.iconOnly).foregroundStyle(.secondary)
                 }
             }
+            .contentShape(Rectangle())
+            .simultaneousGesture(DragGesture(minimumDistance: 35).onEnded { value in
+                guard store.features.swipeAddressToSwitchTabs, !addressFocused,
+                      abs(value.translation.width) > abs(value.translation.height) * 1.5 else { return }
+                store.switchTab(towardNext: value.translation.width < 0)
+            })
             .padding(12)
             .background(Color(uiColor: .secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 14))
             .padding(.horizontal, 8)
@@ -205,13 +209,20 @@ struct TabBrowserView: View {
                     Button("新しいタブ", systemImage: "plus") { _ = store.newTab() }
                     Button("新しいプライベートタブ", systemImage: "hand.raised") { _ = store.newTab(isPrivate: true) }
                     Button("タブ一覧", systemImage: "square.on.square") { showSheet(.tabs) }
+                    Button("ホーム", systemImage: "house") { store.showHome() }
                     Divider()
+                    Button("お気に入りに追加", systemImage: "star") { store.addFavorite() }
+                        .disabled(tab.url.map { !WebURLPolicy.allows($0) } ?? true)
                     Button("ブックマークに追加", systemImage: "bookmark") { store.addBookmark() }
                         .disabled(tab.url.map { !WebURLPolicy.allows($0) } ?? true)
                     Button("ブックマーク", systemImage: "book") { showSheet(.bookmarks) }
                     Button("履歴", systemImage: "clock") { showSheet(.history) }
                     Button("共有", systemImage: "square.and.arrow.up", action: share)
                         .disabled(tab.url.map { !WebURLPolicy.allows($0) } ?? true)
+                    Button("ページ内を検索", systemImage: "magnifyingglass") {
+                        tab.webView.findInteraction?.presentFindNavigator(showingReplace: false)
+                    }.disabled(!tab.hasContent)
+                    Button("ダウンロード", systemImage: "arrow.down.circle") { showSheet(.downloads) }
                     Divider()
                     Button("設定", systemImage: "slider.horizontal.3") { showSheet(.settings) }
                 } label: {
@@ -262,123 +273,16 @@ struct TabBrowserView: View {
     }
 }
 
-@MainActor
-struct TabsView: View {
-    @ObservedObject var store: BrowserStore
-    @Environment(\.dismiss) private var dismiss
-
-    var body: some View {
-        NavigationStack {
-            List {
-                ForEach(store.tabs) { tab in
-                    HStack {
-                        Button {
-                            store.select(tab)
-                            dismiss()
-                        } label: {
-                            TabRow(tab: tab, selected: store.selectedID == tab.id)
-                                .frame(maxWidth: .infinity, alignment: .leading)
-                        }
-                        .buttonStyle(.plain)
-                        Button("タブを閉じる", systemImage: "xmark") { store.close(tab) }
-                            .buttonStyle(.borderless).labelStyle(.iconOnly)
-                    }
-                }
-                .onDelete { offsets in
-                    let removed = offsets.map { store.tabs[$0] }
-                    for tab in removed { store.close(tab) }
-                }
-            }
-            .navigationTitle("タブ \(store.tabs.count)")
-            .toolbar {
-                ToolbarItem(placement: .topBarLeading) { Button("閉じる") { dismiss() } }
-                ToolbarItem(placement: .topBarTrailing) {
-                    Menu("追加", systemImage: "plus") {
-                        Button("通常タブ") { if store.newTab() != nil { dismiss() } }
-                        Button("プライベートタブ") { if store.newTab(isPrivate: true) != nil { dismiss() } }
-                    }
-                    .accessibilityIdentifier("addTabMenu")
-                }
-            }
-        }
-    }
-}
-
-struct TabRow: View {
-    @ObservedObject var tab: BrowserTab
-    let selected: Bool
-    var body: some View {
-        HStack(spacing: 12) {
-            Image(systemName: tab.isPrivate ? "hand.raised" : "globe")
-                .foregroundStyle(tab.isPrivate ? .purple : .blue)
-            VStack(alignment: .leading, spacing: 4) {
-                Text(tab.title).lineLimit(1)
-                Text(tab.url?.host ?? (tab.isPrivate ? "プライベート" : "新しいタブ"))
-                    .font(.caption).foregroundStyle(.secondary).lineLimit(1)
-            }
-            Spacer()
-            if selected { Image(systemName: "checkmark").foregroundStyle(.blue) }
-        }
-        .padding(.vertical, 6)
-    }
-}
-
-@MainActor
-struct LibraryView: View {
-    @ObservedObject var store: BrowserStore
-    let showHistory: Bool
-    @Environment(\.dismiss) private var dismiss
-    @State private var confirmClear = false
-
-    var body: some View {
-        NavigationStack {
-            List {
-                if showHistory {
-                    if store.snapshot.history.isEmpty { Text("履歴はありません").foregroundStyle(.secondary) }
-                    ForEach(store.snapshot.history) { item in
-                        pageButton(title: item.title, url: item.url)
-                    }
-                } else {
-                    if store.snapshot.bookmarks.isEmpty { Text("ブックマークはありません").foregroundStyle(.secondary) }
-                    ForEach(store.snapshot.bookmarks) { item in
-                        pageButton(title: item.title, url: item.url)
-                    }
-                    .onDelete(perform: store.deleteBookmarks)
-                }
-            }
-            .navigationTitle(showHistory ? "履歴" : "ブックマーク")
-            .toolbar {
-                ToolbarItem(placement: .topBarLeading) { Button("閉じる") { dismiss() } }
-                ToolbarItem(placement: .topBarTrailing) {
-                    if showHistory {
-                        Button("消去", role: .destructive) { confirmClear = true }
-                            .disabled(store.snapshot.history.isEmpty)
-                    } else { EditButton() }
-                }
-            }
-            .confirmationDialog("閲覧履歴をすべて消去しますか？", isPresented: $confirmClear, titleVisibility: .visible) {
-                Button("履歴を消去", role: .destructive) { store.clearHistory() }
-            }
-        }
-    }
-
-    private func pageButton(title: String, url: URL) -> some View {
-        Button {
-            store.open(url)
-            dismiss()
-        } label: {
-            VStack(alignment: .leading, spacing: 4) {
-                Text(title).foregroundStyle(.primary).lineLimit(1)
-                Text(url.absoluteString).font(.caption).foregroundStyle(.secondary).lineLimit(2)
-            }
-        }
-    }
-}
-
 struct ActivityView: UIViewControllerRepresentable {
     let items: [Any]
     func makeUIViewController(context: Context) -> UIActivityViewController {
-        UIActivityViewController(activityItems: items, applicationActivities: nil)
+        let controller = UIActivityViewController(activityItems: items, applicationActivities: nil)
+        controller.view.accessibilityIdentifier = "shareSheet"
+        if let popover = controller.popoverPresentationController {
+            popover.sourceView = controller.view
+            popover.sourceRect = CGRect(x: controller.view.bounds.midX, y: controller.view.bounds.midY, width: 1, height: 1)
+        }
+        return controller
     }
     func updateUIViewController(_ uiViewController: UIActivityViewController, context: Context) {}
 }

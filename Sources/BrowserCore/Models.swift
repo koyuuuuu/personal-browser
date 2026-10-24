@@ -135,7 +135,7 @@ public struct BrowserSnapshot: Codable, Equatable, Sendable {
         var copy = self
         copy.settings = settings.normalized()
         copy.history = Array(history.prefix(1000))
-        copy.session.tabs = Array(session.tabs.prefix(12))
+        copy.session.tabs = Array(session.tabs.prefix(500))
         if !copy.session.tabs.contains(where: { $0.id == copy.session.selectedID }) {
             copy.session.selectedID = copy.session.tabs.first?.id
         }
