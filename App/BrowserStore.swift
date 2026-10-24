@@ -332,7 +332,7 @@ final class BrowserStore: ObservableObject {
     func updatePresentation(_ value: PresentationPreferences) {
         presentation = value.normalized()
         for tab in tabs { tab.applyPresentation(presentation) }
-        saveAdditionalData()
+        scheduleSave()
     }
 
     private func trimLiveTabs(limit: Int? = nil) {

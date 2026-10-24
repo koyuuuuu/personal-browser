@@ -164,8 +164,8 @@ final class BrowserTab: NSObject, ObservableObject, Identifiable, WKNavigationDe
     }
 
     func applyPresentation(_ value: PresentationPreferences) {
-        allowsBackgroundAudio = value.backgroundAudio; pageZoom = value.pageZoom
-        liveWebView?.pageZoom = pageZoom
+        allowsBackgroundAudio = value.backgroundAudio
+        if pageZoom != value.pageZoom { pageZoom = value.pageZoom; liveWebView?.pageZoom = pageZoom }
     }
 
     private func configureBlocking(for url: URL?, view: WKWebView) async {
