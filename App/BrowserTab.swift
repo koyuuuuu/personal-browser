@@ -58,6 +58,9 @@ final class BrowserTab: NSObject, ObservableObject, Identifiable, WKNavigationDe
     var onExternalURL: ((URL) -> Void)?
     var onOpenLink: ((URL, Bool) -> Void)?
     var onShareLink: ((URL) -> Void)?
+    var onAnalyzeLink: ((URL) -> Void)?
+    var onMessageLink: ((URL) -> Void)?
+    var onSaveLink: ((URL) -> Void)?
     var onOpenInBrowser: ((URL) -> Void)?
     var onDownload: ((URL) -> Void)?
     private var observations: [NSKeyValueObservation] = []
@@ -82,6 +85,9 @@ final class BrowserTab: NSObject, ObservableObject, Identifiable, WKNavigationDe
         configuration.allowsInlineMediaPlayback = true
         configuration.allowsPictureInPictureMediaPlayback = preferences.enablePictureInPicture
         configuration.mediaTypesRequiringUserActionForPlayback = [.audio, .video]
+        // A popup may share the parent's controller. Give each tab its own
+        // message channel while preserving WebKit's process/opener/data store.
+        configuration.userContentController = WKUserContentController()
         let handler = MediaMessageHandler(tab: self)
         configuration.userContentController.add(handler, name: "personalBrowserMedia")
         configuration.userContentController.addUserScript(WKUserScript(source: Self.mediaScript, injectionTime: .atDocumentStart, forMainFrameOnly: false))
@@ -238,7 +244,7 @@ final class BrowserTab: NSObject, ObservableObject, Identifiable, WKNavigationDe
         }
         downloads.removeAll(); releaseWebView()
         onVisit = nil; onStateChange = nil; onPopup = nil; onClose = nil; onExternalURL = nil
-        onOpenLink = nil; onShareLink = nil; onOpenInBrowser = nil; onDownload = nil
+        onAnalyzeLink = nil; onMessageLink = nil; onSaveLink = nil; onOpenLink = nil; onShareLink = nil; onOpenInBrowser = nil; onDownload = nil
     }
 
     func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
@@ -334,15 +340,35 @@ final class BrowserTab: NSObject, ObservableObject, Identifiable, WKNavigationDe
                     if !opened { Task { @MainActor in self?.errorMessage = "このリンクに対応するアプリが見つかりません。" } }
                 }
             }
+            var appActions: [UIMenuElement] = []
+            if WatchHTML.youtubeURL(link) != nil {
+                appActions.append(UIAction(title: "YouTube", image: UIImage(systemName: "play.rectangle")) { [weak self] _ in
+                    UIApplication.shared.open(link, options: [.universalLinksOnly: true]) { opened in
+                        if !opened { Task { @MainActor in self?.errorMessage = "YouTubeアプリを開けませんでした。ブラウザで開くこともできます。" } }
+                    }
+                })
+            }
+            appActions += [related]
+            appActions += applications
+            appActions += [
+                UIAction(title: "Safari / 既定のブラウザ", image: UIImage(systemName: "safari")) { [weak self] _ in self?.onOpenInBrowser?(link) },
+                UIAction(title: "ファイルにリンクを保存", image: UIImage(systemName: "folder")) { [weak self] _ in self?.onSaveLink?(link) },
+                UIAction(title: "メール", image: UIImage(systemName: "envelope")) { _ in
+                    var parts = URLComponents(); parts.scheme = "mailto"; parts.queryItems = [URLQueryItem(name: "body", value: link.absoluteString)]
+                    if let url = parts.url { UIApplication.shared.open(url) }
+                },
+                UIAction(title: "メッセージ", image: UIImage(systemName: "message")) { [weak self] _ in self?.onMessageLink?(link) }
+            ]
+            for name in ["メモ", "ChatGPT", "Claude", "その他のアプリ"] {
+                appActions.append(UIAction(title: name + "（共有から選択）", image: UIImage(systemName: "square.and.arrow.up")) { [weak self] _ in self?.onShareLink?(link) })
+            }
             return UIMenu(children: [
                 UIAction(title: "このタブで開く", image: UIImage(systemName: "arrow.up.right")) { [weak self] _ in self?.load(link) },
                 UIAction(title: "新しいタブで開く", image: UIImage(systemName: "plus.square")) { [weak self] _ in self?.onOpenLink?(link, self?.isPrivate ?? false) },
                 UIAction(title: "リンクをコピー", image: UIImage(systemName: "doc.on.doc")) { _ in UIPasteboard.general.url = link },
                 UIAction(title: "共有", image: UIImage(systemName: "square.and.arrow.up")) { [weak self] _ in self?.onShareLink?(link) },
-                UIMenu(title: "アプリで開く", image: UIImage(systemName: "arrow.up.forward.app"), children: [related] + applications + [
-                    UIAction(title: "既定のブラウザ", image: UIImage(systemName: "globe")) { [weak self] _ in self?.onOpenInBrowser?(link) },
-                    UIAction(title: "その他のアプリ…", image: UIImage(systemName: "ellipsis")) { [weak self] _ in self?.onShareLink?(link) }
-                ])
+                UIAction(title: "Watch HTMLで解析", image: UIImage(systemName: "play.rectangle.on.rectangle")) { [weak self] _ in self?.onAnalyzeLink?(link) },
+                UIMenu(title: "アプリで開く", image: UIImage(systemName: "arrow.up.forward.app"), children: appActions)
             ])
         }
         completionHandler(menu)

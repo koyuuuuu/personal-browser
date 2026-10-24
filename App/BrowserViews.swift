@@ -1,5 +1,6 @@
 import SwiftUI
 import WebKit
+import MessageUI
 
 struct ShareRequest: Identifiable {
     let id = UUID()
@@ -8,11 +9,12 @@ struct ShareRequest: Identifiable {
 
 enum BrowserSheet: Identifiable {
     case tabs, bookmarks, history, settings, downloads
-    case share(ShareRequest)
+    case share(ShareRequest), message(ShareRequest)
     var id: String {
         switch self {
         case .tabs: "tabs"; case .bookmarks: "bookmarks"; case .history: "history"
         case .settings: "settings"; case .downloads: "downloads"; case .share(let payload): "share-" + payload.id.uuidString
+        case .message(let payload): "message-" + payload.id.uuidString
         }
     }
 }
@@ -23,6 +25,8 @@ struct BrowserRootView: View {
     @ObservedObject var store: BrowserStore
     @State private var sheet: BrowserSheet?
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @State private var linkDocument = LinkFileDocument()
+    @State private var exportLink = false
 
     var body: some View {
         Group {
@@ -54,7 +58,20 @@ struct BrowserRootView: View {
             case .settings: SettingsView(store: store)
             case .downloads: DownloadsView(store: store)
             case .share(let payload): ActivityView(items: [payload.url])
+            case .message(let payload): MessageComposer(url: payload.url)
             }
+        }
+        .onChange(of: store.messageRequest?.id) { _, _ in
+            if let payload = store.messageRequest {
+                if MFMessageComposeViewController.canSendText() { sheet = .message(payload) }
+                else { store.notice = "メッセージを送信できません。端末のメッセージ設定を確認してください。" }
+            }
+        }
+        .onChange(of: store.saveLinkRequest?.id) { _, _ in
+            if let payload = store.saveLinkRequest { linkDocument = LinkFileDocument(url: payload.url); exportLink = true }
+        }
+        .fileExporter(isPresented: $exportLink, document: linkDocument, contentType: LinkFileDocument.contentType, defaultFilename: "Webリンク") { result in
+            if case .failure = result { store.notice = "リンクを保存できませんでした。" }
         }
         .onReceive(NotificationCenter.default.publisher(for: .closeBrowserLibrary)) { _ in sheet = nil }
         .onChange(of: store.shareRequest?.id) { _, _ in
@@ -222,6 +239,10 @@ struct TabBrowserView: View {
                     Button("ページ内を検索", systemImage: "magnifyingglass") {
                         tab.webView.findInteraction?.presentFindNavigator(showingReplace: false)
                     }.disabled(!tab.hasContent)
+                    Button("コピーしたリンクをWatch HTMLで解析", systemImage: "play.rectangle.on.rectangle") { store.analyzeCopiedLink() }
+                    if tab.url.map({ ["/watch", "/watch.html"].contains($0.path.lowercased()) }) == true {
+                        Button("このページをWatch HTMLの接続先にする", systemImage: "link.badge.plus") { store.useCurrentWatchHTML() }
+                    }
                     Button("ダウンロード", systemImage: "arrow.down.circle") { showSheet(.downloads) }
                     Divider()
                     Button("設定", systemImage: "slider.horizontal.3") { showSheet(.settings) }

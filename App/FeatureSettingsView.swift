@@ -42,6 +42,19 @@ struct FeatureSettingsView: View {
                 Toggle("新しいウィンドウを開くリンクを許可", isOn: feature(\.allowPopups))
             } header: { Text("動画・サイトの動作") }
             footer: { Text("PiPの設定は新しく読み込むWebViewに適用されます。サイトや動画配信方式によって利用できない場合があります。") }
+            Section {
+                TextField("https://…/watch.html", text: feature(\.watchHTMLAddress))
+                    .keyboardType(.URL).textInputAutocapitalization(.never).autocorrectionDisabled()
+                Button("現在のWatch HTMLを接続先にする") { store.useCurrentWatchHTML() }
+                    .disabled(store.selectedTab?.url.map { !["/watch", "/watch.html"].contains($0.path.lowercased()) } ?? true)
+                Button("コピーしたWatch HTMLのURLを設定") {
+                    if let url = UIPasteboard.general.url ?? UIPasteboard.general.string.flatMap({ URL(string: $0) }), url.scheme == "https", WebURLPolicy.allows(url) {
+                        var prefs = store.features; prefs.watchHTMLAddress = url.absoluteString; store.updateFeatures(prefs)
+                    } else { store.notice = "HTTPSのWatch HTMLのURLをコピーしてください。" }
+                }
+                Text("自作ビデオサーバーの接続先を保存します。メニューの「コピーしたリンクをWatch HTMLで解析」またはリンクの長押しから、urlパラメータで入力欄へ渡します。トンネルのトークンやパスワードは入力しません。")
+                    .font(.footnote).foregroundStyle(.secondary)
+            } header: { Text("Watch HTMLとの連携") }
             Section("リンクを開くアプリ") {
                 ForEach(ExternalApplication.allCases) { app in
                     Toggle(app.label, isOn: Binding(get: { store.features.externalApplications.contains(app.rawValue) }, set: { enabled in
@@ -99,7 +112,7 @@ struct LibraryTransferView: View {
         Form {
             Section("取り込む種類") {
                 Picker("種類", selection: $kind) { ForEach(LibraryImportKind.allCases) { value in Text(value.label).tag(value) } }.disabled(!pages.isEmpty || busy)
-                Button("HTML・CSV・JSONファイルを選択") { importing = true }.disabled(busy)
+                Button("HTML・CSV・JSON・Safari ZIPを選択") { importing = true }.disabled(busy)
                 if busy { ProgressView("読み込み中…") }
                 if !pages.isEmpty {
                     Text("\(pages.count)件を読み取りました。既存データと同じURLは重複登録しません。")
@@ -110,7 +123,7 @@ struct LibraryTransferView: View {
             }
             Section {
                 Text("他アプリの保存領域やアカウントを直接読むことはできません。PCなどで書き出したブックマークHTML、URLとタイトルを含むCSV、Chrome/FirefoxのブックマークJSON、またはこのアプリの書き出しJSONを選択してください。履歴は最新1,000件を保持します。")
-                Text("パスワードを含むファイルはここでは取り込みません。iOSの「パスワード」や利用中のパスワード管理アプリから自動入力を利用してください。")
+                Text("Safariで使用中のパスワードは、同じApple Accountの「パスワード」アプリ／iCloudキーチェーンをそのまま利用できます。iOSの「設定 → 一般 → 自動入力とパスワード」で有効にしてください。このアプリからAppleの保管庫へ直接登録するAPIはありません。パスワードCSVはApple側の対応する読み込み機能で扱い、ここには取り込みません。Safari ZIP内のパスワードファイルも読み込みません。")
             } header: { Text("他ブラウザからの移行") }
             Section("書き出し") {
                 Button("ブックマーク・お気に入り・履歴をJSONに保存") {
@@ -122,7 +135,7 @@ struct LibraryTransferView: View {
             }
         }
         .navigationTitle("データの取り込み・書き出し")
-        .fileImporter(isPresented: $importing, allowedContentTypes: [.html, .commaSeparatedText, .json, .plainText], allowsMultipleSelection: false) { result in
+        .fileImporter(isPresented: $importing, allowedContentTypes: [.html, .commaSeparatedText, .json, .plainText, .zip], allowsMultipleSelection: false) { result in
             do {
                 guard let url = try result.get().first else { return }
                 busy = true; pages = []; status = nil
@@ -133,7 +146,7 @@ struct LibraryTransferView: View {
                             let access = url.startAccessingSecurityScopedResource(); defer { if access { url.stopAccessingSecurityScopedResource() } }
                             let handle = try FileHandle(forReadingFrom: url); defer { try? handle.close() }
                             let data = try handle.read(upToCount: 20 * 1024 * 1024 + 1) ?? Data()
-                            return try LibraryTransfer.parse(data, kind: selectedKind)
+                            return try SafariImport.parse(data, kind: selectedKind)
                         }.value
                         pages = result
                     } catch { status = error.localizedDescription }

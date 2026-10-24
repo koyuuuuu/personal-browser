@@ -9,6 +9,8 @@ final class BrowserStore: ObservableObject {
     @Published private(set) var extras = LibraryExtras()
     @Published private(set) var features = FeaturePreferences()
     @Published var shareRequest: ShareRequest?
+    @Published var messageRequest: ShareRequest?
+    @Published var saveLinkRequest: ShareRequest?
     @Published var tabAddedID: UUID?
     @Published var homeBackground: UIImage?
     @Published private(set) var extraStorageBlocked = false
@@ -89,6 +91,9 @@ final class BrowserStore: ObservableObject {
         tab.onExternalURL = { [weak self] url in self?.externalURL = url }
         tab.onOpenLink = { [weak self] url, isPrivate in _ = self?.newTab(isPrivate: isPrivate, url: url) }
         tab.onShareLink = { [weak self] url in self?.shareRequest = ShareRequest(url: url) }
+        tab.onAnalyzeLink = { [weak self] url in self?.openWatchHTML(url) }
+        tab.onMessageLink = { [weak self] url in self?.messageRequest = ShareRequest(url: url) }
+        tab.onSaveLink = { [weak self] url in self?.saveLinkRequest = ShareRequest(url: url) }
         tab.onOpenInBrowser = { [weak self] url in self?.externalURL = url }
         tab.onDownload = { [weak self] _ in self?.notice = "ダウンロードしました。メニューの「ダウンロード」から共有・保存できます。" }
         tab.onClose = { [weak self, weak tab] in
@@ -218,6 +223,28 @@ final class BrowserStore: ObservableObject {
             tab.suspend()
             live = tabs.filter(\.isLive)
         }
+    }
+
+    func openWatchHTML(_ url: URL) {
+        do {
+            // A previously visited tool can be reused without embedding the
+            // user's private server hostname in a publicly distributed IPA.
+            let recent = snapshot.history.first { item in item.url.scheme == "https" && ["/watch", "/watch.html"].contains(item.url.path.lowercased()) }?.url.absoluteString ?? ""
+            let address = features.watchHTMLAddress.isEmpty ? recent : features.watchHTMLAddress
+            let destination = try WatchHTML.destination(address: address, video: url)
+            _ = newTab(isPrivate: selectedTab?.isPrivate ?? false, url: destination)
+        } catch { notice = "設定 → ブラウザ機能で、HTTPSのWatch HTMLのURLを設定してください。" }
+    }
+    func analyzeCopiedLink() {
+        let value = UIPasteboard.general.url ?? UIPasteboard.general.string.flatMap { URL(string: $0.trimmingCharacters(in: .whitespacesAndNewlines)) }
+        guard let value, WebURLPolicy.allows(value) else { notice = "コピーしたHTTP・HTTPSのリンクが見つかりません。"; return }
+        openWatchHTML(value)
+    }
+    func useCurrentWatchHTML() {
+        guard let url = selectedTab?.url, url.scheme == "https", ["/watch", "/watch.html"].contains(url.path.lowercased()), var parts = URLComponents(url: url, resolvingAgainstBaseURL: false) else { return }
+        parts.queryItems = parts.queryItems?.filter { $0.name != "url" }; parts.fragment = nil
+        var prefs = features; prefs.watchHTMLAddress = parts.url?.absoluteString ?? ""; updateFeatures(prefs)
+        notice = "このWatch HTMLを接続先に設定しました。"
     }
 
     func showHome() {

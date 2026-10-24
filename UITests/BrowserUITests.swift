@@ -90,8 +90,11 @@ final class BrowserUITests: XCTestCase {
         XCTAssertTrue(app.webViews.firstMatch.waitForExistence(timeout: 10))
         tapMenuControl("menuButton")
         app.buttons["共有"].tap()
-        let copy = app.buttons.matching(NSPredicate(format: "label == 'Copy' OR label == 'コピー'")).firstMatch
+        let copy = app.cells.matching(NSPredicate(format: "label == 'Copy' OR label == 'コピー'")).firstMatch
         XCTAssertTrue(copy.waitForExistence(timeout: 10), "Share sheet must contain a copy action for the current page URL")
+        copy.tap()
+        tapMenuControl("menuButton"); app.buttons["共有"].tap()
+        XCTAssertTrue(copy.waitForExistence(timeout: 10), "Sharing must work a second time")
     }
 
     func testFavoriteHomeAndBookmarkFolders() {

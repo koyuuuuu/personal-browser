@@ -44,6 +44,7 @@ public struct LibraryExtras: Codable, Equatable, Sendable {
 }
 
 public struct FeaturePreferences: Codable, Equatable, Sendable {
+    public var watchHTMLAddress = ""
     public var blockAdvertisements = true
     public var blockingExceptions: [String] = []
     public var swipeAddressToSwitchTabs = true

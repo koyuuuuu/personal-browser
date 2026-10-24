@@ -57,4 +57,34 @@ final class LibraryFeatureTests: XCTestCase {
         XCTAssertEqual(URLComponents(url: external, resolvingAgainstBaseURL: false)?.queryItems?.first?.value, url.absoluteString)
         XCTAssertNil(ExternalApplication.chrome.destination(for: URL(string: "javascript:alert(1)")!))
     }
+    func testWatchHTMLPassesVideoURLWithoutQueryInjection() throws {
+        let video = URL(string: "https://youtu.be/example?a=1&b=2")!
+        let url = try WatchHTML.destination(address: "https://private.example/watch.html?url=old", video: video)
+        let items = URLComponents(url: url, resolvingAgainstBaseURL: false)!.queryItems!
+        XCTAssertEqual(items.count, 1); XCTAssertEqual(items[0].value, video.absoluteString)
+        XCTAssertEqual(try WatchHTML.destination(address: "https://private.example", video: video).path, "/watch.html")
+        XCTAssertThrowsError(try WatchHTML.destination(address: "http://private.example", video: video))
+        XCTAssertNil(WatchHTML.youtubeURL(URL(string: "https://notyoutube.com/watch")!))
+    }
+
+    func testSafariArchiveSkipsPasswordFileAndChecksCRC() throws {
+        let data = Data(base64Encoded: "UEsDBBQAAAAAAF2IWF2lS+UTNQAAADUAAAAOAAAAQm9va21hcmtzLmh0bWw8REw+PERUPjxBIEhSRUY9Imh0dHBzOi8vZXhhbXBsZS5jb20iPlNhZmFyaTwvQT48L0RMPlBLAwQUAAAAAABdiFhdzDBUyDwAAAA8AAAADQAAAFBhc3N3b3Jkcy5jc3Z1cmwscGFzc3dvcmQKaHR0cHM6Ly9zZWNyZXQuZXhhbXBsZSx0ZXN0LW5vdC1hLXJlYWwtcGFzc3dvcmRQSwECFAMUAAAAAABdiFhdpUvlEzUAAAA1AAAADgAAAAAAAAAAAAAAgAEAAAAAQm9va21hcmtzLmh0bWxQSwECFAMUAAAAAABdiFhdzDBUyDwAAAA8AAAADQAAAAAAAAAAAAAAgAFhAAAAUGFzc3dvcmRzLmNzdlBLBQYAAAAAAgACAHcAAADIAAAAAAA=")!
+        let entries = try BrowserArchive.entries(in: data, kind: .bookmarks)
+        XCTAssertEqual(entries.map(\.name), ["Bookmarks.html"])
+        let contents = try BrowserArchive.contents(of: entries[0])
+        XCTAssertEqual(try LibraryTransfer.parse(contents, kind: .bookmarks).first?.title, "Safari")
+        XCTAssertThrowsError(try BrowserArchive.verify(Data("changed".utf8), entry: entries[0]))
+    }
+    func testSafariDeflatedZIPWithAppleCompression() throws {
+        #if canImport(Compression)
+        let data = Data(base64Encoded: "UEsDBBQAAAAIAF2IWF2lS+UTNgAAADUAAAAOAAAAQm9va21hcmtzLmh0bWyzcfGxs3EJsbNxVPAIcnWzVcooKSkottLXT61IzC3ISdVLzs9VsgtOTEssyrTRd7Sz0QdqAABQSwMEFAAAAAgAXYhYXcwwVMg4AAAAPAAAAA0AAABQYXNzd29yZHMuY3N2Ky3K0SlILC4uzy9K4cooKSkottLXL05NLkot0UutSMwtyEnVKUktLtHNyy/RTdQtSk3M0YWpBwBQSwECFAMUAAAACABdiFhdpUvlEzYAAAA1AAAADgAAAAAAAAAAAAAAgAEAAAAAQm9va21hcmtzLmh0bWxQSwECFAMUAAAACABdiFhdzDBUyDgAAAA8AAAADQAAAAAAAAAAAAAAgAFiAAAAUGFzc3dvcmRzLmNzdlBLBQYAAAAAAgACAHcAAADFAAAAAAA=")!
+        let entries = try BrowserArchive.entries(in: data, kind: .bookmarks)
+        XCTAssertEqual(entries.count, 1)
+        let contents = try BrowserArchive.contents(of: entries[0])
+        XCTAssertEqual(try LibraryTransfer.parse(contents, kind: .bookmarks).first?.title, "Safari")
+        #else
+        throw XCTSkip("Apple Compression is tested on macOS CI")
+        #endif
+    }
+
 }
