@@ -26,7 +26,7 @@ struct PresentationSettingsView: View {
             }
             Section {
                 Toggle("ホームインジケータを自動的に隠す", isOn: preference(\.hideHomeIndicator))
-                Toggle("バックグラウンドで音声を継続", isOn: preference(\.backgroundAudio))
+                Text("動画・音声の再生はbuild 14の方式を使用しています。").font(.footnote)
             } header: { Text("閲覧と再生") }
             footer: { Text("横画面のバーは最初は隠れ、ページの上側へ戻るスクロールで表示します。小さな矢印でも戻せます。ホームインジケータの一時表示はiOSが制御します。サイト側が再生を停止する場合や、通信・DRMの制限までは解除できません。") }
             Section {

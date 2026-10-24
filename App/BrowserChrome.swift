@@ -10,7 +10,6 @@ struct TabBrowserView: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var address = ""
     @State private var promptText = ""
-    @State private var transitionProgress = 1.0
     @FocusState private var addressFocused: Bool
 
     var body: some View {
@@ -32,35 +31,15 @@ struct TabBrowserView: View {
                 viewport(width: geometry.size.width)
                 if !landscape && store.chromeVisible && store.snapshot.settings.toolbarPosition == .bottom { chrome(compact: false, width: geometry.size.width) }
             }
-            .overlay(alignment: landscape || store.snapshot.settings.toolbarPosition == .top ? .top : .bottom) {
-                if !store.chromeVisible {
-                    Button { store.revealChrome() } label: {
-                        Image(systemName: landscape || store.snapshot.settings.toolbarPosition == .top ? "chevron.down" : "chevron.up")
-                            .font(.system(size: 12, weight: .semibold)).frame(width: 44, height: 24)
-                            .background(.regularMaterial, in: Capsule())
-                    }
-                    .buttonStyle(.plain).accessibilityLabel("バーを表示")
-                    .accessibilityIdentifier("showChromeButton").padding(2)
-                }
-            }
             .onAppear { store.setLandscape(landscape) }
             .onChange(of: landscape) { _, value in addressFocused = false; store.setLandscape(value) }
         }
         .background(Color(uiColor: .systemBackground))
-        .ignoresSafeArea(.container, edges: .bottom)
-        .animation(reduceMotion ? nil : .easeInOut(duration: 0.18), value: store.chromeVisible)
         .onAppear { address = tab.url?.absoluteString ?? "" }
         .onChange(of: tab.id) { _, _ in address = tab.url?.absoluteString ?? ""; addressFocused = false }
         .onChange(of: tab.url) { _, url in if !addressFocused { address = url?.absoluteString ?? "" } }
         .onChange(of: addressFocused) { _, focused in if !focused { address = tab.url?.absoluteString ?? "" } }
         .onChange(of: tab.dialog?.id) { _, _ in promptText = tab.dialog?.defaultText ?? "" }
-        .task(id: store.tabTransition?.id) {
-            guard store.tabTransition != nil, store.features.animateNewTabs, !reduceMotion else { transitionProgress = 1; return }
-            transitionProgress = 0
-            try? await Task.sleep(for: .milliseconds(16))
-            guard !Task.isCancelled else { return }
-            withAnimation(.easeInOut(duration: 0.24)) { transitionProgress = 1 }
-        }
         .onDisappear { tab.dialog?.resolve(nil); tab.dialog = nil }
         .alert("Webページからのメッセージ", isPresented: Binding(get: { tab.dialog != nil }, set: { if !$0 { finishDialog(nil) } }), presenting: tab.dialog) { dialog in
             if dialog.kind == .prompt { TextField("入力", text: $promptText) }
@@ -70,36 +49,17 @@ struct TabBrowserView: View {
     }
 
     private func viewport(width: CGFloat) -> some View {
-        let direction = CGFloat(store.tabTransition?.direction ?? 1)
-        return ZStack {
-            ZStack {
-                // This identity never changes when selecting a different tab.
-                WebSurface(store: store).accessibilityIdentifier("webContent").accessibilityHidden(!tab.hasContent)
-                if !tab.hasContent {
-                    HomePageView(store: store, isPrivate: tab.isPrivate)
-                        .id(tab.id)
-                        .simultaneousGesture(DragGesture(minimumDistance: 18).onEnded { value in
-                            if abs(value.translation.height) > abs(value.translation.width) {
-                                store.scrollChrome(delta: -Double(value.translation.height))
-                            }
-                        })
-                }
-            }
-            .offset(x: (1 - transitionProgress) * direction * width * 0.15)
-            if transitionProgress < 1 {
-                GeometryReader { geometry in
-                    Group {
-                        if let data = store.tabTransition?.outgoingImage, let image = UIImage(data: data) {
-                            Image(uiImage: image).resizable().scaledToFill()
-                        } else { Color(uiColor: .secondarySystemBackground) }
-                    }
-                    .frame(width: geometry.size.width, height: geometry.size.height).clipped()
-                }
-                .offset(x: -transitionProgress * direction * width)
-                .opacity(1 - transitionProgress).allowsHitTesting(false).accessibilityHidden(true)
-            }
+        ZStack {
+            WebSurface(store: store).accessibilityIdentifier("webContent").accessibilityHidden(!tab.hasContent)
+            if !tab.hasContent { HomePageView(store: store, isPrivate: tab.isPrivate).id(tab.id) }
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity).clipped()
+        .frame(width: width).frame(maxHeight: .infinity).clipped()
+        .simultaneousGesture(DragGesture(minimumDistance: 25).onEnded { value in
+            if !store.chromeVisible && value.translation.height > 25 && abs(value.translation.height) > abs(value.translation.width) {
+                store.revealChrome()
+            }
+        })
+        .accessibilityAction(named: Text("バーを表示")) { store.revealChrome() }
     }
     private func chrome(compact: Bool, width: CGFloat) -> some View {
         BrowserChrome(store: store, tab: tab, compact: compact, availableWidth: width, address: $address, addressFocused: $addressFocused, showSheet: showSheet, share: share)
@@ -113,7 +73,7 @@ struct BrowserChrome: View {
     @ObservedObject var tab: BrowserTab
     let compact: Bool
     let availableWidth: CGFloat
-    @ScaledMetric(relativeTo: .body) private var addressFont = 16.0
+    @ScaledMetric(relativeTo: .body) private var addressFont = 17.0
     @Binding var address: String
     var addressFocused: FocusState<Bool>.Binding
     let showSheet: (BrowserSheet) -> Void
@@ -155,7 +115,7 @@ struct BrowserChrome: View {
                 .padding(.horizontal, 6).padding(.vertical, 2)
                 .overlay(alignment: .bottom) { if tab.isLoading { ProgressView(value: tab.progress).frame(height: 2).clipped() } }
             } else {
-                VStack(spacing: 2) {
+                VStack(spacing: 4) {
                     if tab.isLoading { ProgressView(value: tab.progress).frame(height: 2) }
                     HStack(spacing: 4) {
                         if !leftActions.isEmpty { sideButtons(leftActions, left: true) }
@@ -167,13 +127,13 @@ struct BrowserChrome: View {
                         ForEach(actions) { action in actionButton(action) }
                         menu
                     }.padding(.horizontal, 4)
-                }.padding(.top, 4).padding(.bottom, 4)
+                }.padding(.top, 6)
             }
         }
         .background(.regularMaterial)
     }
     private var addressEntry: some View {
-        HStack(spacing: 6) {
+        HStack(spacing: compact ? 6 : 8) {
             Image(systemName: tab.url?.scheme == "http" ? "exclamationmark.circle" : "globe").font(.system(size: compact ? 12 : 15)).foregroundStyle(.secondary)
             TextField("URLまたは検索語", text: $address)
                 .font(.system(size: compact ? addressFont * 0.875 : addressFont)).textInputAutocapitalization(.never).autocorrectionDisabled().keyboardType(.webSearch).submitLabel(.go)
@@ -183,15 +143,15 @@ struct BrowserChrome: View {
                 Button("入力を消去", systemImage: "xmark.circle.fill") { address = "" }.labelStyle(.iconOnly).foregroundStyle(.secondary)
             }
         }
-        .frame(minWidth: compact ? 180 : 110, minHeight: compact ? 28 : 34)
+        .frame(minWidth: compact ? 180 : 110, minHeight: compact ? 28 : 0)
         .contentShape(Rectangle())
         .highPriorityGesture(DragGesture(minimumDistance: 35).onEnded { value in
             guard store.features.swipeAddressToSwitchTabs, !addressFocused.wrappedValue,
                   abs(value.translation.width) > abs(value.translation.height) * 1.5 else { return }
             store.switchTab(towardNext: value.translation.width < 0)
         }, including: store.features.swipeAddressToSwitchTabs && !addressFocused.wrappedValue ? .all : .subviews)
-        .padding(.horizontal, compact ? 8 : 10).padding(.vertical, compact ? 2 : 3)
-        .background(Color(uiColor: .secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: compact ? 8 : 12))
+        .padding(.horizontal, compact ? 8 : 12).padding(.vertical, compact ? 2 : 12)
+        .background(Color(uiColor: .secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: compact ? 8 : 14))
     }
     private var hideButton: some View {
         Button { addressFocused.wrappedValue = false; store.hideChrome() } label: {
@@ -203,7 +163,7 @@ struct BrowserChrome: View {
         Button { perform(action) } label: {
             Image(systemName: action == .reload && tab.isLoading ? "xmark" : action.symbol)
                 .font(.system(size: compact ? 17 : 20))
-                .frame(maxWidth: compact ? 32 : .infinity, minHeight: compact ? 36 : 40)
+                .frame(maxWidth: compact ? 32 : .infinity, minHeight: compact ? 36 : 44)
         }
         .accessibilityLabel(action == .reload && tab.isLoading ? "読み込みを停止" : action.label)
         .accessibilityIdentifier(action.rawValue + "Button").disabled(disabled(action))
@@ -231,7 +191,7 @@ struct BrowserChrome: View {
             Button("設定", systemImage: "slider.horizontal.3") { showSheet(.settings) }
         } label: {
             Image(systemName: "ellipsis.circle").font(.system(size: compact ? 18 : 20))
-                .frame(maxWidth: compact ? 32 : .infinity, minHeight: compact ? 36 : 40).contentShape(Rectangle())
+                .frame(maxWidth: compact ? 32 : .infinity, minHeight: compact ? 36 : 44).contentShape(Rectangle())
         }
         .accessibilityLabel("メニュー").accessibilityIdentifier("menuButton")
     }

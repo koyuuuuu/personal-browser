@@ -149,7 +149,7 @@ final class BrowserUITests: XCTestCase {
     }
 
     private func navigate(_ address: String) {
-        if app.buttons["showChromeButton"].exists { tapMenuControl("showChromeButton") }
+        if !app.textFields["addressField"].exists { app.swipeDown() }
         let field = app.textFields["addressField"]; XCTAssertTrue(field.waitForExistence(timeout: 5)); field.tap()
         if app.buttons["入力を消去"].exists { app.buttons["入力を消去"].tap() }
         field.typeText(address + "\n")
@@ -159,22 +159,22 @@ final class BrowserUITests: XCTestCase {
     }
     func testLandscapeChromeIsHiddenCompactAndRevealsOnReverseScroll() {
         XCUIDevice.shared.orientation = .landscapeRight
-        XCTAssertTrue(app.buttons["showChromeButton"].waitForExistence(timeout: 5))
+        XCTAssertFalse(app.buttons["showChromeButton"].exists)
         XCTAssertFalse(app.textFields["addressField"].exists)
-        tapMenuControl("showChromeButton")
+        app.swipeDown()
         XCTAssertTrue(app.textFields["addressField"].waitForExistence(timeout: 5))
         XCTAssertLessThanOrEqual(app.buttons["hideChromeButton"].frame.height, 44)
         app.webViews.firstMatch.swipeUp()
-        XCTAssertTrue(app.buttons["showChromeButton"].waitForExistence(timeout: 5))
+        XCTAssertFalse(app.buttons["showChromeButton"].exists)
         app.webViews.firstMatch.swipeDown()
         XCTAssertTrue(app.textFields["addressField"].waitForExistence(timeout: 5))
         XCUIDevice.shared.orientation = .portrait
     }
     func testBarsCanBeHiddenAndRestoredInPortrait() {
         tapMenuControl("hideChromeButton")
-        XCTAssertTrue(app.buttons["showChromeButton"].waitForExistence(timeout: 5))
+        XCTAssertFalse(app.buttons["showChromeButton"].exists)
         XCTAssertFalse(app.textFields["addressField"].exists)
-        tapMenuControl("showChromeButton")
+        app.swipeDown()
         XCTAssertTrue(app.textFields["addressField"].waitForExistence(timeout: 5))
     }
     func testNextSwipeAtEndCreatesTabAndOverviewPlusIsAtBottom() {
@@ -300,6 +300,27 @@ final class BrowserUITests: XCTestCase {
         app.navigationBars["表示・操作"].buttons["設定"].tap()
         app.navigationBars["設定"].buttons["閉じる"].tap()
         XCTAssertTrue(app.buttons["addressLeft-find"].waitForExistence(timeout: 5))
+    }
+
+    func testLandscapeSwipeKeepsControlsWorkingAndTilesStayInsideWindow() {
+        XCUIDevice.shared.orientation = .landscapeRight
+        app.swipeDown()
+        XCTAssertTrue(app.textFields["addressField"].waitForExistence(timeout: 5))
+        app.textFields["addressField"].swipeLeft()
+        XCTAssertTrue(app.staticTexts["お気に入り"].waitForExistence(timeout: 5))
+        tapMenuControl("menuButton")
+        app.buttons["タブ一覧"].tap()
+        XCTAssertTrue(app.navigationBars["タブ 2"].waitForExistence(timeout: 5))
+        for orientation in [UIDeviceOrientation.landscapeRight, .portrait] {
+            XCUIDevice.shared.orientation = orientation
+            let tiles = app.buttons.matching(NSPredicate(format: "value == 'プレビューあり' OR value == 'プレビューなし'"))
+            XCTAssertGreaterThanOrEqual(tiles.count, 2)
+            let window = app.windows.firstMatch.frame
+            for tile in tiles.allElementsBoundByIndex {
+                XCTAssertGreaterThanOrEqual(tile.frame.minX, window.minX)
+                XCTAssertLessThanOrEqual(tile.frame.maxX, window.maxX)
+            }
+        }
     }
 
 }

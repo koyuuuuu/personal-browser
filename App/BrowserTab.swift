@@ -40,10 +40,7 @@ final class BrowserTab: NSObject, ObservableObject, Identifiable, WKNavigationDe
     var existingWebView: WKWebView? { liveWebView }
     var isLive: Bool { liveWebView != nil }
     var isCapturingPreview: Bool { snapshotInProgress }
-    var isProtectedForMedia: Bool { hasActiveMedia || isPictureInPicture || backgroundMediaRetained }
-    var allowsBackgroundAudio = true
-    private var backgroundMediaRetained = false
-    private var suspendedForBackground = false
+    var isProtectedForMedia: Bool { hasActiveMedia || isPictureInPicture }
     private var previousScrollY: CGFloat?
     var onConnectionRequest: ((ConnectionRequest) -> Void)?
     var trustsCertificate: ((String, String) -> Bool)?
@@ -84,8 +81,6 @@ final class BrowserTab: NSObject, ObservableObject, Identifiable, WKNavigationDe
     var onDownload: ((URL) -> Void)?
     private var observations: [NSKeyValueObservation] = []
     private var mediaFrames: [String: Bool] = [:]
-    private var audibleFrames: [String: Bool] = [:]
-    private var hasAudibleMedia = false
     private var pipFrames: [String: Bool] = [:]
     private var appliedRule: WKContentRuleList?
     private var pendingRequest: URL?
@@ -164,7 +159,6 @@ final class BrowserTab: NSObject, ObservableObject, Identifiable, WKNavigationDe
     }
 
     func applyPresentation(_ value: PresentationPreferences) {
-        allowsBackgroundAudio = value.backgroundAudio
         if pageZoom != value.pageZoom { pageZoom = value.pageZoom; liveWebView?.pageZoom = pageZoom }
     }
 
@@ -196,7 +190,8 @@ final class BrowserTab: NSObject, ObservableObject, Identifiable, WKNavigationDe
     }
 
     func capturePreview() {
-        guard !snapshotInProgress, let view = liveWebView, hasContent, !isPictureInPicture,
+        guard !snapshotInProgress, let view = liveWebView, hasContent, !hasActiveMedia, !isPictureInPicture,
+              UIApplication.shared.applicationState == .active, view.window != nil, view.alpha == 1,
               let capturedURL = url, WebURLPolicy.allows(capturedURL), view.bounds.width > 1, view.bounds.height > 1 else { return }
         snapshotInProgress = true
         let capturedTitle = title
@@ -223,26 +218,6 @@ final class BrowserTab: NSObject, ObservableObject, Identifiable, WKNavigationDe
     func scrollViewDidEndDecelerating(_ scrollView: UIScrollView) { capturePreview() }
     func scrollViewDidEndDragging(_ scrollView: UIScrollView, willDecelerate decelerate: Bool) { if !decelerate { capturePreview() } }
 
-    private func configurePlaybackAudioSession() {
-        let session = AVAudioSession.sharedInstance()
-        guard session.category != .playAndRecord else { return }
-        try? session.setCategory(allowsBackgroundAudio ? .playback : .ambient,
-                                 mode: allowsBackgroundAudio ? .moviePlayback : .default, options: [])
-        try? session.setActive(true)
-    }
-    func prepareForBackground(continueAudio: Bool) {
-        allowsBackgroundAudio = continueAudio
-        backgroundMediaRetained = continueAudio && (backgroundMediaRetained || hasActiveMedia || isPictureInPicture)
-        if backgroundMediaRetained && hasAudibleMedia { configurePlaybackAudioSession() }
-        else if !continueAudio, hasActiveMedia, !isPictureInPicture {
-            liveWebView?.setAllMediaPlaybackSuspended(true, completionHandler: nil); suspendedForBackground = true
-        }
-    }
-    func finishBackgroundPlayback() {
-        backgroundMediaRetained = false
-        if suspendedForBackground { liveWebView?.setAllMediaPlaybackSuspended(false, completionHandler: nil); suspendedForBackground = false }
-    }
-
     func suspend() {
         guard !isProtectedForMedia, !snapshotInProgress, downloads.isEmpty else { return }
         releaseWebView(); isLoading = false; canGoBack = false; canGoForward = false
@@ -254,18 +229,20 @@ final class BrowserTab: NSObject, ObservableObject, Identifiable, WKNavigationDe
         liveWebView?.stopLoading(); liveWebView?.navigationDelegate = nil; liveWebView?.uiDelegate = nil
         liveWebView?.configuration.userContentController.removeScriptMessageHandler(forName: "personalBrowserMedia")
         observations.removeAll(); appliedRule = nil; liveWebView = nil
-        mediaFrames.removeAll(); pipFrames.removeAll(); audibleFrames.removeAll(); hasAudibleMedia = false; hasActiveMedia = false; isPictureInPicture = false
+        mediaFrames.removeAll(); pipFrames.removeAll(); hasActiveMedia = false; isPictureInPicture = false
     }
 
     func updateMedia(_ payload: [String: Any]) {
         guard let frame = payload["frame"] as? String else { return }
         mediaFrames[frame] = payload["playing"] as? Bool ?? false
         pipFrames[frame] = payload["pip"] as? Bool ?? false
-        audibleFrames[frame] = payload["audible"] as? Bool ?? false
-        let active = mediaFrames.values.contains(true), pip = pipFrames.values.contains(true), audible = audibleFrames.values.contains(true)
-        guard active != hasActiveMedia || pip != isPictureInPicture || audible != hasAudibleMedia else { return }
-        hasActiveMedia = active; isPictureInPicture = pip; hasAudibleMedia = audible
-        if audible { configurePlaybackAudioSession() }
+        let active = mediaFrames.values.contains(true), pip = pipFrames.values.contains(true)
+        guard active != hasActiveMedia || pip != isPictureInPicture else { return }
+        hasActiveMedia = active; isPictureInPicture = pip
+        if active {
+            try? AVAudioSession.sharedInstance().setCategory(.playback, mode: .moviePlayback, options: [.mixWithOthers])
+            try? AVAudioSession.sharedInstance().setActive(true)
+        }
         onStateChange?()
     }
 
@@ -274,23 +251,22 @@ final class BrowserTab: NSObject, ObservableObject, Identifiable, WKNavigationDe
       const frame = Math.random().toString(36).slice(2), players = new Set();
       let lastStatus = '';
       const report = () => {
-        let playing = false, pip = false, audible = false;
+        let playing = false, pip = false;
         players.forEach(v => { if (!v.isConnected) players.delete(v); else {
           playing ||= !v.paused && !v.ended;
-          audible ||= !v.paused && !v.ended && !v.muted && v.volume > 0;
           pip ||= v.webkitPresentationMode === 'picture-in-picture' || document.pictureInPictureElement === v;
         }});
-        const status = (playing||pip) + ':' + pip + ':' + audible;
+        const status = (playing||pip) + ':' + pip;
         if (status === lastStatus) return;
         lastStatus = status;
-        window.webkit.messageHandlers.personalBrowserMedia.postMessage({frame,playing:playing||pip,pip,audible});
+        window.webkit.messageHandlers.personalBrowserMedia.postMessage({frame,playing:playing||pip,pip});
       };
       const scan = () => { document.querySelectorAll('video,audio').forEach(v => {
         if (players.has(v)) return; players.add(v);
-        ['play','playing','pause','ended','volumechange','enterpictureinpicture','leavepictureinpicture','webkitpresentationmodechanged'].forEach(e => v.addEventListener(e,report));
+        ['play','playing','pause','ended','enterpictureinpicture','leavepictureinpicture','webkitpresentationmodechanged'].forEach(e => v.addEventListener(e,report));
       }); report(); };
       document.addEventListener('DOMContentLoaded', () => { scan(); new MutationObserver(scan).observe(document.documentElement,{childList:true,subtree:true}); });
-      window.addEventListener('pagehide', () => window.webkit.messageHandlers.personalBrowserMedia.postMessage({frame,playing:false,pip:false,audible:false}));
+      window.addEventListener('pagehide', () => window.webkit.messageHandlers.personalBrowserMedia.postMessage({frame,playing:false,pip:false}));
     })();
     """
 
@@ -389,7 +365,7 @@ final class BrowserTab: NSObject, ObservableObject, Identifiable, WKNavigationDe
     }
 
     func webViewWebContentProcessDidTerminate(_ webView: WKWebView) {
-        mediaFrames.removeAll(); pipFrames.removeAll(); audibleFrames.removeAll(); hasAudibleMedia = false; hasActiveMedia = false; isPictureInPicture = false
+        mediaFrames.removeAll(); pipFrames.removeAll(); hasActiveMedia = false; isPictureInPicture = false
         errorMessage = "ページの表示処理が終了しました。再読み込みしてください。"
     }
 
@@ -566,12 +542,12 @@ struct WebSurface: UIViewRepresentable {
             if view.superview !== host { host.addSubview(view) }
             view.isUserInteractionEnabled = tab.id == selected.id && tab.hasContent
             // Do not hide a playing WebView or detach it on backgrounding.
-            view.alpha = tab.id == selected.id && tab.hasContent ? 1 : 0.01
+            view.alpha = (tab.id == selected.id && tab.hasContent) || tab.isCapturingPreview ? 1 : 0.01
         }
         if let view = selected.existingWebView { host.bringSubviewToFront(view) }
         host.setNeedsLayout()
     }
 }
 final class WebSurfaceView: UIView {
-    override func layoutSubviews() { super.layoutSubviews(); for view in subviews { view.frame = bounds } }
+    override func layoutSubviews() { super.layoutSubviews(); clipsToBounds = true; for view in subviews { view.frame = bounds } }
 }

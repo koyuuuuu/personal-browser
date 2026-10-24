@@ -321,14 +321,8 @@ final class BrowserStore: ObservableObject {
         guard tab.previewData == nil, !tab.isPrivate, let record = previewRecords[tab.id], record.url == tab.url else { return }
         tab.previewData = try? previews.image(for: record)
     }
-    func applicationBackgrounded() {
-        selectedTab?.capturePreview()
-        for tab in tabs { tab.prepareForBackground(continueAudio: presentation.backgroundAudio) }
-        flush()
-    }
-    func applicationForegrounded() {
-        for tab in tabs { tab.finishBackgroundPlayback() }
-    }
+    func applicationBackgrounded() { flush() }
+    func applicationForegrounded() {}
     func updatePresentation(_ value: PresentationPreferences) {
         presentation = value.normalized()
         for tab in tabs { tab.applyPresentation(presentation) }
