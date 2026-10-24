@@ -43,7 +43,7 @@ def main():
                   const a = document.getElementById('audio');
                   document.getElementById('status').textContent = 'Sample ' + (++samples) + ':' +
                     (a.paused ? 'Paused' : 'Playing') + ':' + a.currentTime.toFixed(3) +
-                    ':ready=' + a.readyState + ':error=' + (a.error ? a.error.code : 'none');
+                    ':ready=' + a.readyState + ':error=' + (a.error ? a.error.code : 'none') + ':wall=' + Date.now();
                 }
                 </script>
                 <p id="status"></p>'''
