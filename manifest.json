@@ -2,10 +2,10 @@
   "releases": [
     {
       "file": "PersonalBrowser.ipa",
-      "sha256": "72439533eba9884be23f82117e8bf5930b7df7a4a0c59eee1b6e8c3e8b335717",
+      "sha256": "833cd995b9da3420ac5846c663cc2eb27f934061f136d1a3c6f842bdfe7d4cf9",
       "bundle_id": "local.personalbrowser.app",
-      "version": "0.2.0",
-      "build": "10",
+      "version": "0.3.0",
+      "build": "12",
       "minimum_ios": "17.0",
       "target_ios": "18.4.1",
       "architecture": "arm64",
@@ -13,11 +13,11 @@
       "embedded_profile": false,
       "signature_resources": false,
       "installation_verified": false,
-      "source_commit": "4eff6acc7609a3f337401df62fea8c7afa14400c",
+      "source_commit": "c8ddca4f256b969d70253c896a01d9eb95780210",
       "data_schema": 1,
-      "size": 376835,
-      "date": "2026-10-24T12:31:15.740208+00:00",
-      "description": "更新通知のオン・オフ設定とSideStore配信に対応。履歴・ブックマークの保存形式とアプリIDは維持しています。",
+      "size": 684525,
+      "date": "2026-10-24T17:09:41.002359+00:00",
+      "description": "PiPのバックグラウンド再生設定と共有シートを修正。広告ブロック・サイト別除外、500タブの遅延読み込み、タイル式一覧とスワイプ操作、お気に入りホーム・背景画像、ブックマークフォルダ、リンク長押しメニュー、ページ内検索・ダウンロード・HTML/CSV/JSON取り込みと書き出しを追加。既存のブックマーク・履歴形式とアプリIDを維持。PiPと上書き更新は実機で受け入れ確認が必要です。 SafariのZIP書き出しに対応し、パスワードはApple標準の管理機能を継続利用。YouTube・ブラウザ・ファイル保存・メール・メッセージ等のリンク操作と、Watch HTMLへのURL引き渡しを追加。",
       "appPermissions": {
         "entitlements": [],
         "privacy": {
@@ -25,7 +25,7 @@
           "NSMicrophoneUsageDescription": "閲覧中のWebサイトでマイクを使用するために必要です。"
         }
       },
-      "tag": "v0.2.0-build.10"
+      "tag": "v0.3.0-build.12"
     },
     {
       "file": "PersonalBrowser.ipa",
@@ -80,6 +80,33 @@
         }
       },
       "tag": "v0.2.0-build.8"
+    },
+    {
+      "file": "PersonalBrowser.ipa",
+      "sha256": "72439533eba9884be23f82117e8bf5930b7df7a4a0c59eee1b6e8c3e8b335717",
+      "bundle_id": "local.personalbrowser.app",
+      "version": "0.2.0",
+      "build": "10",
+      "minimum_ios": "17.0",
+      "target_ios": "18.4.1",
+      "architecture": "arm64",
+      "platform": "iOS device",
+      "embedded_profile": false,
+      "signature_resources": false,
+      "installation_verified": false,
+      "source_commit": "4eff6acc7609a3f337401df62fea8c7afa14400c",
+      "data_schema": 1,
+      "size": 376835,
+      "date": "2026-10-24T12:31:15.740208+00:00",
+      "description": "更新通知のオン・オフ設定とSideStore配信に対応。履歴・ブックマークの保存形式とアプリIDは維持しています。",
+      "appPermissions": {
+        "entitlements": [],
+        "privacy": {
+          "NSCameraUsageDescription": "閲覧中のWebサイトでカメラを使用するために必要です。",
+          "NSMicrophoneUsageDescription": "閲覧中のWebサイトでマイクを使用するために必要です。"
+        }
+      },
+      "tag": "v0.2.0-build.10"
     },
     {
       "id": 12394386981,

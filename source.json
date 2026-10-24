@@ -12,6 +12,16 @@
       "iconURL": "https://raw.githubusercontent.com/koyuuuuu/personal-browser-distribution/main/icon.png",
       "versions": [
         {
+          "version": "0.3.0",
+          "buildVersion": "12",
+          "date": "2026-10-24T17:09:41.002359+00:00",
+          "localizedDescription": "PiPのバックグラウンド再生設定と共有シートを修正。広告ブロック・サイト別除外、500タブの遅延読み込み、タイル式一覧とスワイプ操作、お気に入りホーム・背景画像、ブックマークフォルダ、リンク長押しメニュー、ページ内検索・ダウンロード・HTML/CSV/JSON取り込みと書き出しを追加。既存のブックマーク・履歴形式とアプリIDを維持。PiPと上書き更新は実機で受け入れ確認が必要です。 SafariのZIP書き出しに対応し、パスワードはApple標準の管理機能を継続利用。YouTube・ブラウザ・ファイル保存・メール・メッセージ等のリンク操作と、Watch HTMLへのURL引き渡しを追加。",
+          "downloadURL": "https://github.com/koyuuuuu/personal-browser-distribution/releases/download/v0.3.0-build.12/PersonalBrowser.ipa",
+          "size": 684525,
+          "minOSVersion": "17.0",
+          "sha256": "833cd995b9da3420ac5846c663cc2eb27f934061f136d1a3c6f842bdfe7d4cf9"
+        },
+        {
           "version": "0.2.0",
           "buildVersion": "10",
           "date": "2026-10-24T12:31:15.740208+00:00",
