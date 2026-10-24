@@ -1,5 +1,12 @@
 import SwiftUI
 import WebKit
+import ImageIO
+
+struct ClosedBrowserTab {
+    var title: String
+    var url: URL?
+    var isPrivate: Bool
+}
 
 @MainActor
 final class BrowserStore: ObservableObject {
@@ -10,8 +17,10 @@ final class BrowserStore: ObservableObject {
     @Published private(set) var features = FeaturePreferences()
     @Published var shareRequest: ShareRequest?
     @Published var messageRequest: ShareRequest?
+    @Published var safariRequest: ShareRequest?
     @Published var saveLinkRequest: ShareRequest?
     @Published var tabAddedID: UUID?
+    @Published private(set) var closedTabs: [ClosedBrowserTab] = []
     @Published var homeBackground: UIImage?
     @Published private(set) var extraStorageBlocked = false
     @Published var notice: String?
@@ -94,6 +103,7 @@ final class BrowserStore: ObservableObject {
         tab.onAnalyzeLink = { [weak self] url in self?.openWatchHTML(url) }
         tab.onMessageLink = { [weak self] url in self?.messageRequest = ShareRequest(url: url) }
         tab.onSaveLink = { [weak self] url in self?.saveLinkRequest = ShareRequest(url: url) }
+        tab.onOpenInSafari = { [weak self] url in self?.safariRequest = ShareRequest(url: url) }
         tab.onOpenInBrowser = { [weak self] url in self?.externalURL = url }
         tab.onDownload = { [weak self] _ in self?.notice = "ダウンロードしました。メニューの「ダウンロード」から共有・保存できます。" }
         tab.onClose = { [weak self, weak tab] in
@@ -128,6 +138,8 @@ final class BrowserStore: ObservableObject {
 
     func close(_ tab: BrowserTab) {
         guard let index = tabs.firstIndex(where: { $0.id == tab.id }) else { return }
+        closedTabs.insert(ClosedBrowserTab(title: tab.title, url: tab.url, isPrivate: tab.isPrivate), at: 0)
+        closedTabs = Array(closedTabs.prefix(20))
         tab.dispose()
         tabs.remove(at: index)
         if selectedID == tab.id {
@@ -135,6 +147,11 @@ final class BrowserStore: ObservableObject {
         }
         if tabs.isEmpty { _ = newTab() }
         scheduleSave()
+    }
+
+    func restoreClosedTab() {
+        guard let record = closedTabs.first, tabs.count < Self.maximumTabs else { return }
+        if let tab = newTab(isPrivate: record.isPrivate, url: record.url) { tab.title = record.title; closedTabs.removeFirst() }
     }
 
     func navigate(_ text: String) {
@@ -181,6 +198,7 @@ final class BrowserStore: ObservableObject {
     func clearWebsiteData() {
         guard !isClearingData else { return }
         isClearingData = true
+        closedTabs = []
         let dataStores = [WKWebsiteDataStore.default()] + tabs.filter(\.isPrivate).map { $0.webView.configuration.websiteDataStore }
         for tab in tabs { tab.dispose() }
         tabs = []
@@ -343,10 +361,14 @@ final class BrowserStore: ObservableObject {
         let file = directory.appendingPathComponent("home-background.jpg")
         do {
             if let data {
-                guard let image = UIImage(data: data) else { return }
-                let ratio = min(1, 1800 / max(image.size.width, image.size.height))
-                let size = CGSize(width: image.size.width * ratio, height: image.size.height * ratio)
-                let compressed = UIGraphicsImageRenderer(size: size).image { _ in image.draw(in: CGRect(origin: .zero, size: size)) }.jpegData(compressionQuality: 0.8)
+                guard let source = CGImageSourceCreateWithData(data as CFData, nil),
+                      let thumbnail = CGImageSourceCreateThumbnailAtIndex(source, 0, [
+                        kCGImageSourceCreateThumbnailFromImageAlways: true,
+                        kCGImageSourceCreateThumbnailWithTransform: true,
+                        kCGImageSourceThumbnailMaxPixelSize: 1800,
+                        kCGImageSourceShouldCacheImmediately: true
+                      ] as CFDictionary) else { return }
+                let compressed = UIImage(cgImage: thumbnail).jpegData(compressionQuality: 0.8)
                 guard let compressed else { return }
                 try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
                 try compressed.write(to: file, options: [.atomic, .completeFileProtectionUntilFirstUserAuthentication])

@@ -54,7 +54,8 @@ public enum BrowserArchive {
         if entry.method == 0 { data = entry.compressed }
         else {
             #if canImport(Compression)
-            guard entry.size > 0 else { return Data() }
+            if entry.size == 0 { try verify(Data(), entry: entry); return Data() }
+            guard !entry.compressed.isEmpty else { throw LibraryTransferError.malformed }
             var output = [UInt8](repeating: 0, count: entry.size + 1)
             let decoded = entry.compressed.withUnsafeBytes { source in
                 output.withUnsafeMutableBufferPointer { destination in

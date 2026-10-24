@@ -1,5 +1,6 @@
 import SwiftUI
 import MessageUI
+import SafariServices
 import UniformTypeIdentifiers
 
 struct LinkFileDocument: FileDocument {
@@ -24,4 +25,10 @@ struct MessageComposer: UIViewControllerRepresentable {
         init(finish: @escaping () -> Void) { self.finish = finish }
         func messageComposeViewController(_ controller: MFMessageComposeViewController, didFinishWith result: MessageComposeResult) { finish() }
     }
+}
+
+struct SafariScreen: UIViewControllerRepresentable {
+    let url: URL
+    func makeUIViewController(context: Context) -> SFSafariViewController { SFSafariViewController(url: url) }
+    func updateUIViewController(_ controller: SFSafariViewController, context: Context) {}
 }

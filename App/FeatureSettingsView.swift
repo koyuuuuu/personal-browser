@@ -5,11 +5,13 @@ import UniformTypeIdentifiers
 @MainActor
 struct FeatureSettingsView: View {
     @ObservedObject var store: BrowserStore
+    @ObservedObject private var blocker = ContentBlocking.shared
     @State private var imageSelection: PhotosPickerItem?
     @State private var host = ""
     var body: some View {
         Form {
             Section {
+                Text(blocker.status).font(.caption).foregroundStyle(.secondary).accessibilityIdentifier("blockingRuleStatus")
                 Toggle("広告をブロック", isOn: feature(\.blockAdvertisements)).accessibilityIdentifier("adBlockingToggle")
                 ForEach(store.features.blockingExceptions, id: \.self) { domain in Text(domain) }
                     .onDelete { offsets in var value = store.features; value.blockingExceptions.remove(atOffsets: offsets); store.updateFeatures(value) }
@@ -68,6 +70,7 @@ struct FeatureSettingsView: View {
             }
         }
         .navigationTitle("ブラウザ機能")
+        .task { _ = await blocker.rules() }
         .task(id: imageSelection) {
             guard let imageSelection else { return }
             do {

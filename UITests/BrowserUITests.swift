@@ -119,10 +119,26 @@ final class BrowserUITests: XCTestCase {
         XCTAssertTrue(app.navigationBars["設定"].waitForExistence(timeout: 5))
         tapMenuControl("featureSettingsLink")
         XCTAssertTrue(app.navigationBars["ブラウザ機能"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.staticTexts["内蔵ルールを準備しました"].waitForExistence(timeout: 10), "WebKit must compile the native filtering rules")
         let toggle = app.switches["adBlockingToggle"]
         XCTAssertTrue(toggle.waitForExistence(timeout: 5)); XCTAssertEqual(toggle.value as? String, "1")
         toggle.coordinate(withNormalizedOffset: CGVector(dx: 0.9, dy: 0.5)).tap()
         XCTAssertEqual(toggle.value as? String, "0")
+    }
+
+    func testAddressSwipeReturnsToPreviousTab() {
+        tapMenuControl("menuButton"); app.buttons["新しいタブ"].tap()
+        XCTAssertTrue(app.staticTexts["お気に入り"].waitForExistence(timeout: 5))
+        app.textFields["addressField"].swipeRight()
+        XCTAssertTrue(app.webViews.firstMatch.staticTexts["オフラインのテストページ"].waitForExistence(timeout: 5))
+    }
+    func testTabTileCanBeSwipedClosed() {
+        tapMenuControl("menuButton"); app.buttons["新しいプライベートタブ"].tap()
+        app.buttons["tabsButton"].tap()
+        XCTAssertTrue(app.navigationBars["タブ 2"].waitForExistence(timeout: 5))
+        let tile = app.buttons["新しいタブ、選択中"]
+        XCTAssertTrue(tile.waitForExistence(timeout: 5)); tile.swipeLeft()
+        XCTAssertTrue(app.navigationBars["タブ 1"].waitForExistence(timeout: 5))
     }
 
 }

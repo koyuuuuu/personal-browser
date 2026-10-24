@@ -1,10 +1,12 @@
 import Foundation
+import Combine
 import WebKit
 
 /// Small original rule set. No downloaded JavaScript, remote filter subscription,
 /// or browsing URL is sent to a filtering service.
 @MainActor
-final class ContentBlocking {
+final class ContentBlocking: ObservableObject {
+    @Published private(set) var status = "内蔵ルールを準備中…"
     static let shared = ContentBlocking()
     private var task: Task<WKContentRuleList?, Never>?
     static let domains = ["doubleclick.net", "googlesyndication.com", "googleadservices.com", "adservice.google.com", "adsystem.com", "amazon-adsystem.com", "adnxs.com", "adsrvr.org", "criteo.com", "criteo.net", "taboola.com", "outbrain.com", "pubmatic.com", "rubiconproject.com", "openx.net", "casalemedia.com", "smartadserver.com", "scorecardresearch.com", "quantserve.com", "advertising.com"]
@@ -17,9 +19,11 @@ final class ContentBlocking {
                 return ["trigger": ["url-filter": "^https?://([^/]+\\.)?" + escaped + "[:/]", "load-type": ["third-party"]], "action": ["type": "block"]]
             }
             guard let data = try? JSONSerialization.data(withJSONObject: rules), let json = String(data: data, encoding: .utf8) else { return nil }
-            return await withCheckedContinuation { continuation in
+            let result: WKContentRuleList? = await withCheckedContinuation { continuation in
                 WKContentRuleListStore.default().compileContentRuleList(forIdentifier: "PersonalBrowser-ads-v1", encodedContentRuleList: json) { list, _ in continuation.resume(returning: list) }
             }
+            self.status = result == nil ? "内蔵ルールの準備に失敗しました" : "内蔵ルールを準備しました"
+            return result
         }
         task = operation
         return await operation.value

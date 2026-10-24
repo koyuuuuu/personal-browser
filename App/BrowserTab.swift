@@ -62,6 +62,7 @@ final class BrowserTab: NSObject, ObservableObject, Identifiable, WKNavigationDe
     var onMessageLink: ((URL) -> Void)?
     var onSaveLink: ((URL) -> Void)?
     var onOpenInBrowser: ((URL) -> Void)?
+    var onOpenInSafari: ((URL) -> Void)?
     var onDownload: ((URL) -> Void)?
     private var observations: [NSKeyValueObservation] = []
     private var mediaFrames: [String: Bool] = [:]
@@ -244,7 +245,7 @@ final class BrowserTab: NSObject, ObservableObject, Identifiable, WKNavigationDe
         }
         downloads.removeAll(); releaseWebView()
         onVisit = nil; onStateChange = nil; onPopup = nil; onClose = nil; onExternalURL = nil
-        onAnalyzeLink = nil; onMessageLink = nil; onSaveLink = nil; onOpenLink = nil; onShareLink = nil; onOpenInBrowser = nil; onDownload = nil
+        onAnalyzeLink = nil; onMessageLink = nil; onSaveLink = nil; onOpenLink = nil; onShareLink = nil; onOpenInSafari = nil; onOpenInBrowser = nil; onDownload = nil
     }
 
     func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
@@ -274,6 +275,7 @@ final class BrowserTab: NSObject, ObservableObject, Identifiable, WKNavigationDe
     }
 
     func webViewWebContentProcessDidTerminate(_ webView: WKWebView) {
+        mediaFrames.removeAll(); pipFrames.removeAll(); hasActiveMedia = false; isPictureInPicture = false
         errorMessage = "ページの表示処理が終了しました。再読み込みしてください。"
     }
 
@@ -351,7 +353,8 @@ final class BrowserTab: NSObject, ObservableObject, Identifiable, WKNavigationDe
             appActions += [related]
             appActions += applications
             appActions += [
-                UIAction(title: "Safari / 既定のブラウザ", image: UIImage(systemName: "safari")) { [weak self] _ in self?.onOpenInBrowser?(link) },
+                UIAction(title: "Safariの画面で開く", image: UIImage(systemName: "safari")) { [weak self] _ in self?.onOpenInSafari?(link) },
+                UIAction(title: "既定のブラウザで開く", image: UIImage(systemName: "globe")) { [weak self] _ in self?.onOpenInBrowser?(link) },
                 UIAction(title: "ファイルにリンクを保存", image: UIImage(systemName: "folder")) { [weak self] _ in self?.onSaveLink?(link) },
                 UIAction(title: "メール", image: UIImage(systemName: "envelope")) { _ in
                     var parts = URLComponents(); parts.scheme = "mailto"; parts.queryItems = [URLQueryItem(name: "body", value: link.absoluteString)]

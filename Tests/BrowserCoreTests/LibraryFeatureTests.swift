@@ -87,4 +87,10 @@ final class LibraryFeatureTests: XCTestCase {
         #endif
     }
 
+    func testSafariFavoritesAreSeparatedFromOtherBookmarkFolders() throws {
+        let html = #"<DL><H3>Favorites</H3><DL><A HREF="https://favorite.example">Favorite</A></DL><H3>Other</H3><DL><A HREF="https://bookmark.example">Bookmark</A></DL></DL>"#
+        XCTAssertEqual(try LibraryTransfer.parse(Data(html.utf8), kind: .favorites).map(\.title), ["Favorite"])
+        XCTAssertEqual(try LibraryTransfer.parse(Data(html.utf8), kind: .bookmarks).count, 2)
+    }
+
 }

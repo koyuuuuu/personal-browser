@@ -9,12 +9,13 @@ struct ShareRequest: Identifiable {
 
 enum BrowserSheet: Identifiable {
     case tabs, bookmarks, history, settings, downloads
-    case share(ShareRequest), message(ShareRequest)
+    case share(ShareRequest), message(ShareRequest), safari(ShareRequest)
     var id: String {
         switch self {
         case .tabs: "tabs"; case .bookmarks: "bookmarks"; case .history: "history"
         case .settings: "settings"; case .downloads: "downloads"; case .share(let payload): "share-" + payload.id.uuidString
         case .message(let payload): "message-" + payload.id.uuidString
+        case .safari(let payload): "safari-" + payload.id.uuidString
         }
     }
 }
@@ -59,7 +60,11 @@ struct BrowserRootView: View {
             case .downloads: DownloadsView(store: store)
             case .share(let payload): ActivityView(items: [payload.url])
             case .message(let payload): MessageComposer(url: payload.url)
+            case .safari(let payload): SafariScreen(url: payload.url)
             }
+        }
+        .onChange(of: store.safariRequest?.id) { _, _ in
+            if let payload = store.safariRequest { sheet = .safari(payload) }
         }
         .onChange(of: store.messageRequest?.id) { _, _ in
             if let payload = store.messageRequest {
@@ -204,11 +209,11 @@ struct TabBrowserView: View {
                 }
             }
             .contentShape(Rectangle())
-            .simultaneousGesture(DragGesture(minimumDistance: 35).onEnded { value in
+            .highPriorityGesture(DragGesture(minimumDistance: 35).onEnded { value in
                 guard store.features.swipeAddressToSwitchTabs, !addressFocused,
                       abs(value.translation.width) > abs(value.translation.height) * 1.5 else { return }
                 store.switchTab(towardNext: value.translation.width < 0)
-            })
+            }, including: store.features.swipeAddressToSwitchTabs && !addressFocused ? .all : .subviews)
             .padding(12)
             .background(Color(uiColor: .secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 14))
             .padding(.horizontal, 8)
@@ -226,6 +231,8 @@ struct TabBrowserView: View {
                     Button("新しいタブ", systemImage: "plus") { _ = store.newTab() }
                     Button("新しいプライベートタブ", systemImage: "hand.raised") { _ = store.newTab(isPrivate: true) }
                     Button("タブ一覧", systemImage: "square.on.square") { showSheet(.tabs) }
+                    Button("閉じたタブを戻す", systemImage: "arrow.uturn.backward") { store.restoreClosedTab() }
+                        .disabled(store.closedTabs.isEmpty)
                     Button("ホーム", systemImage: "house") { store.showHome() }
                     Divider()
                     Button("お気に入りに追加", systemImage: "star") { store.addFavorite() }

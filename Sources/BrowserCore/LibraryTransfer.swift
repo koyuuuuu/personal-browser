@@ -40,6 +40,10 @@ public enum LibraryTransfer {
         } else { pages = try parseCSV(trimmed) }
         guard !pages.isEmpty else { throw LibraryTransferError.unsupported }
         guard pages.count <= 50_000 else { throw LibraryTransferError.tooLarge }
+        if kind == .favorites {
+            let favorites = pages.filter { $0.folders.contains { ["favorites", "favourites", "お気に入り"].contains($0.lowercased()) } }
+            if !favorites.isEmpty { return favorites }
+        }
         return pages
     }
 
@@ -75,7 +79,7 @@ public enum LibraryTransfer {
         guard let urlIndex = headers.firstIndex(where: { ["url", "uri", "address", "website", "ページurl"].contains($0) }) else { throw LibraryTransferError.unsupported }
         let titleIndex = headers.firstIndex { ["title", "name", "タイトル"].contains($0) }
         let folderIndex = headers.firstIndex { ["folder", "folders", "フォルダ"].contains($0) }
-        let dateIndex = headers.firstIndex { ["date", "visitedat", "visited_at", "last_visit_time", "visit_time"].contains($0) }
+        let dateIndex = headers.firstIndex { ["date", "visitedat", "visited_at", "last_visit_time", "visit_time", "visittime", "lastvisittime", "lastvisited", "time"].contains($0) }
         return rows.dropFirst().compactMap { values in
             guard values.indices.contains(urlIndex), let url = URL(string: values[urlIndex]), WebURLPolicy.allows(url) else { return nil }
             func value(_ index: Int?) -> String? { index.flatMap { values.indices.contains($0) ? values[$0] : nil } }
@@ -92,7 +96,7 @@ public enum LibraryTransfer {
             guard let item = node as? [String: Any] else { return }
             if item.keys.contains(where: { ["password", "passwords", "logins", "encryptedPassword"].contains($0) }) { throw LibraryTransferError.passwordFile }
             if let address = (item["url"] ?? item["uri"]) as? String, let url = URL(string: address), WebURLPolicy.allows(url) {
-                result.append(ImportedPage(title: (item["title"] ?? item["name"]) as? String ?? url.host ?? address, url: url, folders: (item["folders"] as? [String]) ?? path, date: parseDate((item["visitedAt"] ?? item["date"] ?? item["last_visit_time"]).map { String(describing: $0) })))
+                result.append(ImportedPage(title: (item["title"] ?? item["name"]) as? String ?? url.host ?? address, url: url, folders: (item["folders"] as? [String]) ?? path, date: parseDate((item["visitedAt"] ?? item["date"] ?? item["last_visit_time"] ?? item["lastVisited"] ?? item["time_visit"]).map { String(describing: $0) })))
                 return
             }
             if let children = item["children"] {
@@ -132,6 +136,8 @@ public enum LibraryTransfer {
     private static func parseDate(_ text: String?) -> Date {
         guard let text else { return Date() }
         let formatter = ISO8601DateFormatter()
+        if let date = formatter.date(from: text) { return date }
+        formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
         if let date = formatter.date(from: text) { return date }
         if let number = Double(text) {
             if number > 10_000_000_000_000_000 { return Date(timeIntervalSince1970: number / 1_000_000 - 11_644_473_600) }
