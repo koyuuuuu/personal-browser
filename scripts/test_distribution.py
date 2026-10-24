@@ -130,6 +130,32 @@ class DistributionTests(unittest.TestCase):
                 publish_public_mirror(PublicRepository(), [record], root)
         self.assertEqual(events, ["draft", "upload", "publish", "source"])
 
+    def test_public_release_backfill_does_not_mark_an_old_version_latest(self):
+        records = [self.record("0.2.0", "8"), self.record("0.1.0", "6")]
+        tags, latest_flags = [], []
+        class PublicRepository:
+            repo = "koyuuuuu/personal-browser-distribution"
+            def request(self, path, **kwargs):
+                if path == "": return {"private": False}
+                if path == "/git/ref/heads/main": return {"object": {"sha": "e" * 40}}
+                if path.startswith("/releases?"): return []
+                if path == "/releases":
+                    tags.append(kwargs["body"]["tag_name"])
+                    return {"id": len(tags), "assets": [], "upload_url": "https://uploads.github.com/example{?name}"}
+                if path.startswith("https://uploads.github.com/"): return {}
+                if path.startswith("/releases/"):
+                    latest_flags.append(kwargs["body"]["make_latest"])
+                    return {}
+                raise AssertionError(path)
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory); (root / "versions").mkdir()
+            for record in records:
+                (root / "versions" / f"{record['tag']}.ipa").write_bytes(b"ipa")
+            with patch("publish_release.store_public_source"):
+                publish_public_mirror(PublicRepository(), records, root)
+        self.assertEqual(tags, [records[1]["tag"], records[0]["tag"]])
+        self.assertEqual(latest_flags, ["false", "true"])
+
 
 if __name__ == "__main__":
     unittest.main()

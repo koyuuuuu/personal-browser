@@ -15,7 +15,7 @@ import urllib.parse
 import urllib.request
 from pathlib import Path
 
-from distribution import BUNDLE_ID, inspect_release, release_config, release_tag, verify_bytes, write_assets
+from distribution import BUNDLE_ID, inspect_release, release_config, release_tag, verify_bytes, version_key, write_assets
 
 ROOT = Path(__file__).resolve().parents[1]
 LEGACY_IPA_BLOB = "146a48247f1e95119ff40332f46aa369635266dc"
@@ -205,7 +205,9 @@ def publish_public_mirror(github, records, destination):
         # Bootstrap only public metadata so Release tags can target a valid ref.
         store_public_source(github, destination, include_source=False)
     published = {r["tag_name"]: r for r in all_releases(github)}
-    for info in records:
+    ordered = sorted(records, key=lambda r: (version_key(r["version"]), int(r["build"])))
+    latest = ordered[-1]["tag"]
+    for info in ordered:
         data = (Path(destination) / "versions" / f"{info['tag']}.ipa").read_bytes()
         verify_bytes(data, info)
         existing = published.get(info["tag"])
@@ -223,7 +225,8 @@ def publish_public_mirror(github, records, destination):
             github.request(f"/releases/assets/{asset['id']}", method="DELETE")
         url = release["upload_url"].split("{")[0] + "?name=PersonalBrowser.ipa"
         github.request(url, method="POST", body=data)
-        github.request(f"/releases/{release['id']}", method="PATCH", body={"draft": False, "make_latest": "false"})
+        github.request(f"/releases/{release['id']}", method="PATCH", body={
+            "draft": False, "make_latest": "true" if info["tag"] == latest else "false"})
     # Advertise a version only after every referenced IPA is available.
     store_public_source(github, destination)
 
