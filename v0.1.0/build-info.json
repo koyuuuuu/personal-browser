@@ -1,0 +1,14 @@
+{
+  "file": "PersonalBrowser.ipa",
+  "sha256": "76b4a17e0fd381b27680f5807a0acffb2be4c25167f1767f3486bd6b35eb2b99",
+  "bundle_id": "local.personalbrowser.app",
+  "version": "0.1.0",
+  "build": "6",
+  "minimum_ios": "17.0",
+  "target_ios": "18.4.1",
+  "architecture": "arm64",
+  "platform": "iOS device",
+  "embedded_profile": false,
+  "signature_resources": false,
+  "installation_verified": false
+}
