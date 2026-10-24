@@ -68,7 +68,7 @@ struct PresentationSettingsView: View {
             ForEach(values) { action in Label(action.label, systemImage: action.symbol) }
                 .onMove { source, destination in editAddress(left: left) { $0.move(fromOffsets: source, toOffset: destination) } }
                 .onDelete { offsets in editAddress(left: left) { $0.remove(atOffsets: offsets) } }
-            let missing = BrowserAction.allCases.filter { !values.contains($0) }
+            let missing = AddressBarAction.allCases.filter { !values.contains($0) }
             if !missing.isEmpty {
                 Menu("ボタンを追加", systemImage: "plus") {
                     ForEach(missing) { action in Button(action.label, systemImage: action.symbol) { editAddress(left: left) { $0.append(action) } } }
@@ -77,7 +77,7 @@ struct PresentationSettingsView: View {
             }
         } header: { Text((left ? "左側" : "右側") + "（\(values.count)個）") }
     }
-    private func editAddress(left: Bool, operation: (inout [BrowserAction]) -> Void) {
+    private func editAddress(left: Bool, operation: (inout [AddressBarAction]) -> Void) {
         var p = store.presentation; p.customAddressButtons = true
         if left { operation(&p.addressLeft) } else { operation(&p.addressRight) }
         store.updatePresentation(p)

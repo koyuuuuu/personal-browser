@@ -7,8 +7,8 @@ public struct PresentationPreferences: Codable, Equatable, Sendable {
     public var pageZoom = 1.0
     public var interfaceTextSize = InterfaceTextSize.system
     public var customAddressButtons = false
-    public var addressLeft: [BrowserAction] = []
-    public var addressRight: [BrowserAction] = []
+    public var addressLeft: [AddressBarAction] = []
+    public var addressRight: [AddressBarAction] = []
     public var hideHomeIndicator = true
     public var backgroundAudio = true
     public var backgroundZoom = 1.0
@@ -23,8 +23,8 @@ public struct PresentationPreferences: Codable, Equatable, Sendable {
         pageZoom = try c.decodeIfPresent(Double.self, forKey: .pageZoom) ?? 1
         interfaceTextSize = try c.decodeIfPresent(InterfaceTextSize.self, forKey: .interfaceTextSize) ?? .system
         customAddressButtons = try c.decodeIfPresent(Bool.self, forKey: .customAddressButtons) ?? false
-        addressLeft = try c.decodeIfPresent([BrowserAction].self, forKey: .addressLeft) ?? []
-        addressRight = try c.decodeIfPresent([BrowserAction].self, forKey: .addressRight) ?? []
+        addressLeft = try c.decodeIfPresent([AddressBarAction].self, forKey: .addressLeft) ?? []
+        addressRight = try c.decodeIfPresent([AddressBarAction].self, forKey: .addressRight) ?? []
         hideHomeIndicator = try c.decodeIfPresent(Bool.self, forKey: .hideHomeIndicator) ?? true
         backgroundAudio = try c.decodeIfPresent(Bool.self, forKey: .backgroundAudio) ?? true
         backgroundZoom = try c.decodeIfPresent(Double.self, forKey: .backgroundZoom) ?? 1
@@ -36,7 +36,7 @@ public struct PresentationPreferences: Codable, Equatable, Sendable {
         var result = self
         result.tabColumns = min(4, max(1, tabColumns))
         result.pageZoom = pageZoom.isFinite ? min(2, max(0.75, pageZoom)) : 1
-        var seen = Set<BrowserAction>(); result.addressLeft = addressLeft.filter { seen.insert($0).inserted }
+        var seen = Set<AddressBarAction>(); result.addressLeft = addressLeft.filter { seen.insert($0).inserted }
         seen = []; result.addressRight = addressRight.filter { seen.insert($0).inserted }
         result.backgroundZoom = backgroundZoom.isFinite ? min(3, max(1, backgroundZoom)) : 1
         result.backgroundHorizontalOffset = backgroundHorizontalOffset.isFinite ? min(1, max(-1, backgroundHorizontalOffset)) : 0

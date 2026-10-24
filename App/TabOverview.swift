@@ -57,7 +57,7 @@ struct TabsView: View {
                     Spacer()
                     Button("完了") { dismiss() }.frame(width: 60, height: 44)
                 }
-                .padding(.horizontal, 12).background(.regularMaterial).accessibilityIdentifier("overviewBottomToolbar")
+                .padding(.horizontal, 12).background(.regularMaterial)
             }
             .confirmationDialog("すべてのタブを閉じますか？", isPresented: $confirmClose, titleVisibility: .visible) {
                 Button("すべて閉じる", role: .destructive) { for tab in store.tabs { store.close(tab) } }
@@ -108,7 +108,6 @@ struct TabTile: View {
         .background(.background, in: RoundedRectangle(cornerRadius: 14))
         .clipShape(RoundedRectangle(cornerRadius: 14))
         .overlay(RoundedRectangle(cornerRadius: 14).stroke(selected ? Color.accentColor : .clear, lineWidth: 3))
-        .accessibilityIdentifier("tabTile-" + tab.id.uuidString)
         .offset(x: translation).opacity(closing ? 0 : max(0.5, 1 + translation / 500))
         .scaleEffect(closing ? 0.94 : 1)
         .simultaneousGesture(DragGesture(minimumDistance: 25).onChanged { value in

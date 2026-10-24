@@ -120,24 +120,24 @@ struct BrowserChrome: View {
     let share: () -> Void
     private var actions: [BrowserAction] { store.snapshot.settings.actions }
     private var middle: Int { (actions.count + 1) / 2 }
-    private var leftActions: [BrowserAction] {
-        store.presentation.customAddressButtons ? store.presentation.addressLeft : (compact ? Array(actions.prefix(middle)) : [])
+    private var leftActions: [AddressBarAction] {
+        store.presentation.customAddressButtons ? store.presentation.addressLeft : (compact ? actions.prefix(middle).map { AddressBarAction(legacy: $0) } : [])
     }
-    private var rightActions: [BrowserAction] {
-        store.presentation.customAddressButtons ? store.presentation.addressRight : (compact ? Array(actions.dropFirst(middle)) : [])
+    private var rightActions: [AddressBarAction] {
+        store.presentation.customAddressButtons ? store.presentation.addressRight : (compact ? actions.dropFirst(middle).map { AddressBarAction(legacy: $0) } : [])
     }
-    private func sideWidth(_ values: [BrowserAction]) -> CGFloat {
+    private func sideWidth(_ values: [AddressBarAction]) -> CGFloat {
         let total = leftActions.count + rightActions.count
         guard total > 0 else { return 0 }
         let budget = max(0, availableWidth - (compact ? 96 : 58) - (compact ? 196 : 130))
         return min(CGFloat(values.count) * 32, budget * CGFloat(values.count) / CGFloat(total))
     }
-    private func sideButtons(_ values: [BrowserAction], left: Bool) -> some View {
+    private func sideButtons(_ values: [AddressBarAction], left: Bool) -> some View {
         ScrollView(.horizontal, showsIndicators: false) {
             HStack(spacing: 0) {
                 ForEach(values) { action in
-                    Button { perform(action) } label: { Image(systemName: action == .reload && tab.isLoading ? "xmark" : action.symbol).font(.system(size: 17)).frame(width: 32, height: 36) }
-                        .accessibilityLabel(action.label).accessibilityIdentifier((left ? "addressLeft-" : "addressRight-") + action.rawValue).disabled(disabled(action))
+                    Button { performAddress(action) } label: { Image(systemName: action == .reload && tab.isLoading ? "xmark" : action.symbol).font(.system(size: 17)).frame(width: 32, height: 36) }
+                        .accessibilityLabel(action.label).accessibilityIdentifier((left ? "addressLeft-" : "addressRight-") + action.rawValue).disabled(disabledAddress(action))
                 }
             }
         }.frame(width: sideWidth(values), height: 36)
@@ -171,7 +171,6 @@ struct BrowserChrome: View {
             }
         }
         .background(.regularMaterial)
-        .accessibilityIdentifier(compact ? "landscapeChrome" : "portraitChrome")
     }
     private var addressEntry: some View {
         HStack(spacing: 6) {
@@ -235,6 +234,27 @@ struct BrowserChrome: View {
                 .frame(maxWidth: compact ? 32 : .infinity, minHeight: compact ? 36 : 40).contentShape(Rectangle())
         }
         .accessibilityLabel("メニュー").accessibilityIdentifier("menuButton")
+    }
+    private func disabledAddress(_ action: AddressBarAction) -> Bool {
+        if let legacy = action.legacy { return disabled(legacy) }
+        if action == .find { return !tab.hasContent }
+        if action == .favorite || action == .addBookmark { return disabled(.share) }
+        return false
+    }
+    private func performAddress(_ action: AddressBarAction) {
+        addressFocused.wrappedValue = false
+        if let legacy = action.legacy { perform(legacy); return }
+        switch action {
+        case .home: store.showHome()
+        case .history: showSheet(.history)
+        case .find: tab.webView.findInteraction?.presentFindNavigator(showingReplace: false)
+        case .downloads: showSheet(.downloads)
+        case .watchHTML: store.analyzeCopiedLink()
+        case .favorite: store.addFavorite()
+        case .addBookmark: store.addBookmark()
+        case .settings: showSheet(.settings)
+        default: break
+        }
     }
     private func disabled(_ action: BrowserAction) -> Bool {
         switch action {

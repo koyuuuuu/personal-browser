@@ -2,14 +2,18 @@ import XCTest
 
 final class BrowserUITests: XCTestCase {
     private var app: XCUIApplication!
+    private static var launchFailure = false
 
     override func setUpWithError() throws {
         continueAfterFailure = false
+        if Self.launchFailure { throw XCTSkip("The initial browser controls failed to appear; see the first failure before spending more runner time") }
         XCUIDevice.shared.orientation = .portrait
         app = XCUIApplication()
         app.launchArguments = ["--ui-testing"]
         app.launch()
-        XCTAssertTrue(app.textFields["addressField"].waitForExistence(timeout: 15))
+        let ready = app.textFields["addressField"].waitForExistence(timeout: 15)
+        if !ready { Self.launchFailure = true }
+        XCTAssertTrue(ready, "The initial browser address field must be accessible")
     }
 
     override func tearDownWithError() throws {
@@ -247,6 +251,22 @@ final class BrowserUITests: XCTestCase {
         XCTAssertTrue(playing.waitForExistence(timeout: 5))
         let seconds = Int(playing.label.split(separator: ":").last ?? "0") ?? 0
         XCTAssertGreaterThanOrEqual(seconds, 3)
+    }
+
+    func testAddressSideActionsAndTabSizeCanBeConfigured() {
+        tapMenuControl("menuButton"); app.buttons["設定"].tap()
+        XCTAssertTrue(app.navigationBars["設定"].waitForExistence(timeout: 5)); tapMenuControl("presentationSettingsLink")
+        XCTAssertTrue(app.navigationBars["表示・操作"].waitForExistence(timeout: 5))
+        let stepper = app.steppers["tabColumnsStepper"]
+        XCTAssertTrue(stepper.waitForExistence(timeout: 5))
+        stepper.coordinate(withNormalizedOffset: CGVector(dx: 0.96, dy: 0.5)).tap()
+        XCTAssertTrue(stepper.label.contains("3列") || app.staticTexts["タブ一覧：3列"].waitForExistence(timeout: 5))
+        let add = app.buttons["addAddressLeftButton"]
+        for _ in 0..<4 { if add.exists && add.isHittable { break }; app.swipeUp() }
+        tapMenuControl("addAddressLeftButton"); app.buttons["ページ内を検索"].tap()
+        app.navigationBars["表示・操作"].buttons["設定"].tap()
+        app.navigationBars["設定"].buttons["閉じる"].tap()
+        XCTAssertTrue(app.buttons["addressLeft-find"].waitForExistence(timeout: 5))
     }
 
 }

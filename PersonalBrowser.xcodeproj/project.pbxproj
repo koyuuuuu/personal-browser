@@ -213,6 +213,16 @@
 			"path" = "App";
 			"sourceTree" = "<group>";
 		};
+		"8826D8EB9DC40A949DD78ECB" = {
+			"isa" = "PBXFileReference";
+			"lastKnownFileType" = "sourcecode.swift";
+			"path" = "AddressBarAction.swift";
+			"sourceTree" = "<group>";
+		};
+		"797E76956CC87E14595A6CA8" = {
+			"isa" = "PBXBuildFile";
+			"fileRef" = "8826D8EB9DC40A949DD78ECB";
+		};
 		"27B6E2C91F424C774DA534BC" = {
 			"isa" = "PBXFileReference";
 			"lastKnownFileType" = "sourcecode.swift";
@@ -326,6 +336,7 @@
 		"E531CAEC0C1F33507375558A" = {
 			"isa" = "PBXGroup";
 			"children" = (
+				"8826D8EB9DC40A949DD78ECB",
 				"27B6E2C91F424C774DA534BC",
 				"62FF8EFE771CF67A1302047B",
 				"4B56001B1CF53949E67845AF",
@@ -564,6 +575,7 @@
 				"2FDCB63F20D91EA6C97BE6BA",
 				"7D00D18171494CA00E5DD24C",
 				"116295B764339DFF363B4838",
+				"797E76956CC87E14595A6CA8",
 				"24503D32E1FAF4AE42A87DBE",
 				"4317089D044903CE42ADD4A5",
 				"3BBE197E2CABE4FA30F3DC5A",
