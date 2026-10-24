@@ -12,6 +12,16 @@
       "iconURL": "https://raw.githubusercontent.com/koyuuuuu/personal-browser-distribution/main/icon.png",
       "versions": [
         {
+          "version": "0.4.1",
+          "buildVersion": "24",
+          "date": "2026-10-24T22:25:56.219443+00:00",
+          "localizedDescription": "タブ削除後の待機時間とページの横スライドを廃止。タブ画像の幅制限・取得中の表示保持を修正し、黒い画像の上書きと横画面の表示崩れを防止。縦画面バーの寸法・安全領域と再生制御をbuild 14へ戻しました。バー復帰矢印を削除し、下方向スワイプで再表示。",
+          "downloadURL": "https://github.com/koyuuuuu/personal-browser-distribution/releases/download/v0.4.1-build.24/PersonalBrowser.ipa",
+          "size": 844562,
+          "minOSVersion": "17.0",
+          "sha256": "b7d265a110775baf04a42772459f35affd0fd69936113aa499b35c373c815b8b"
+        },
+        {
           "version": "0.4.0",
           "buildVersion": "20",
           "date": "2026-10-24T21:00:41.015676+00:00",
