@@ -2,6 +2,33 @@
   "releases": [
     {
       "file": "PersonalBrowser.ipa",
+      "sha256": "72439533eba9884be23f82117e8bf5930b7df7a4a0c59eee1b6e8c3e8b335717",
+      "bundle_id": "local.personalbrowser.app",
+      "version": "0.2.0",
+      "build": "10",
+      "minimum_ios": "17.0",
+      "target_ios": "18.4.1",
+      "architecture": "arm64",
+      "platform": "iOS device",
+      "embedded_profile": false,
+      "signature_resources": false,
+      "installation_verified": false,
+      "source_commit": "4eff6acc7609a3f337401df62fea8c7afa14400c",
+      "data_schema": 1,
+      "size": 376835,
+      "date": "2026-10-24T12:31:15.740208+00:00",
+      "description": "更新通知のオン・オフ設定とSideStore配信に対応。履歴・ブックマークの保存形式とアプリIDは維持しています。",
+      "appPermissions": {
+        "entitlements": [],
+        "privacy": {
+          "NSCameraUsageDescription": "閲覧中のWebサイトでカメラを使用するために必要です。",
+          "NSMicrophoneUsageDescription": "閲覧中のWebサイトでマイクを使用するために必要です。"
+        }
+      },
+      "tag": "v0.2.0-build.10"
+    },
+    {
+      "file": "PersonalBrowser.ipa",
       "sha256": "a052ef77a81a1e26d160cfa1cc9093894b63ac3c4283440c0000032eb8e76d7c",
       "bundle_id": "local.personalbrowser.app",
       "version": "0.2.0",
