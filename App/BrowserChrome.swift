@@ -51,14 +51,14 @@ struct TabBrowserView: View {
     private func viewport(width: CGFloat) -> some View {
         ZStack {
             WebSurface(store: store).accessibilityIdentifier("webContent").accessibilityHidden(!tab.hasContent)
-            if !tab.hasContent { HomePageView(store: store, isPrivate: tab.isPrivate).id(tab.id) }
+            if !tab.hasContent {
+                HomePageView(store: store, isPrivate: tab.isPrivate).id(tab.id)
+                    .simultaneousGesture(DragGesture(minimumDistance: 25).onEnded { value in
+                        if value.translation.height > 25 && abs(value.translation.height) > abs(value.translation.width) { store.revealChrome() }
+                    })
+            }
         }
         .frame(width: width).frame(maxHeight: .infinity).clipped()
-        .simultaneousGesture(DragGesture(minimumDistance: 25).onEnded { value in
-            if !store.chromeVisible && value.translation.height > 25 && abs(value.translation.height) > abs(value.translation.width) {
-                store.revealChrome()
-            }
-        })
         .accessibilityAction(named: Text("バーを表示")) { store.revealChrome() }
     }
     private func chrome(compact: Bool, width: CGFloat) -> some View {

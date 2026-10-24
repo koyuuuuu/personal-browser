@@ -51,6 +51,7 @@ final class BrowserTab: NSObject, ObservableObject, Identifiable, WKNavigationDe
     private var certificateWarningShown = false
     private var pageZoom = 1.0
     var onVerticalScroll: ((CGFloat) -> Void)?
+    var onRevealChrome: (() -> Void)?
     var onPreview: ((Data, URL, String) -> Void)?
     @Published var url: URL?
     @Published var title = "新しいタブ"
@@ -215,6 +216,10 @@ final class BrowserTab: NSObject, ObservableObject, Identifiable, WKNavigationDe
         guard scrollView.isDragging || scrollView.isDecelerating, let previousScrollY else { return }
         onVerticalScroll?(current - previousScrollY)
     }
+    func scrollViewWillEndDragging(_ scrollView: UIScrollView, withVelocity velocity: CGPoint, targetContentOffset: UnsafeMutablePointer<CGPoint>) {
+        let translation = scrollView.panGestureRecognizer.translation(in: scrollView)
+        if translation.y > 25 && abs(translation.y) > abs(translation.x) { onRevealChrome?() }
+    }
     func scrollViewDidEndDecelerating(_ scrollView: UIScrollView) { capturePreview() }
     func scrollViewDidEndDragging(_ scrollView: UIScrollView, willDecelerate decelerate: Bool) { if !decelerate { capturePreview() } }
 
@@ -292,7 +297,7 @@ final class BrowserTab: NSObject, ObservableObject, Identifiable, WKNavigationDe
         pendingConnection?.resolve(allow: false); pendingConnection = nil
         downloads.removeAll(); releaseWebView()
         onConnectionRequest = nil; trustsCertificate = nil; rememberCertificate = nil; rememberHTTP = nil
-        onPreview = nil; onVerticalScroll = nil; onVisit = nil; onStateChange = nil; onPopup = nil; onClose = nil; onExternalURL = nil
+        onPreview = nil; onVerticalScroll = nil; onRevealChrome = nil; onVisit = nil; onStateChange = nil; onPopup = nil; onClose = nil; onExternalURL = nil
         onAnalyzeLink = nil; onMessageLink = nil; onSaveLink = nil; onOpenLink = nil; onShareLink = nil; onOpenInSafari = nil; onOpenInBrowser = nil; onDownload = nil
     }
 

@@ -128,6 +128,10 @@ final class BrowserStore: ObservableObject {
             guard let self, let tab, self.selectedID == tab.id else { return }
             self.scrollChrome(delta: Double(delta))
         }
+        tab.onRevealChrome = { [weak self, weak tab] in
+            guard let self, let tab, self.selectedID == tab.id else { return }
+            self.revealChrome()
+        }
         tab.onPreview = { [weak self, weak tab] image, url, title in
             guard let self, let tab, !tab.isPrivate, !self.previewStorageBlocked,
                   self.tabs.contains(where: { $0.id == tab.id }) else { return }
@@ -308,7 +312,7 @@ final class BrowserStore: ObservableObject {
         landscape = value; chromeState.setLandscape(value); publishChrome()
     }
     func hideChrome() { chromeState.hide(); publishChrome() }
-    func revealChrome() { chromeState.reveal(); publishChrome() }
+    func revealChrome() { chromeState.reveal(); publishChrome(); ignoreChromeScrollUntil = Date().addingTimeInterval(0.6) }
     func scrollChrome(delta: Double) {
         guard Date() >= ignoreChromeScrollUntil else { return }
         chromeState.scroll(delta: delta); publishChrome()
