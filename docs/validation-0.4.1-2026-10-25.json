@@ -1,0 +1,99 @@
+{
+  "recorded_date_jst": "2026-10-25",
+  "source_commit": "47b42a3af83ae52696c2c91f1c47e54a7d00bf30",
+  "ci_run": "https://github.com/koyuuuuu/personal-browser/actions/runs/40137846620",
+  "release": "v0.4.1-build.24",
+  "artifact": {
+    "file": "PersonalBrowser-0.4.1-build.24.ipa",
+    "sha256": "b7d265a110775baf04a42772459f35affd0fd69936113aa499b35c373c815b8b",
+    "bundle_id": "local.personalbrowser.app",
+    "version": "0.4.1",
+    "build": "24",
+    "minimum_ios": "17.0",
+    "target_ios": "18.4.1",
+    "architecture": "arm64",
+    "platform": "iOS device",
+    "embedded_profile": false,
+    "signature_resources": false,
+    "installation_verified": false,
+    "size": 844562
+  },
+  "data_schema": 1,
+  "checks": {
+    "python": 30,
+    "macos_core": 38,
+    "ios_ui": 21,
+    "latest_bookmark_history_old_new_old_new": "passed",
+    "landscape_tab_swipe_then_menu_then_overview_and_rotation_bounds": "passed",
+    "arrowless_chrome_restore_portrait_and_landscape": "passed",
+    "normal_preview_process_restart_without_background_webviews": "passed",
+    "tab_swipe_close_and_selection": "passed",
+    "build14_media_handler_and_script_exact_match": "passed",
+    "controlled_audio_without_pip": "passed; does not validate real-site PiP"
+  },
+  "distribution": {
+    "source_url": "https://raw.githubusercontent.com/koyuuuuu/personal-browser-distribution/main/source.json",
+    "versions": [
+      {
+        "version": "0.4.1",
+        "build": "24",
+        "sha256": "b7d265a110775baf04a42772459f35affd0fd69936113aa499b35c373c815b8b",
+        "size": 844562
+      },
+      {
+        "version": "0.4.0",
+        "build": "20",
+        "sha256": "0fec29654dd75e5311b9bc0da215e496c0e3a5561fdd965be2bc42846951f31f",
+        "size": 858640
+      },
+      {
+        "version": "0.3.0",
+        "build": "14",
+        "sha256": "5e17e41c229bb3f6097cc26522e3d58969198db8e2301467664086e87bcf2125",
+        "size": 696060
+      },
+      {
+        "version": "0.3.0",
+        "build": "12",
+        "sha256": "833cd995b9da3420ac5846c663cc2eb27f934061f136d1a3c6f842bdfe7d4cf9",
+        "size": 684525
+      },
+      {
+        "version": "0.2.0",
+        "build": "10",
+        "sha256": "72439533eba9884be23f82117e8bf5930b7df7a4a0c59eee1b6e8c3e8b335717",
+        "size": 376835
+      },
+      {
+        "version": "0.2.0",
+        "build": "9",
+        "sha256": "a052ef77a81a1e26d160cfa1cc9093894b63ac3c4283440c0000032eb8e76d7c",
+        "size": 376835
+      },
+      {
+        "version": "0.2.0",
+        "build": "8",
+        "sha256": "bc79930e5f2286260d7a1411f4d05487d8f928ec28a1a80937e04a90d44b85fc",
+        "size": 376835
+      },
+      {
+        "version": "0.1.0",
+        "build": "6",
+        "sha256": "76b4a17e0fd381b27680f5807a0acffb2be4c25167f1767f3486bd6b35eb2b99",
+        "size": 330871
+      }
+    ],
+    "icon_http": 200,
+    "no_request_authentication_supplied": true
+  },
+  "source_repository_private": true,
+  "public_git_files": [
+    "README.md",
+    "icon.png",
+    "source.json"
+  ],
+  "device_acceptance": {
+    "pip": "not verified on device; reverted to build 14 as requested; cause candidates documented",
+    "visual_smoothness_and_nonblack_preview_content": "source fixes implemented; actual phone acceptance pending; cached black images need page revisit"
+  }
+}
