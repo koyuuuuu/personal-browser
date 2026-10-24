@@ -10,9 +10,8 @@ struct HomePageView: View {
             let columns = store.features.favoriteColumns
             let iconSize = min(50, max(28, (geometry.size.width - 40 - CGFloat(columns - 1) * 12) / CGFloat(columns) - 12))
             ZStack {
-                if store.features.showHomeBackground, let image = store.homeBackground {
-                    Image(uiImage: image).resizable().scaledToFill()
-                        .frame(width: geometry.size.width, height: geometry.size.height).clipped()
+                if store.features.showHomeBackground, store.homeBackground != nil {
+                    HomeBackgroundImage(store: store)
                     Rectangle().fill(.black.opacity(0.2))
                 } else { Color(uiColor: .systemBackground) }
                 ScrollView {

@@ -8,6 +8,12 @@ struct ClosedBrowserTab {
     var isPrivate: Bool
 }
 
+struct TabVisualTransition: Identifiable {
+    let id = UUID()
+    let direction: Int
+    let outgoingImage: Data?
+}
+
 @MainActor
 final class BrowserStore: ObservableObject {
     @Published private(set) var tabs: [BrowserTab] = []
@@ -19,7 +25,18 @@ final class BrowserStore: ObservableObject {
     @Published var messageRequest: ShareRequest?
     @Published var safariRequest: ShareRequest?
     @Published var saveLinkRequest: ShareRequest?
-    @Published var tabAddedID: UUID?
+    @Published var connectionRequest: ConnectionRequest?
+    @Published private(set) var connectionPreferences = ConnectionPreferences()
+    private var connectionStorageBlocked = false
+    private var ignoreChromeScrollUntil = Date.distantPast
+    @Published var tabTransition: TabVisualTransition?
+    @Published private(set) var presentation = PresentationPreferences()
+    @Published private(set) var chromeVisible = true
+    @Published private(set) var landscape = false
+    private var chromeState = ChromeVisibility()
+    private let previews: TabPreviewStore
+    private var previewRecords: [UUID: TabPreviewRecord] = [:]
+    private var previewStorageBlocked = false
     @Published private(set) var closedTabs: [ClosedBrowserTab] = []
     @Published var homeBackground: UIImage?
     @Published private(set) var extraStorageBlocked = false
@@ -49,12 +66,15 @@ final class BrowserStore: ObservableObject {
         #endif
         if testing {
             directory = manager.temporaryDirectory.appendingPathComponent("BrowserUITests", isDirectory: true)
-            try? manager.removeItem(at: directory)
+            if !ProcessInfo.processInfo.arguments.contains("--ui-keep-data") { try? manager.removeItem(at: directory) }
         } else {
             directory = manager.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
                 .appendingPathComponent("PersonalBrowser", isDirectory: true)
         }
         storage = SnapshotStore(fileURL: directory.appendingPathComponent("browser.json"))
+        previews = TabPreviewStore(directory: directory.appendingPathComponent("tab-previews", isDirectory: true))
+        do { previewRecords = Dictionary(uniqueKeysWithValues: try previews.records().map { ($0.id, $0) }) }
+        catch { previewStorageBlocked = true }
         do { snapshot = try storage.load() }
         catch {
             persistenceBlocked = true
@@ -71,7 +91,13 @@ final class BrowserStore: ObservableObject {
             selectedID = snapshot.session.selectedID ?? tabs.first?.id
         }
         restoring = false
-        if testing { selectedTab?.loadTestFixture() }
+        if testing && !ProcessInfo.processInfo.arguments.contains("--ui-no-fixture") { selectedTab?.loadTestFixture() }
+        #if DEBUG
+        if testing, ProcessInfo.processInfo.arguments.contains("--ui-many-tabs") {
+            for _ in 0..<18 { _ = newTab() }
+            flush()
+        }
+        #endif
         memoryObserver = NotificationCenter.default.addObserver(forName: UIApplication.didReceiveMemoryWarningNotification, object: nil, queue: .main) { [weak self] _ in
             Task { @MainActor in self?.trimLiveTabs(limit: 1) }
         }
@@ -91,12 +117,40 @@ final class BrowserStore: ObservableObject {
         }
         let tab = BrowserTab(id: id, isPrivate: isPrivate, configuration: configuration)
         tab.applyPreferences(features, swipe: snapshot.settings.swipeNavigation)
+        tab.applyPresentation(presentation)
         tab.onVisit = { [weak self, weak tab] url, title in
             guard let self, let tab else { return }
             self.snapshot.recordVisit(url: url, title: title, isPrivate: tab.isPrivate)
             self.scheduleSave()
         }
         tab.onStateChange = { [weak self] in self?.scheduleSave() }
+        tab.onVerticalScroll = { [weak self, weak tab] delta in
+            guard let self, let tab, self.selectedID == tab.id else { return }
+            self.scrollChrome(delta: Double(delta))
+        }
+        tab.onPreview = { [weak self, weak tab] image, url, title in
+            guard let self, let tab, !tab.isPrivate, !self.previewStorageBlocked,
+                  self.tabs.contains(where: { $0.id == tab.id }) else { return }
+            do {
+                if let record = try self.previews.save(id: tab.id, url: url, title: title, image: image, isPrivate: false) {
+                    self.previewRecords[tab.id] = record
+                    for file in [self.previews.directory, self.previews.directory.appendingPathComponent(record.fileName), self.previews.directory.appendingPathComponent("index.json")] {
+                        try? FileManager.default.setAttributes([.protectionKey: FileProtectionType.completeUntilFirstUserAuthentication], ofItemAtPath: file.path)
+                    }
+                }
+            } catch { self.previewStorageBlocked = true; self.notice = "タブ画像を保存できませんでした。既存の画像は保持しています。" }
+        }
+        tab.onConnectionRequest = { [weak self] request in self?.connectionRequest = request }
+        tab.trustsCertificate = { [weak self] origin, fingerprint in self?.connectionPreferences.trusts(origin: origin, fingerprint: fingerprint) ?? false }
+        tab.rememberCertificate = { [weak self] origin, fingerprint in
+            guard let self else { return }
+            do { try self.connectionPreferences.rememberCertificate(origin: origin, fingerprint: fingerprint); self.saveConnectionPreferences() }
+            catch { self.notice = "証明書の例外を保存できませんでした。" }
+        }
+        tab.rememberHTTP = { [weak self] url in
+            guard let self, let origin = ConnectionSecurity.origin(url), ConnectionSecurity.isLocal(url) else { return }
+            if !self.connectionPreferences.httpOrigins.contains(origin) { self.connectionPreferences.httpOrigins.append(origin); self.saveConnectionPreferences() }
+        }
         tab.onExternalURL = { [weak self] url in self?.externalURL = url }
         tab.onOpenLink = { [weak self] url, isPrivate in _ = self?.newTab(isPrivate: isPrivate, url: url) }
         tab.onShareLink = { [weak self] url in self?.shareRequest = ShareRequest(url: url) }
@@ -115,14 +169,15 @@ final class BrowserStore: ObservableObject {
             popup?.hasContent = true
             return popup?.webView
         }
+        if let record = previewRecords[id], record.url == url { tab.title = record.title }
         tabs.append(tab)
         if select {
+            if !restoring { beginTabTransition(direction: 1) }
             selectedTab?.capturePreview()
             selectedID = tab.id
             activationOrder.removeAll { $0 == tab.id }; activationOrder.append(tab.id)
-            if !restoring { tabAddedID = tab.id }
         }
-        if let url { tab.load(url) }
+        if let url { tab.load(ConnectionSecurity.preferredURL(url, preferences: connectionPreferences)) }
         if !restoring { trimLiveTabs() }
         scheduleSave()
         return tab
@@ -131,6 +186,11 @@ final class BrowserStore: ObservableObject {
     func select(_ tab: BrowserTab) {
         // A drag can finish a tile's button action after that tile was removed.
         guard tabs.contains(where: { $0.id == tab.id }) else { return }
+        if selectedID != tab.id {
+            let old = tabs.firstIndex(where: { $0.id == selectedID }) ?? 0
+            let next = tabs.firstIndex(where: { $0.id == tab.id }) ?? old
+            beginTabTransition(direction: next >= old ? 1 : -1)
+        }
         selectedTab?.capturePreview()
         selectedID = tab.id
         activationOrder.removeAll { $0 == tab.id }; activationOrder.append(tab.id)
@@ -143,6 +203,10 @@ final class BrowserStore: ObservableObject {
         closedTabs.insert(ClosedBrowserTab(title: tab.title, url: tab.url, isPrivate: tab.isPrivate), at: 0)
         closedTabs = Array(closedTabs.prefix(20))
         tab.dispose()
+        if !tab.isPrivate, !previewStorageBlocked {
+            do { try previews.remove(id: tab.id); previewRecords.removeValue(forKey: tab.id) }
+            catch { previewStorageBlocked = true }
+        }
         tabs.remove(at: index)
         if selectedID == tab.id {
             selectedID = tabs.isEmpty ? nil : tabs[min(index, tabs.count - 1)].id
@@ -160,13 +224,13 @@ final class BrowserStore: ObservableObject {
         guard !isClearingData else { return }
         do {
             let url = try AddressResolver.resolve(text, engine: snapshot.settings.searchEngine)
-            selectedTab?.load(url)
+            selectedTab?.load(ConnectionSecurity.preferredURL(url, preferences: connectionPreferences))
         } catch { notice = error.localizedDescription }
     }
 
     func open(_ url: URL) {
         guard WebURLPolicy.allows(url), !isClearingData else { return }
-        selectedTab?.load(url)
+        selectedTab?.load(ConnectionSecurity.preferredURL(url, preferences: connectionPreferences))
     }
 
     func addBookmark() {
@@ -229,14 +293,52 @@ final class BrowserStore: ObservableObject {
 
     func switchTab(towardNext: Bool) {
         guard let current = tabs.firstIndex(where: { $0.id == selectedID }) else { return }
-        let next = current + (towardNext ? 1 : -1)
-        if tabs.indices.contains(next) { select(tabs[next]) }
+        switch TabNavigation.destination(current: current, count: tabs.count, towardNext: towardNext, maximum: Self.maximumTabs) {
+        case .existing(let index): select(tabs[index])
+        case .create: _ = newTab(isPrivate: selectedTab?.isPrivate ?? false)
+        case .none: break
+        }
+    }
+
+    private func beginTabTransition(direction: Int) {
+        tabTransition = TabVisualTransition(direction: direction, outgoingImage: selectedTab?.previewData)
+    }
+    func setLandscape(_ value: Bool) {
+        guard value != landscape else { return }
+        landscape = value; chromeState.setLandscape(value); publishChrome()
+    }
+    func hideChrome() { chromeState.hide(); publishChrome() }
+    func revealChrome() { chromeState.reveal(); publishChrome() }
+    func scrollChrome(delta: Double) {
+        guard Date() >= ignoreChromeScrollUntil else { return }
+        chromeState.scroll(delta: delta); publishChrome()
+    }
+    private func publishChrome() {
+        if chromeVisible != chromeState.visible { ignoreChromeScrollUntil = Date().addingTimeInterval(0.25); chromeVisible = chromeState.visible }
+    }
+
+    func loadPreview(_ tab: BrowserTab) {
+        guard tab.previewData == nil, !tab.isPrivate, let record = previewRecords[tab.id], record.url == tab.url else { return }
+        tab.previewData = try? previews.image(for: record)
+    }
+    func applicationBackgrounded() {
+        selectedTab?.capturePreview()
+        for tab in tabs { tab.prepareForBackground(continueAudio: presentation.backgroundAudio) }
+        flush()
+    }
+    func applicationForegrounded() {
+        for tab in tabs { tab.finishBackgroundPlayback() }
+    }
+    func updatePresentation(_ value: PresentationPreferences) {
+        presentation = value.normalized()
+        for tab in tabs { tab.applyPresentation(presentation) }
+        saveAdditionalData()
     }
 
     private func trimLiveTabs(limit: Int? = nil) {
         let allowed = limit ?? features.maximumLiveTabs
         var live = tabs.filter(\.isLive)
-        let candidates = live.filter { $0.id != selectedID && !$0.hasActiveMedia && !$0.isPictureInPicture }.sorted {
+        let candidates = live.filter { $0.id != selectedID && !$0.isProtectedForMedia }.sorted {
             (activationOrder.firstIndex(of: $0.id) ?? -1) < (activationOrder.firstIndex(of: $1.id) ?? -1)
         }
         for tab in candidates where live.count >= allowed {
@@ -385,6 +487,13 @@ final class BrowserStore: ObservableObject {
             if FileManager.default.fileExists(atPath: file.path) { extras = try JSONDecoder().decode(LibraryExtras.self, from: Data(contentsOf: file)).validated() }
             let prefs = directory.appendingPathComponent("features.json")
             if FileManager.default.fileExists(atPath: prefs.path) { features = try JSONDecoder().decode(FeaturePreferences.self, from: Data(contentsOf: prefs)) }
+            let securityFile = directory.appendingPathComponent("security-exceptions.json")
+            if FileManager.default.fileExists(atPath: securityFile.path) {
+                do { connectionPreferences = try JSONDecoder().decode(ConnectionPreferences.self, from: Data(contentsOf: securityFile)) }
+                catch { connectionStorageBlocked = true }
+            }
+            let presentationFile = directory.appendingPathComponent("presentation.json")
+            if FileManager.default.fileExists(atPath: presentationFile.path) { presentation = try JSONDecoder().decode(PresentationPreferences.self, from: Data(contentsOf: presentationFile)) }
             homeBackground = UIImage(contentsOfFile: directory.appendingPathComponent("home-background.jpg").path)
         } catch { extraStorageBlocked = true; notice = "追加データを読み込めませんでした。元のファイルを保持し、上書きを停止しています。" }
     }
@@ -395,7 +504,21 @@ final class BrowserStore: ObservableObject {
             let encoder = JSONEncoder(); encoder.outputFormatting = [.sortedKeys]
             try encoder.encode(extras).write(to: directory.appendingPathComponent("library-extras.json"), options: [.atomic, .completeFileProtectionUntilFirstUserAuthentication])
             try encoder.encode(features).write(to: directory.appendingPathComponent("features.json"), options: [.atomic, .completeFileProtectionUntilFirstUserAuthentication])
+            try encoder.encode(presentation).write(to: directory.appendingPathComponent("presentation.json"), options: [.atomic, .completeFileProtectionUntilFirstUserAuthentication])
         } catch { extraStorageBlocked = true; notice = "追加データを保存できませんでした。空き容量を確認してください。" }
+    }
+
+    func removeConnectionException(_ origin: String) {
+        connectionPreferences.certificates.removeValue(forKey: origin)
+        connectionPreferences.httpOrigins.removeAll { $0 == origin }
+        saveConnectionPreferences()
+    }
+    private func saveConnectionPreferences() {
+        guard !connectionStorageBlocked else { notice = "接続例外の保存を停止しています。既存ファイルは保持しています。"; return }
+        do {
+            try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+            try JSONEncoder().encode(connectionPreferences).write(to: directory.appendingPathComponent("security-exceptions.json"), options: [.atomic, .completeFileProtectionUntilFirstUserAuthentication])
+        } catch { notice = "接続例外を保存できませんでした。今回は接続しても、次回は再確認します。" }
     }
 
     private func captureSession() {

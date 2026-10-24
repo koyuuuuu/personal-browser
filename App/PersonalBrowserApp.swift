@@ -12,8 +12,8 @@ struct PersonalBrowserApp: App {
                 .environmentObject(updates)
                 .task { await updates.check(automatically: true) }
                 .onChange(of: scenePhase) { _, phase in
-                    if phase != .active { store.flush() }
-                    else { Task { await updates.check(automatically: true) } }
+                    if phase != .active { store.applicationBackgrounded() }
+                    else { store.applicationForegrounded(); Task { await updates.check(automatically: true) } }
                 }
         }
     }

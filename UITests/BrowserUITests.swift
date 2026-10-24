@@ -5,6 +5,7 @@ final class BrowserUITests: XCTestCase {
 
     override func setUpWithError() throws {
         continueAfterFailure = false
+        XCUIDevice.shared.orientation = .portrait
         app = XCUIApplication()
         app.launchArguments = ["--ui-testing"]
         app.launch()
@@ -141,6 +142,111 @@ final class BrowserUITests: XCTestCase {
         XCTAssertTrue(app.navigationBars["タブ 1"].waitForExistence(timeout: 5))
         tapMenuControl("閉じる")
         XCTAssertTrue(app.webViews.firstMatch.staticTexts["オフラインのテストページ"].waitForExistence(timeout: 5), "The remaining tab must still be selected after a swipe close")
+    }
+
+    private func navigate(_ address: String) {
+        if app.buttons["showChromeButton"].exists { tapMenuControl("showChromeButton") }
+        let field = app.textFields["addressField"]; XCTAssertTrue(field.waitForExistence(timeout: 5)); field.tap()
+        if app.buttons["入力を消去"].exists { app.buttons["入力を消去"].tap() }
+        field.typeText(address + "\n")
+    }
+    private func relaunchPreservingData(extra: [String] = []) {
+        app.terminate(); app.launchArguments = ["--ui-testing", "--ui-keep-data", "--ui-no-fixture"] + extra; app.launch()
+    }
+    func testLandscapeChromeIsHiddenCompactAndRevealsOnReverseScroll() {
+        XCUIDevice.shared.orientation = .landscapeRight
+        XCTAssertTrue(app.buttons["showChromeButton"].waitForExistence(timeout: 5))
+        XCTAssertFalse(app.textFields["addressField"].exists)
+        tapMenuControl("showChromeButton")
+        XCTAssertTrue(app.textFields["addressField"].waitForExistence(timeout: 5))
+        XCTAssertLessThanOrEqual(app.buttons["hideChromeButton"].frame.height, 44)
+        app.webViews.firstMatch.swipeUp()
+        XCTAssertTrue(app.buttons["showChromeButton"].waitForExistence(timeout: 5))
+        app.webViews.firstMatch.swipeDown()
+        XCTAssertTrue(app.textFields["addressField"].waitForExistence(timeout: 5))
+        XCUIDevice.shared.orientation = .portrait
+    }
+    func testBarsCanBeHiddenAndRestoredInPortrait() {
+        tapMenuControl("hideChromeButton")
+        XCTAssertTrue(app.buttons["showChromeButton"].waitForExistence(timeout: 5))
+        XCTAssertFalse(app.textFields["addressField"].exists)
+        tapMenuControl("showChromeButton")
+        XCTAssertTrue(app.textFields["addressField"].waitForExistence(timeout: 5))
+    }
+    func testNextSwipeAtEndCreatesTabAndOverviewPlusIsAtBottom() {
+        app.textFields["addressField"].swipeLeft()
+        XCTAssertTrue(app.staticTexts["お気に入り"].waitForExistence(timeout: 5))
+        tapMenuControl("tabsButton")
+        XCTAssertTrue(app.navigationBars["タブ 2"].waitForExistence(timeout: 5))
+        let add = app.buttons["overviewNewTabButton"]
+        XCTAssertTrue(add.waitForExistence(timeout: 5)); XCTAssertGreaterThan(add.frame.midY, app.windows.firstMatch.frame.midY)
+        add.tap(); XCTAssertTrue(app.buttons["tabsButton"].waitForExistence(timeout: 5)); tapMenuControl("tabsButton")
+        XCTAssertTrue(app.navigationBars["タブ 3"].waitForExistence(timeout: 5))
+    }
+    func testOverviewOpensAtLastActiveTab() {
+        app.terminate(); app.launchArguments = ["--ui-testing", "--ui-many-tabs"]; app.launch()
+        XCTAssertTrue(app.buttons["tabsButton"].waitForExistence(timeout: 10)); tapMenuControl("tabsButton")
+        XCTAssertTrue(app.navigationBars["タブ 19"].waitForExistence(timeout: 5))
+        let active = app.buttons["新しいタブ、選択中"]
+        XCTAssertTrue(active.waitForExistence(timeout: 5)); XCTAssertTrue(active.isHittable)
+        XCTAssertLessThan(active.frame.maxY, app.buttons["overviewNewTabButton"].frame.minY)
+    }
+    func testNormalPreviewSurvivesProcessRestartWithoutLoadingThePage() {
+        XCTAssertTrue(app.webViews.firstMatch.staticTexts["オフラインのテストページ"].waitForExistence(timeout: 10))
+        tapMenuControl("menuButton"); app.buttons["新しいタブ"].tap(); tapMenuControl("tabsButton")
+        let preview = app.buttons.matching(NSPredicate(format: "value == 'プレビューあり'")).firstMatch
+        XCTAssertTrue(preview.waitForExistence(timeout: 8))
+        relaunchPreservingData()
+        XCTAssertTrue(app.buttons["tabsButton"].waitForExistence(timeout: 10)); tapMenuControl("tabsButton")
+        XCTAssertTrue(preview.waitForExistence(timeout: 8))
+        XCTAssertEqual(app.webViews.count, 0, "Cached previews must not instantiate background WebViews")
+    }
+    func testRememberedCertificateIsReusedAfterRestart() {
+        navigate("https://127.0.0.1:18766/tls-remember")
+        XCTAssertTrue(app.navigationBars["接続の確認"].waitForExistence(timeout: 15))
+        let toggle = app.switches["rememberConnectionToggle"]
+        XCTAssertEqual(toggle.value as? String, "0"); toggle.coordinate(withNormalizedOffset: CGVector(dx: 0.9, dy: 0.5)).tap()
+        tapMenuControl("allowConnectionButton")
+        XCTAssertTrue(app.webViews.firstMatch.staticTexts["Local connection /tls-remember"].waitForExistence(timeout: 10))
+        relaunchPreservingData()
+        XCTAssertTrue(app.webViews.firstMatch.staticTexts["Local connection /tls-remember"].waitForExistence(timeout: 15))
+        XCTAssertFalse(app.navigationBars["接続の確認"].exists)
+    }
+    func testUncheckedCertificateIsAskedAgainAfterRestart() {
+        navigate("https://127.0.0.1:18766/tls-once")
+        XCTAssertTrue(app.navigationBars["接続の確認"].waitForExistence(timeout: 15))
+        XCTAssertEqual(app.switches["rememberConnectionToggle"].value as? String, "0")
+        tapMenuControl("allowConnectionButton")
+        XCTAssertTrue(app.webViews.firstMatch.staticTexts["Local connection /tls-once"].waitForExistence(timeout: 10))
+        relaunchPreservingData()
+        XCTAssertTrue(app.navigationBars["接続の確認"].waitForExistence(timeout: 15))
+        app.buttons["キャンセル"].tap()
+    }
+    func testPlainLocalHTTPServerIsOfferedAfterTLSFailure() {
+        navigate("https://127.0.0.1:18765/plain")
+        XCTAssertTrue(app.navigationBars["接続の確認"].waitForExistence(timeout: 15))
+        let toggle = app.switches["rememberConnectionToggle"]
+        XCTAssertEqual(toggle.value as? String, "0"); toggle.coordinate(withNormalizedOffset: CGVector(dx: 0.9, dy: 0.5)).tap()
+        tapMenuControl("allowConnectionButton")
+        XCTAssertTrue(app.webViews.firstMatch.staticTexts["Local connection /plain"].waitForExistence(timeout: 10))
+        navigate("127.0.0.1:18765/remembered-http")
+        XCTAssertTrue(app.webViews.firstMatch.staticTexts["Local connection /remembered-http"].waitForExistence(timeout: 10))
+        XCTAssertTrue((app.textFields["addressField"].value as? String)?.hasPrefix("http://") == true)
+    }
+    func testAudioCanContinueInBackgroundWithoutPiP() {
+        navigate("http://127.0.0.1:18765/media")
+        let page = app.webViews.firstMatch
+        XCTAssertTrue(page.buttons["Play test audio"].waitForExistence(timeout: 10)); page.buttons["Play test audio"].tap()
+        page.buttons["Check audio state"].tap()
+        XCTAssertTrue(page.staticTexts.matching(NSPredicate(format: "label BEGINSWITH 'Playing:'")).firstMatch.waitForExistence(timeout: 5))
+        XCUIDevice.shared.press(.home)
+        let elapsed = expectation(description: "Audio runs while the app is backgrounded")
+        DispatchQueue.main.asyncAfter(deadline: .now() + 3) { elapsed.fulfill() }; wait(for: [elapsed], timeout: 5)
+        app.activate(); page.buttons["Check audio state"].tap()
+        let playing = page.staticTexts.matching(NSPredicate(format: "label BEGINSWITH 'Playing:'")).firstMatch
+        XCTAssertTrue(playing.waitForExistence(timeout: 5))
+        let seconds = Int(playing.label.split(separator: ":").last ?? "0") ?? 0
+        XCTAssertGreaterThanOrEqual(seconds, 3)
     }
 
 }

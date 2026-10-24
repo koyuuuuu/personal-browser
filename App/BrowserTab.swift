@@ -1,6 +1,8 @@
 import SwiftUI
 import WebKit
 import AVFoundation
+import Security
+import CryptoKit
 
 @MainActor
 final class JavaScriptDialog: Identifiable {
@@ -26,7 +28,7 @@ final class JavaScriptDialog: Identifiable {
 }
 
 @MainActor
-final class BrowserTab: NSObject, ObservableObject, Identifiable, WKNavigationDelegate, WKUIDelegate, WKDownloadDelegate {
+final class BrowserTab: NSObject, ObservableObject, Identifiable, WKNavigationDelegate, WKUIDelegate, WKDownloadDelegate, UIScrollViewDelegate {
     let id: UUID
     let isPrivate: Bool
     private var liveWebView: WKWebView?
@@ -37,6 +39,22 @@ final class BrowserTab: NSObject, ObservableObject, Identifiable, WKNavigationDe
     }
     var existingWebView: WKWebView? { liveWebView }
     var isLive: Bool { liveWebView != nil }
+    var isCapturingPreview: Bool { snapshotInProgress }
+    var isProtectedForMedia: Bool { hasActiveMedia || isPictureInPicture || backgroundMediaRetained }
+    var allowsBackgroundAudio = true
+    private var backgroundMediaRetained = false
+    private var suspendedForBackground = false
+    private var previousScrollY: CGFloat?
+    var onConnectionRequest: ((ConnectionRequest) -> Void)?
+    var trustsCertificate: ((String, String) -> Bool)?
+    var rememberCertificate: ((String, String) -> Void)?
+    var rememberHTTP: ((URL) -> Void)?
+    private var pendingConnection: ConnectionRequest?
+    private var navigationGrants: [String: String] = [:]
+    private var certificateWarningShown = false
+    private var pageZoom = 1.0
+    var onVerticalScroll: ((CGFloat) -> Void)?
+    var onPreview: ((Data, URL, String) -> Void)?
     @Published var url: URL?
     @Published var title = "新しいタブ"
     @Published var progress = 0.0
@@ -66,6 +84,8 @@ final class BrowserTab: NSObject, ObservableObject, Identifiable, WKNavigationDe
     var onDownload: ((URL) -> Void)?
     private var observations: [NSKeyValueObservation] = []
     private var mediaFrames: [String: Bool] = [:]
+    private var audibleFrames: [String: Bool] = [:]
+    private var hasAudibleMedia = false
     private var pipFrames: [String: Bool] = [:]
     private var appliedRule: WKContentRuleList?
     private var pendingRequest: URL?
@@ -97,6 +117,8 @@ final class BrowserTab: NSObject, ObservableObject, Identifiable, WKNavigationDe
         view.navigationDelegate = self; view.uiDelegate = self
         view.allowsBackForwardNavigationGestures = swipeNavigation
         view.isFindInteractionEnabled = true
+        view.scrollView.delegate = self
+        view.pageZoom = pageZoom
         observations = [
             view.observe(\.estimatedProgress, options: [.initial, .new]) { [weak self] view, _ in
                 Task { @MainActor in self?.progress = view.estimatedProgress }
@@ -141,6 +163,11 @@ final class BrowserTab: NSObject, ObservableObject, Identifiable, WKNavigationDe
         if let view = liveWebView { Task { await self.configureBlocking(for: self.url, view: view) } }
     }
 
+    func applyPresentation(_ value: PresentationPreferences) {
+        allowsBackgroundAudio = value.backgroundAudio; pageZoom = value.pageZoom
+        liveWebView?.pageZoom = pageZoom
+    }
+
     private func configureBlocking(for url: URL?, view: WKWebView) async {
         guard preferences.shouldBlock(url) else {
             if let appliedRule { view.configuration.userContentController.remove(appliedRule); self.appliedRule = nil }
@@ -155,6 +182,7 @@ final class BrowserTab: NSObject, ObservableObject, Identifiable, WKNavigationDe
 
     func load(_ url: URL) {
         guard WebURLPolicy.allows(url) else { return }
+        pendingConnection?.resolve(allow: false); pendingConnection = nil; navigationGrants = [:]; certificateWarningShown = false
         errorMessage = nil; hasContent = true; self.url = url
         if let view = liveWebView {
             Task { @MainActor [weak self, weak view] in
@@ -168,40 +196,76 @@ final class BrowserTab: NSObject, ObservableObject, Identifiable, WKNavigationDe
     }
 
     func capturePreview() {
-        guard !snapshotInProgress, let view = liveWebView, hasContent, !hasActiveMedia else { return }
+        guard !snapshotInProgress, let view = liveWebView, hasContent, !isPictureInPicture,
+              let capturedURL = url, WebURLPolicy.allows(capturedURL), view.bounds.width > 1, view.bounds.height > 1 else { return }
         snapshotInProgress = true
-        let config = WKSnapshotConfiguration(); config.snapshotWidth = 240
-        view.takeSnapshot(with: config) { [weak self] image, _ in
+        let capturedTitle = title
+        let config = WKSnapshotConfiguration(); config.snapshotWidth = 360; config.rect = view.bounds
+        view.takeSnapshot(with: config) { [weak self, weak view] image, _ in
             guard let self else { return }
             self.snapshotInProgress = false
-            if let image { self.previewData = image.jpegData(compressionQuality: 0.45) }
+            guard self.liveWebView === view, self.url == capturedURL else { return }
+            if let data = image?.jpegData(compressionQuality: 0.5), data.count <= 500_000 {
+                self.previewData = data
+                self.onPreview?(data, capturedURL, capturedTitle)
+            }
+            self.onStateChange?()
         }
     }
 
+    func scrollViewWillBeginDragging(_ scrollView: UIScrollView) { previousScrollY = scrollView.contentOffset.y }
+    func scrollViewDidScroll(_ scrollView: UIScrollView) {
+        let current = scrollView.contentOffset.y
+        defer { previousScrollY = current }
+        guard scrollView.isDragging || scrollView.isDecelerating, let previousScrollY else { return }
+        onVerticalScroll?(current - previousScrollY)
+    }
+    func scrollViewDidEndDecelerating(_ scrollView: UIScrollView) { capturePreview() }
+    func scrollViewDidEndDragging(_ scrollView: UIScrollView, willDecelerate decelerate: Bool) { if !decelerate { capturePreview() } }
+
+    private func configurePlaybackAudioSession() {
+        let session = AVAudioSession.sharedInstance()
+        guard session.category != .playAndRecord else { return }
+        try? session.setCategory(allowsBackgroundAudio ? .playback : .ambient,
+                                 mode: allowsBackgroundAudio ? .moviePlayback : .default, options: [])
+        try? session.setActive(true)
+    }
+    func prepareForBackground(continueAudio: Bool) {
+        allowsBackgroundAudio = continueAudio
+        backgroundMediaRetained = continueAudio && (backgroundMediaRetained || hasActiveMedia || isPictureInPicture)
+        if backgroundMediaRetained && hasAudibleMedia { configurePlaybackAudioSession() }
+        else if !continueAudio, hasActiveMedia, !isPictureInPicture {
+            liveWebView?.setAllMediaPlaybackSuspended(true, completionHandler: nil); suspendedForBackground = true
+        }
+    }
+    func finishBackgroundPlayback() {
+        backgroundMediaRetained = false
+        if suspendedForBackground { liveWebView?.setAllMediaPlaybackSuspended(false, completionHandler: nil); suspendedForBackground = false }
+    }
+
     func suspend() {
-        guard !hasActiveMedia, !isPictureInPicture, downloads.isEmpty else { return }
+        guard !isProtectedForMedia, !snapshotInProgress, downloads.isEmpty else { return }
         releaseWebView(); isLoading = false; canGoBack = false; canGoForward = false
     }
 
     private func releaseWebView() {
         dialog?.resolve(nil); dialog = nil
+        liveWebView?.scrollView.delegate = nil
         liveWebView?.stopLoading(); liveWebView?.navigationDelegate = nil; liveWebView?.uiDelegate = nil
         liveWebView?.configuration.userContentController.removeScriptMessageHandler(forName: "personalBrowserMedia")
         observations.removeAll(); appliedRule = nil; liveWebView = nil
-        mediaFrames.removeAll(); pipFrames.removeAll(); hasActiveMedia = false; isPictureInPicture = false
+        mediaFrames.removeAll(); pipFrames.removeAll(); audibleFrames.removeAll(); hasAudibleMedia = false; hasActiveMedia = false; isPictureInPicture = false
     }
 
     func updateMedia(_ payload: [String: Any]) {
         guard let frame = payload["frame"] as? String else { return }
         mediaFrames[frame] = payload["playing"] as? Bool ?? false
         pipFrames[frame] = payload["pip"] as? Bool ?? false
-        let active = mediaFrames.values.contains(true), pip = pipFrames.values.contains(true)
-        guard active != hasActiveMedia || pip != isPictureInPicture else { return }
-        hasActiveMedia = active; isPictureInPicture = pip
-        if active {
-            try? AVAudioSession.sharedInstance().setCategory(.playback, mode: .moviePlayback, options: [.mixWithOthers])
-            try? AVAudioSession.sharedInstance().setActive(true)
-        }
+        audibleFrames[frame] = payload["audible"] as? Bool ?? false
+        let active = mediaFrames.values.contains(true), pip = pipFrames.values.contains(true), audible = audibleFrames.values.contains(true)
+        guard active != hasActiveMedia || pip != isPictureInPicture || audible != hasAudibleMedia else { return }
+        hasActiveMedia = active; isPictureInPicture = pip; hasAudibleMedia = audible
+        if audible { configurePlaybackAudioSession() }
         onStateChange?()
     }
 
@@ -210,22 +274,23 @@ final class BrowserTab: NSObject, ObservableObject, Identifiable, WKNavigationDe
       const frame = Math.random().toString(36).slice(2), players = new Set();
       let lastStatus = '';
       const report = () => {
-        let playing = false, pip = false;
+        let playing = false, pip = false, audible = false;
         players.forEach(v => { if (!v.isConnected) players.delete(v); else {
           playing ||= !v.paused && !v.ended;
+          audible ||= !v.paused && !v.ended && !v.muted && v.volume > 0;
           pip ||= v.webkitPresentationMode === 'picture-in-picture' || document.pictureInPictureElement === v;
         }});
-        const status = (playing||pip) + ':' + pip;
+        const status = (playing||pip) + ':' + pip + ':' + audible;
         if (status === lastStatus) return;
         lastStatus = status;
-        window.webkit.messageHandlers.personalBrowserMedia.postMessage({frame,playing:playing||pip,pip});
+        window.webkit.messageHandlers.personalBrowserMedia.postMessage({frame,playing:playing||pip,pip,audible});
       };
       const scan = () => { document.querySelectorAll('video,audio').forEach(v => {
         if (players.has(v)) return; players.add(v);
-        ['play','playing','pause','ended','enterpictureinpicture','leavepictureinpicture','webkitpresentationmodechanged'].forEach(e => v.addEventListener(e,report));
+        ['play','playing','pause','ended','volumechange','enterpictureinpicture','leavepictureinpicture','webkitpresentationmodechanged'].forEach(e => v.addEventListener(e,report));
       }); report(); };
       document.addEventListener('DOMContentLoaded', () => { scan(); new MutationObserver(scan).observe(document.documentElement,{childList:true,subtree:true}); });
-      window.addEventListener('pagehide', () => window.webkit.messageHandlers.personalBrowserMedia.postMessage({frame,playing:false,pip:false}));
+      window.addEventListener('pagehide', () => window.webkit.messageHandlers.personalBrowserMedia.postMessage({frame,playing:false,pip:false,audible:false}));
     })();
     """
 
@@ -239,7 +304,7 @@ final class BrowserTab: NSObject, ObservableObject, Identifiable, WKNavigationDe
         <title>テストページ</title><h1>オフラインのテストページ</h1>
         <p>ネット接続を使わずにWebKit表示を確認します。</p>
         <button onclick="document.getElementById('result').textContent='操作成功'">ページ内ボタン</button>
-        <p id="result"></p>
+        <p id="result"></p><div style="height:1800px">スクロール検証用のページ</div><p>ページの下部</p>
         """, baseURL: URL(string: "https://fixture.invalid"))
     }
 
@@ -248,8 +313,10 @@ final class BrowserTab: NSObject, ObservableObject, Identifiable, WKNavigationDe
             item.0.cancel { _ in }
             if let target = item.1 { try? FileManager.default.removeItem(at: target) }
         }
+        pendingConnection?.resolve(allow: false); pendingConnection = nil
         downloads.removeAll(); releaseWebView()
-        onVisit = nil; onStateChange = nil; onPopup = nil; onClose = nil; onExternalURL = nil
+        onConnectionRequest = nil; trustsCertificate = nil; rememberCertificate = nil; rememberHTTP = nil
+        onPreview = nil; onVerticalScroll = nil; onVisit = nil; onStateChange = nil; onPopup = nil; onClose = nil; onExternalURL = nil
         onAnalyzeLink = nil; onMessageLink = nil; onSaveLink = nil; onOpenLink = nil; onShareLink = nil; onOpenInSafari = nil; onOpenInBrowser = nil; onDownload = nil
     }
 
@@ -263,7 +330,7 @@ final class BrowserTab: NSObject, ObservableObject, Identifiable, WKNavigationDe
     }
 
     func webView(_ webView: WKWebView, didStartProvisionalNavigation navigation: WKNavigation!) {
-        errorMessage = nil
+        errorMessage = nil; navigationGrants = [:]; certificateWarningShown = false
     }
 
     func webView(_ webView: WKWebView, didFailProvisionalNavigation navigation: WKNavigation!, withError error: Error) {
@@ -275,12 +342,54 @@ final class BrowserTab: NSObject, ObservableObject, Identifiable, WKNavigationDe
     }
 
     private func show(_ error: Error) {
-        guard (error as NSError).code != NSURLErrorCancelled else { return }
+        let code = (error as NSError).code
+        guard code != NSURLErrorCancelled else { return }
         errorMessage = error.localizedDescription
+        if [NSURLErrorSecureConnectionFailed, NSURLErrorServerCertificateUntrusted, NSURLErrorServerCertificateHasBadDate,
+            NSURLErrorServerCertificateHasUnknownRoot, NSURLErrorServerCertificateNotYetValid].contains(code),
+           let original = url, let alternative = ConnectionSecurity.httpAlternative(original), pendingConnection == nil, !certificateWarningShown {
+            let request = ConnectionRequest(kind: .http, url: original) { [weak self] allow, remember in
+                guard let self else { return }
+                self.pendingConnection = nil
+                if allow { if remember { self.rememberHTTP?(original) }; self.load(alternative) }
+            }
+            pendingConnection = request; onConnectionRequest?(request)
+        }
+    }
+
+    func webView(_ webView: WKWebView, didReceive challenge: URLAuthenticationChallenge,
+                 completionHandler: @escaping (URLSession.AuthChallengeDisposition, URLCredential?) -> Void) {
+        guard challenge.protectionSpace.authenticationMethod == NSURLAuthenticationMethodServerTrust,
+              let trust = challenge.protectionSpace.serverTrust else { completionHandler(.performDefaultHandling, nil); return }
+        var error: CFError?
+        if SecTrustEvaluateWithError(trust, &error) { completionHandler(.performDefaultHandling, nil); return }
+        var parts = URLComponents(); parts.scheme = "https"; parts.host = challenge.protectionSpace.host
+        parts.port = challenge.protectionSpace.port > 0 ? challenge.protectionSpace.port : 443
+        guard let url = parts.url, let origin = ConnectionSecurity.origin(url), let certificate = SecTrustGetCertificateAtIndex(trust, 0) else {
+            completionHandler(.cancelAuthenticationChallenge, nil); return
+        }
+        let fingerprint = SHA256.hash(data: SecCertificateCopyData(certificate) as Data).map { String(format: "%02x", $0) }.joined()
+        if navigationGrants[origin] == fingerprint || trustsCertificate?(origin, fingerprint) == true {
+            completionHandler(.useCredential, URLCredential(trust: trust)); return
+        }
+        pendingConnection?.resolve(allow: false)
+        certificateWarningShown = true
+        let request = ConnectionRequest(kind: .certificate, url: url, fingerprint: fingerprint) { [weak self] allow, remember in
+            guard let self else { completionHandler(.cancelAuthenticationChallenge, nil); return }
+            self.pendingConnection = nil
+            if allow {
+                self.navigationGrants[origin] = fingerprint
+                if remember { self.rememberCertificate?(origin, fingerprint) }
+                completionHandler(.useCredential, URLCredential(trust: trust))
+            } else { completionHandler(.cancelAuthenticationChallenge, nil) }
+        }
+        pendingConnection = request
+        if let onConnectionRequest { onConnectionRequest(request) }
+        else { request.resolve(allow: false) }
     }
 
     func webViewWebContentProcessDidTerminate(_ webView: WKWebView) {
-        mediaFrames.removeAll(); pipFrames.removeAll(); hasActiveMedia = false; isPictureInPicture = false
+        mediaFrames.removeAll(); pipFrames.removeAll(); audibleFrames.removeAll(); hasAudibleMedia = false; hasActiveMedia = false; isPictureInPicture = false
         errorMessage = "ページの表示処理が終了しました。再読み込みしてください。"
     }
 
@@ -449,7 +558,7 @@ struct WebSurface: UIViewRepresentable {
     func makeUIView(context: Context) -> WebSurfaceView { WebSurfaceView() }
     func updateUIView(_ host: WebSurfaceView, context: Context) {
         guard let selected = store.selectedTab else { return }
-        let kept = store.tabs.filter { $0.id == selected.id || $0.hasActiveMedia || $0.isPictureInPicture }
+        let kept = store.tabs.filter { $0.id == selected.id || $0.isProtectedForMedia || $0.isCapturingPreview }
         let views = kept.compactMap { $0.id == selected.id && $0.hasContent ? $0.webView : $0.existingWebView }
         for view in host.subviews where !views.contains(where: { $0 === view }) { view.removeFromSuperview() }
         for tab in kept {

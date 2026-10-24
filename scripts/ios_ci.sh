@@ -30,6 +30,37 @@ if [[ "${CHECK_DATA_COMPATIBILITY:-0}" == "1" ]]; then
 fi
 signing=(CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO 'CODE_SIGN_IDENTITY=')
 
+# Controlled loopback servers exercise TLS decisions and background audio.
+# Certificates are ephemeral, stay outside artifacts, and contain no user data.
+fixture_dir="$(mktemp -d "${TMPDIR:-/tmp}/browser-web-fixtures.XXXXXX")"
+package_dir=""
+fixture_pid=""
+cleanup() {
+    if [[ -n "$fixture_pid" ]]; then kill "$fixture_pid" 2>/dev/null || true; fi
+    rm -rf "$fixture_dir"
+    if [[ -n "$package_dir" ]]; then rm -rf "$package_dir"; fi
+}
+trap cleanup EXIT
+cat > "$fixture_dir/openssl.cnf" <<'CERT_CONFIG'
+[req]
+distinguished_name=dn
+x509_extensions=v3
+prompt=no
+[dn]
+CN=localhost
+[v3]
+subjectAltName=DNS:localhost,IP:127.0.0.1
+CERT_CONFIG
+openssl req -x509 -newkey rsa:2048 -nodes -days 1 -config "$fixture_dir/openssl.cnf" \
+    -keyout "$fixture_dir/key.pem" -out "$fixture_dir/cert.pem" >/dev/null 2>&1
+python3 scripts/test_local_server.py --cert "$fixture_dir/cert.pem" --key "$fixture_dir/key.pem" &
+fixture_pid=$!
+for attempt in {1..50}; do
+    if curl --silent --fail http://127.0.0.1:18765/health >/dev/null; then break; fi
+    sleep 0.1
+done
+curl --silent --fail http://127.0.0.1:18765/health >/dev/null
+
 xcodebuild test \
     -project PersonalBrowser.xcodeproj \
     -scheme PersonalBrowser \
@@ -63,7 +94,6 @@ xcodebuild build \
     2>&1 | tee build/device-build.log
 
 package_dir="$(mktemp -d "${TMPDIR:-/tmp}/personal-browser.XXXXXX")"
-trap 'rm -rf "$package_dir"' EXIT
 mkdir -p "${package_dir}/Payload"
 ditto build/device/Build/Products/Release-iphoneos/PersonalBrowser.app "${package_dir}/Payload/PersonalBrowser.app"
 ditto -c -k --keepParent "${package_dir}/Payload" dist/PersonalBrowser.ipa

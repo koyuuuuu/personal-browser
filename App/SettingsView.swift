@@ -18,7 +18,8 @@ struct SettingsView: View {
                     NavigationLink("データの取り込み・書き出し") { LibraryTransferView(store: store) }
                 }
                 Section("操作") {
-                    Picker("バーの位置", selection: setting(\.toolbarPosition)) {
+                    NavigationLink("表示・操作") { PresentationSettingsView(store: store) }.accessibilityIdentifier("presentationSettingsLink")
+                    Picker("縦画面のバーの位置", selection: setting(\.toolbarPosition)) {
                         Text("上").tag(ToolbarPosition.top)
                         Text("下").tag(ToolbarPosition.bottom)
                     }

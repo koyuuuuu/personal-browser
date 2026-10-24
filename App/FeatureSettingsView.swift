@@ -35,7 +35,10 @@ struct FeatureSettingsView: View {
                 Stepper("お気に入りの列数：\(store.features.favoriteColumns)", value: feature(\.favoriteColumns), in: 3...6)
                 Toggle("背景画像を表示", isOn: feature(\.showHomeBackground))
                 PhotosPicker(selection: $imageSelection, matching: .images) { Label("背景画像を選ぶ", systemImage: "photo") }
-                if store.homeBackground != nil { Button("背景画像を削除", role: .destructive) { store.setHomeBackground(nil) } }
+                if store.homeBackground != nil {
+                    NavigationLink("背景の位置・ズームを調整") { BackgroundAdjustmentView(store: store) }
+                    Button("背景画像を削除", role: .destructive) { store.setHomeBackground(nil) }
+                }
                 Text("サイトのアイコンはドメインの頭文字で表示します。ホーム表示時に各サイトへの通信は行いません。")
                     .font(.footnote).foregroundStyle(.secondary)
             }
