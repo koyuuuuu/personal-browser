@@ -56,7 +56,10 @@ final class BrowserUITests: XCTestCase {
     func testAddressBarRejectsExecutableScheme() {
         let field = app.textFields["addressField"]
         field.tap()
-        app.buttons["入力を消去"].tap()
+        XCTAssertTrue(app.keyboards.firstMatch.waitForExistence(timeout: 5))
+        settlePresentation()
+        app.buttons["入力を消去"].coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).tap()
+        XCTAssertTrue(["", "URLまたは検索語"].contains(field.value as? String ?? ""))
         field.typeText("javascript:alert(1)\n")
         XCTAssertTrue(app.alerts["お知らせ"].waitForExistence(timeout: 5))
         XCTAssertTrue(app.alerts.staticTexts["アドレス欄ではHTTP・HTTPSのURLを開けます。"].exists)
@@ -304,7 +307,8 @@ final class BrowserUITests: XCTestCase {
 
     func testLandscapeSwipeKeepsControlsWorkingAndTilesStayInsideWindow() {
         XCUIDevice.shared.orientation = .landscapeRight
-        app.swipeDown()
+        settlePresentation()
+        app.webViews.firstMatch.swipeDown()
         XCTAssertTrue(app.textFields["addressField"].waitForExistence(timeout: 5))
         app.textFields["addressField"].swipeLeft()
         XCTAssertTrue(app.staticTexts["お気に入り"].waitForExistence(timeout: 5))
@@ -313,6 +317,7 @@ final class BrowserUITests: XCTestCase {
         XCTAssertTrue(app.navigationBars["タブ 2"].waitForExistence(timeout: 5))
         for orientation in [UIDeviceOrientation.landscapeRight, .portrait] {
             XCUIDevice.shared.orientation = orientation
+            settlePresentation()
             let tiles = app.buttons.matching(NSPredicate(format: "value == 'プレビューあり' OR value == 'プレビューなし'"))
             XCTAssertGreaterThanOrEqual(tiles.count, 2)
             let window = app.windows.firstMatch.frame
@@ -321,6 +326,12 @@ final class BrowserUITests: XCTestCase {
                 XCTAssertLessThanOrEqual(tile.frame.maxX, window.maxX)
             }
         }
+    }
+
+    private func settlePresentation() {
+        let ready = expectation(description: "Keyboard or rotation presentation has settled")
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1) { ready.fulfill() }
+        wait(for: [ready], timeout: 3)
     }
 
 }
