@@ -1,0 +1,116 @@
+{
+  "recorded_date_jst": "2026-10-25",
+  "source_commit": "12401948095c0507107f63c9dadf110fd8864802",
+  "ci_run": "https://github.com/koyuuuuu/personal-browser/actions/runs/40131596839",
+  "release": "v0.4.0-build.20",
+  "artifact": {
+    "file": "PersonalBrowser.ipa",
+    "sha256": "0fec29654dd75e5311b9bc0da215e496c0e3a5561fdd965be2bc42846951f31f",
+    "bundle_id": "local.personalbrowser.app",
+    "version": "0.4.0",
+    "build": "20",
+    "minimum_ios": "17.0",
+    "target_ios": "18.4.1",
+    "architecture": "arm64",
+    "platform": "iOS device",
+    "embedded_profile": false,
+    "signature_resources": false,
+    "installation_verified": false,
+    "size": 858640,
+    "data_schema": 1
+  },
+  "checks": {
+    "python": 30,
+    "linux_core_passed": 37,
+    "linux_core_skipped_apple_compression": 1,
+    "macos_core_passed": 38,
+    "ios_ui_passed": 20,
+    "latest_bookmark_history_old_new_old_new": "passed",
+    "landscape_hidden_compact_reverse_scroll_and_portrait_restore": "passed",
+    "address_side_find_action_and_tab_column_configuration": "passed",
+    "preview_persistence_after_process_restart_without_background_webviews": "passed",
+    "overview_opens_at_last_active_tab_and_bottom_plus_creates_tab": "passed",
+    "next_swipe_at_end_creates_tab_and_tile_swipe_closes": "passed",
+    "checked_certificate_persists_and_unchecked_reprompts_after_restart": "passed on ephemeral self-signed loopback HTTPS fixture",
+    "local_https_to_http_confirmation_and_remembered_bare_url": "passed on loopback HTTP fixture",
+    "background_audio_without_pip": "passed: 4 seconds on Home screen; media elapsed 7.200s matched sampled wall elapsed 7.200s",
+    "background_audio_samples": [
+      {
+        "media_seconds": 3.085,
+        "wall_milliseconds": 1792875317726
+      },
+      {
+        "media_seconds": 10.285,
+        "wall_milliseconds": 1792875324926
+      }
+    ],
+    "certificate_origin_port_fingerprint_scope_and_local_http_bounds": "passed in core tests",
+    "private_previews_never_write_to_disk": "passed in core tests",
+    "share_copy_and_second_presentation": "passed"
+  },
+  "distribution": {
+    "source_url": "https://raw.githubusercontent.com/koyuuuuu/personal-browser-distribution/main/source.json",
+    "versions": [
+      {
+        "version": "0.4.0",
+        "build": "20",
+        "sha256": "0fec29654dd75e5311b9bc0da215e496c0e3a5561fdd965be2bc42846951f31f",
+        "size": 858640
+      },
+      {
+        "version": "0.3.0",
+        "build": "14",
+        "sha256": "5e17e41c229bb3f6097cc26522e3d58969198db8e2301467664086e87bcf2125",
+        "size": 696060
+      },
+      {
+        "version": "0.3.0",
+        "build": "12",
+        "sha256": "833cd995b9da3420ac5846c663cc2eb27f934061f136d1a3c6f842bdfe7d4cf9",
+        "size": 684525
+      },
+      {
+        "version": "0.2.0",
+        "build": "10",
+        "sha256": "72439533eba9884be23f82117e8bf5930b7df7a4a0c59eee1b6e8c3e8b335717",
+        "size": 376835
+      },
+      {
+        "version": "0.2.0",
+        "build": "9",
+        "sha256": "a052ef77a81a1e26d160cfa1cc9093894b63ac3c4283440c0000032eb8e76d7c",
+        "size": 376835
+      },
+      {
+        "version": "0.2.0",
+        "build": "8",
+        "sha256": "bc79930e5f2286260d7a1411f4d05487d8f928ec28a1a80937e04a90d44b85fc",
+        "size": 376835
+      },
+      {
+        "version": "0.1.0",
+        "build": "6",
+        "sha256": "76b4a17e0fd381b27680f5807a0acffb2be4c25167f1767f3486bd6b35eb2b99",
+        "size": 330871
+      }
+    ],
+    "icon_http": 200,
+    "no_request_authentication_supplied": true,
+    "source_repository_private": true,
+    "public_git_files": [
+      "README.md",
+      "icon.png",
+      "source.json"
+    ],
+    "personal_watch_host_embedded_in_ipa": false,
+    "audio_background_mode_present": true,
+    "local_network_purpose_present": true,
+    "private_and_public_ipa_identical": true
+  },
+  "device_acceptance": {
+    "iphone12_ios18_4_1_install_and_data_retention_on_this_update": "not verified; update the existing app through SideStore without deleting it",
+    "personal_lan_192_168_1_120_port3000": "not contacted from CI; user device and reachable local server required",
+    "real_site_background_audio_and_pip": "not verified; controlled audio passed; site/WebKit/DRM/iOS limits remain",
+    "home_indicator": "public auto-hide request implemented; transient visibility remains controlled by iOS"
+  }
+}
