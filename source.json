@@ -13,6 +13,16 @@
       "versions": [
         {
           "version": "0.3.0",
+          "buildVersion": "14",
+          "date": "2026-10-24T17:23:50.712572+00:00",
+          "localizedDescription": "PiPのバックグラウンド再生設定と共有シートを修正。広告ブロック・サイト別除外、500タブの遅延読み込み、タイル式一覧とスワイプ操作、お気に入りホーム・背景画像、ブックマークフォルダ、リンク長押しメニュー、ページ内検索・ダウンロード・HTML/CSV/JSON取り込みと書き出しを追加。既存のブックマーク・履歴形式とアプリIDを維持。PiPと上書き更新は実機で受け入れ確認が必要です。 SafariのZIP書き出しに対応し、パスワードはApple標準の管理機能を継続利用。YouTube・ブラウザ・ファイル保存・メール・メッセージ等のリンク操作と、Watch HTMLへのURL引き渡しを追加。",
+          "downloadURL": "https://github.com/koyuuuuu/personal-browser-distribution/releases/download/v0.3.0-build.14/PersonalBrowser.ipa",
+          "size": 696060,
+          "minOSVersion": "17.0",
+          "sha256": "5e17e41c229bb3f6097cc26522e3d58969198db8e2301467664086e87bcf2125"
+        },
+        {
+          "version": "0.3.0",
           "buildVersion": "12",
           "date": "2026-10-24T17:09:41.002359+00:00",
           "localizedDescription": "PiPのバックグラウンド再生設定と共有シートを修正。広告ブロック・サイト別除外、500タブの遅延読み込み、タイル式一覧とスワイプ操作、お気に入りホーム・背景画像、ブックマークフォルダ、リンク長押しメニュー、ページ内検索・ダウンロード・HTML/CSV/JSON取り込みと書き出しを追加。既存のブックマーク・履歴形式とアプリIDを維持。PiPと上書き更新は実機で受け入れ確認が必要です。 SafariのZIP書き出しに対応し、パスワードはApple標準の管理機能を継続利用。YouTube・ブラウザ・ファイル保存・メール・メッセージ等のリンク操作と、Watch HTMLへのURL引き渡しを追加。",
