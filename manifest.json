@@ -1,0 +1,64 @@
+{
+  "releases": [
+    {
+      "file": "PersonalBrowser.ipa",
+      "sha256": "bc79930e5f2286260d7a1411f4d05487d8f928ec28a1a80937e04a90d44b85fc",
+      "bundle_id": "local.personalbrowser.app",
+      "version": "0.2.0",
+      "build": "8",
+      "minimum_ios": "17.0",
+      "target_ios": "18.4.1",
+      "architecture": "arm64",
+      "platform": "iOS device",
+      "embedded_profile": false,
+      "signature_resources": false,
+      "installation_verified": false,
+      "source_commit": "695450e180476d7a25bb09fc6f538d0659b222a9",
+      "data_schema": 1,
+      "size": 376835,
+      "date": "2026-10-24T11:43:27.053918+00:00",
+      "description": "更新通知のオン・オフ設定とSideStore配信に対応。履歴・ブックマークの保存形式とアプリIDは維持しています。",
+      "appPermissions": {
+        "entitlements": [],
+        "privacy": {
+          "NSCameraUsageDescription": "閲覧中のWebサイトでカメラを使用するために必要です。",
+          "NSMicrophoneUsageDescription": "閲覧中のWebサイトでマイクを使用するために必要です。"
+        }
+      },
+      "tag": "v0.2.0-build.8"
+    },
+    {
+      "id": 12394386981,
+      "url": "https://github.com/koyuuuuu/personal-browser/actions/runs/39704611315/artifacts/12394386981",
+      "name": "PersonalBrowser-6",
+      "archive_bytes": 328506,
+      "ipa_bytes": 330871,
+      "expires_at_utc": "2026-10-23T01:17:49Z",
+      "file": "PersonalBrowser.ipa",
+      "sha256": "76b4a17e0fd381b27680f5807a0acffb2be4c25167f1767f3486bd6b35eb2b99",
+      "bundle_id": "local.personalbrowser.app",
+      "version": "0.1.0",
+      "build": "6",
+      "minimum_ios": "17.0",
+      "target_ios": "18.4.1",
+      "architecture": "arm64",
+      "platform": "iOS device",
+      "embedded_profile": false,
+      "signature_resources": false,
+      "installation_verified": false,
+      "tag": "v0.1.0",
+      "data_schema": 1,
+      "size": 330871,
+      "date": "2026-10-22T01:17:49Z",
+      "source_commit": "438292f5622801bf56525381576b789f65e4d203",
+      "description": "初期版。最新のschema 1の履歴・ブックマークをそのまま使用します。",
+      "appPermissions": {
+        "entitlements": [],
+        "privacy": {
+          "NSCameraUsageDescription": "閲覧中のWebサイトでカメラを使用するために必要です。",
+          "NSMicrophoneUsageDescription": "閲覧中のWebサイトでマイクを使用するために必要です。"
+        }
+      }
+    }
+  ]
+}

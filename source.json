@@ -1,0 +1,45 @@
+{
+  "name": "Personal Browser",
+  "identifier": "local.personalbrowser.source",
+  "subtitle": "個人用ブラウザの配信ソース",
+  "tintColor": "#2675D9",
+  "apps": [
+    {
+      "name": "Personal Browser",
+      "bundleIdentifier": "local.personalbrowser.app",
+      "developerName": "Personal Browser",
+      "localizedDescription": "自分専用のブラウザ。タブ、履歴、ブックマーク、プライベート閲覧、UIカスタマイズに対応。",
+      "iconURL": "https://raw.githubusercontent.com/koyuuuuu/personal-browser-distribution/main/icon.png",
+      "versions": [
+        {
+          "version": "0.2.0",
+          "buildVersion": "8",
+          "date": "2026-10-24T11:43:27.053918+00:00",
+          "localizedDescription": "更新通知のオン・オフ設定とSideStore配信に対応。履歴・ブックマークの保存形式とアプリIDは維持しています。",
+          "downloadURL": "https://github.com/koyuuuuu/personal-browser-distribution/releases/download/v0.2.0-build.8/PersonalBrowser.ipa",
+          "size": 376835,
+          "minOSVersion": "17.0",
+          "sha256": "bc79930e5f2286260d7a1411f4d05487d8f928ec28a1a80937e04a90d44b85fc"
+        },
+        {
+          "version": "0.1.0",
+          "buildVersion": "6",
+          "date": "2026-10-22T01:17:49Z",
+          "localizedDescription": "初期版。最新のschema 1の履歴・ブックマークをそのまま使用します。",
+          "downloadURL": "https://github.com/koyuuuuu/personal-browser-distribution/releases/download/v0.1.0/PersonalBrowser.ipa",
+          "size": 330871,
+          "minOSVersion": "17.0",
+          "sha256": "76b4a17e0fd381b27680f5807a0acffb2be4c25167f1767f3486bd6b35eb2b99"
+        }
+      ],
+      "appPermissions": {
+        "entitlements": [],
+        "privacy": {
+          "NSCameraUsageDescription": "閲覧中のWebサイトでカメラを使用するために必要です。",
+          "NSMicrophoneUsageDescription": "閲覧中のWebサイトでマイクを使用するために必要です。"
+        }
+      }
+    }
+  ],
+  "news": []
+}
