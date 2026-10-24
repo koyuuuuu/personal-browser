@@ -3,6 +3,8 @@
 import argparse
 import html
 import io
+import math
+import struct
 import signal
 import re
 import ssl
@@ -19,7 +21,9 @@ def main():
     audio = io.BytesIO()
     with wave.open(audio, 'wb') as stream:
         stream.setnchannels(1); stream.setsampwidth(2); stream.setframerate(8000)
-        stream.writeframes(b'\0\0' * 8000 * 45)
+        # Audible PCM makes the fixture exercise a real playback audio session.
+        second = b''.join(struct.pack('<h', round(2000 * math.sin(2 * math.pi * 440 * i / 8000))) for i in range(8000))
+        stream.writeframes(second * 45)
     audio = audio.getvalue()
 
     class Handler(BaseHTTPRequestHandler):
@@ -32,7 +36,16 @@ def main():
                 data = b'''<!doctype html><meta name="viewport" content="width=device-width,initial-scale=1"><title>Audio fixture</title>
                 <audio id="audio" src="/audio.wav" preload="auto"></audio>
                 <button onclick="document.getElementById('audio').play()">Play test audio</button>
-                <button onclick="document.getElementById('status').textContent=(document.getElementById('audio').paused?'Paused':'Playing')+':'+Math.floor(document.getElementById('audio').currentTime)">Check audio state</button>
+                <button onclick="sampleAudio()">Check audio state</button>
+                <script>
+                let samples = 0;
+                function sampleAudio() {
+                  const a = document.getElementById('audio');
+                  document.getElementById('status').textContent = 'Sample ' + (++samples) + ':' +
+                    (a.paused ? 'Paused' : 'Playing') + ':' + a.currentTime.toFixed(3) +
+                    ':ready=' + a.readyState + ':error=' + (a.error ? a.error.code : 'none');
+                }
+                </script>
                 <p id="status"></p>'''
                 mime = 'text/html; charset=utf-8'
             else:

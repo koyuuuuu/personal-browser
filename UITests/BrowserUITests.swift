@@ -241,16 +241,34 @@ final class BrowserUITests: XCTestCase {
         navigate("http://127.0.0.1:18765/media")
         let page = app.webViews.firstMatch
         XCTAssertTrue(page.buttons["Play test audio"].waitForExistence(timeout: 10)); page.buttons["Play test audio"].tap()
-        page.buttons["Check audio state"].tap()
-        XCTAssertTrue(page.staticTexts.matching(NSPredicate(format: "label BEGINSWITH 'Playing:'")).firstMatch.waitForExistence(timeout: 5))
+        // Poll a fresh, numbered JS sample: paused == false alone does not
+        // prove that the media clock has started or continued in background.
+        var sample = 0
+        func readClock() -> Double {
+            sample += 1
+            page.buttons["Check audio state"].tap()
+            let state = page.staticTexts.matching(NSPredicate(format: "label BEGINSWITH %@", "Sample \(sample):")).firstMatch
+            XCTAssertTrue(state.waitForExistence(timeout: 5))
+            let fields = state.label.split(separator: ":")
+            XCTAssertEqual(fields.count, 5, state.label)
+            XCTAssertEqual(fields.dropFirst().first.map(String.init), "Playing", state.label)
+            print("Audio clock sample: \(state.label)")
+            return fields.count == 5 ? Double(fields[2]) ?? -1 : -1
+        }
+        var before = readClock()
+        for _ in 0..<6 {
+            if before >= 1 { break }
+            let tick = expectation(description: "Wait for media clock to start")
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1) { tick.fulfill() }; wait(for: [tick], timeout: 3)
+            before = readClock()
+        }
+        XCTAssertGreaterThanOrEqual(before, 1, "The audio fixture must actually start before backgrounding")
         XCUIDevice.shared.press(.home)
         let elapsed = expectation(description: "Audio runs while the app is backgrounded")
-        DispatchQueue.main.asyncAfter(deadline: .now() + 3) { elapsed.fulfill() }; wait(for: [elapsed], timeout: 5)
-        app.activate(); page.buttons["Check audio state"].tap()
-        let playing = page.staticTexts.matching(NSPredicate(format: "label BEGINSWITH 'Playing:'")).firstMatch
-        XCTAssertTrue(playing.waitForExistence(timeout: 5))
-        let seconds = Int(playing.label.split(separator: ":").last ?? "0") ?? 0
-        XCTAssertGreaterThanOrEqual(seconds, 3)
+        DispatchQueue.main.asyncAfter(deadline: .now() + 4) { elapsed.fulfill() }; wait(for: [elapsed], timeout: 6)
+        app.activate()
+        let after = readClock()
+        XCTAssertGreaterThanOrEqual(after - before, 3, "Media time must advance while backgrounded, without PiP")
     }
 
     func testAddressSideActionsAndTabSizeCanBeConfigured() {
@@ -259,7 +277,7 @@ final class BrowserUITests: XCTestCase {
         XCTAssertTrue(app.navigationBars["表示・操作"].waitForExistence(timeout: 5))
         let stepper = app.steppers["tabColumnsStepper"]
         XCTAssertTrue(stepper.waitForExistence(timeout: 5))
-        stepper.coordinate(withNormalizedOffset: CGVector(dx: 0.96, dy: 0.5)).tap()
+        stepper.buttons["tabColumnsStepper-Increment"].tap()
         XCTAssertTrue(stepper.label.contains("3列") || app.staticTexts["タブ一覧：3列"].waitForExistence(timeout: 5))
         let add = app.buttons["addAddressLeftButton"]
         for _ in 0..<4 { if add.exists && add.isHittable { break }; app.swipeUp() }
