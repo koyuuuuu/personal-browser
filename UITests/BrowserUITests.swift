@@ -75,7 +75,8 @@ final class BrowserUITests: XCTestCase {
     func testUpdateNotificationPreferenceCanBeTurnedOnAndOff() {
         tapMenuControl("menuButton")
         app.buttons["設定"].tap()
-        app.buttons["updateSettingsLink"].tap()
+        XCTAssertTrue(app.navigationBars["設定"].waitForExistence(timeout: 5))
+        tapMenuControl("updateSettingsLink")
         XCTAssertTrue(app.navigationBars["アプリの更新"].waitForExistence(timeout: 5))
         let toggle = app.switches["updateNotificationsToggle"]
         XCTAssertTrue(toggle.waitForExistence(timeout: 5))
