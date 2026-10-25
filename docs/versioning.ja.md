@@ -1,6 +1,6 @@
 # バージョン管理と旧版へ戻す手順
 
-2026-10-24。非公開の`koyuuuuu/personal-browser`で管理する。
+現在は本人の指示で公開した`koyuuuuu/personal-browser`で管理する。最新配信は0.5.0 build38。[配信記録](validation-0.5.0-build38.json)。
 
 ## 保存するもの
 
@@ -9,22 +9,22 @@
 | 日々の変更 | Gitコミット。過去の変更履歴を残す |
 | 利用に渡す版 | `v0.1.0`等のタグを、検証したソースのコミットへ固定 |
 | 実際のインストール用ファイル | 未署名IPA・ビルド記録・SHA-256を版ごとに保管 |
-| 変更内容と制約 | 非公開GitHub Releaseの説明文 |
+| 変更内容と制約 | GitHub Releaseの説明文 |
 | iPhone内のデータ | ソース履歴とは別。形式変更時にバックアップ・移行方法を実装・検証 |
 
-実機での利用報告がある初期版は[v0.1.0 / build 6](https://github.com/koyuuuuu/personal-browser/releases/tag/v0.1.0)。タグのビルド元は`438292f5622801bf56525381576b789f65e4d203`、保存形式はschema 1。2026-10-24に本人がiPhoneで利用できたと報告した。
+実機での利用報告がある初期版は[v0.1.0 / build 6](https://github.com/koyuuuuu/personal-browser/releases/tag/v0.1.0)。タグのビルド元は`12f15dbe922d7d6f7a5de86345b2d5ee2d2b346f`、保存形式はschema 1。2026-10-24に本人がiPhoneで利用できたと報告した。
 
 ## 現在の復帰基準
 
-2026-10-25に利用者が良好と確認した **0.4.2 build27** を固定して保持する。タグ `v0.4.2-build.27`、ソース `70052bb73a2170eb516bb99aece43b13918a0553`。[公開IPA](https://github.com/koyuuuuu/personal-browser-distribution/releases/download/v0.4.2-build.27/PersonalBrowser.ipa) は916001 bytes、SHA-256 `3d3477697c89d15cd3cc955c442b486bee65ccd62917195f2ef130cc5e75a4ad`。新機能は0.5.0から追加し、このタグ・IPAは差し替えない。
+2026-10-25に利用者が良好と確認した **0.4.2 build27** を固定して保持する。タグ `v0.4.2-build.27`、ソース `0064cf7d7047ba94f27b4722f88ff91641918b77`。[公開IPA](https://github.com/koyuuuuu/personal-browser-distribution/releases/download/v0.4.2-build.27/PersonalBrowser.ipa) は916001 bytes、SHA-256 `3d3477697c89d15cd3cc955c442b486bee65ccd62917195f2ef130cc5e75a4ad`。新機能は0.5.0から追加し、このタグ・IPAは差し替えない。
 
 ## IPAの保管先
 
-初期版の保存時は、会話側のGitHub連携から`uploads.github.com`へのアップロードが401になった。そのため初期IPAは[非公開のipa-archiveブランチ](https://github.com/koyuuuuu/personal-browser/tree/ipa-archive/v0.1.0)をIPA保管専用に使う。ソース用のmainとは分け、保管ブランチをmainへマージしない。
+初期版の保存時は、会話側のGitHub連携から`uploads.github.com`へのアップロードが401になった。そのため初期IPAは[ipa-archiveブランチ](https://github.com/koyuuuuu/personal-browser/tree/ipa-archive/v0.1.0)をIPA保管専用に使う。ソース用のmainとは分け、保管ブランチをmainへマージしない。
 
-`v0.1.0/`に`PersonalBrowser.ipa`、`build-info.json`、`SHA256SUMS.txt`、説明を保存した。初期IPAは330,871 bytesと小さいため通常のGit blobで保存する。初期版の履歴は上書きしない。0.2.0以降はActionsのGITHUB_TOKENで非公開Release assetsへの保存に成功しており、新版はReleaseに保存する。公開配布先には承認済みのIPAだけを複製する。Git LFSや有料ストレージを自動追加しない。
+`v0.1.0/`に`PersonalBrowser.ipa`、`build-info.json`、`SHA256SUMS.txt`、説明を保存した。初期IPAは330,871 bytesと小さいため通常のGit blobで保存する。初期版の履歴は上書きしない。0.2.0以降はActionsのGITHUB_TOKENでRelease assetsへの保存に成功しており、新版はReleaseに保存する。公開配布先には承認済みのIPAだけを複製する。Git LFSや有料ストレージを自動追加しない。
 
-Actions成果物は一時保管として1日で失効するが、この保管ブランチにはその自動削除期限はない。リポジトリ・ブランチ等を削除しない限り保存できる。初期版の保管ブランチは非公開のまま。秘密鍵、Apple Account認証情報、端末内の履歴・Cookieは保存しない。
+Actions成果物は一時保管として1日で失効するが、この保管ブランチにはその自動削除期限はない。リポジトリ・ブランチ等を削除しない限り保存できる。現在は本体リポジトリの公開に伴い保管ブランチも公開されている。秘密鍵、Apple Account認証情報、端末内の履歴・Cookieは保存しない。
 
 ## 今後の版の付け方
 
@@ -52,4 +52,10 @@ Gitでソースを戻せることと、iPhone内のデータを以前へ戻せ�
 
 ## 自動配信への移行
 
-2026-10-24の追加要件により、mainへのアプリ関連pushからビルド・Release保存・SideStoreソース更新を自動化する。タグは`vVERSION-build.NUMBER`。本体ソースは非公開を維持し、IPA・配信JSON・必要なアイコンのみ専用の公開リポジトリへ配信する。[初回設定と運用](distribution.ja.md)を参照。
+2026-10-24の追加要件により、mainへのアプリ関連pushからビルド・Release保存・SideStoreソース更新を自動化する。タグは`vVERSION-build.NUMBER`。本体ソースは現在公開済み。専用の配布リポジトリにはIPA・配信JSON・必要なアイコンのみを置く。[初回設定と運用](distribution.ja.md)を参照。
+
+## 0.5.0 build38の例外と次回の版番号
+
+本人の即時配信指示により、今回だけ固定ソースからテストを追加実行せずbuild38を配信した。通常のCIは変更していない。次回はマーケティングバージョンを0.5.1以上に上げてからアプリ変更をpushする。通常のiOSワークフローはrun37までのため、次回もビルド番号38になり得るが、タグを`v0.5.1-build.38`等として配信済み`v0.5.0-build.38`との衝突を避ける。0.5.0のIPAは差し替えない。
+
+メール非公開化で変更した過去のソースIDは`distribution/history-rewrite.json`で対応付ける。過去の配信記録に残る元のIDと、現在のタグのIDをこの対応表で照合し、IPAのハッシュは変更しない。

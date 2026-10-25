@@ -35,5 +35,7 @@
     "Unsigned device IPA generation and inspection",
     "Release and SideStore feed publication",
     "Real-device X/app handoff acceptance"
-  ]
+  ],
+  "historical_record": true,
+  "superseded_by": "validation-0.5.0-build38.json"
 }

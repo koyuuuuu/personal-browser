@@ -1,0 +1,57 @@
+{
+  "version": "0.5.0",
+  "build": "38",
+  "source_commit": "ef8a61549807173f81a4710c2c6e81fe3a72cc5d",
+  "tag": "v0.5.0-build.38",
+  "delivery_status": "published",
+  "published_at_utc": "2026-10-25T20:10:34Z",
+  "ci_run": "https://github.com/koyuuuuu/personal-browser/actions/runs/40229381819",
+  "source_repository": "https://github.com/koyuuuuu/personal-browser",
+  "source_visibility": "public",
+  "public_release": "https://github.com/koyuuuuu/personal-browser-distribution/releases/tag/v0.5.0-build.38",
+  "source_url": "https://raw.githubusercontent.com/koyuuuuu/personal-browser-distribution/main/source.json",
+  "ipa": {
+    "sha256": "695f90d84ec04ec5f793b2dd55387eceab6b72fd5e0aacfb592ced13691d2a5f",
+    "size": 992118,
+    "bundle_id": "local.personalbrowser.app",
+    "minimum_ios": "17.0",
+    "architecture": "arm64",
+    "data_schema": 1
+  },
+  "verification": {
+    "native_device_build": "passed",
+    "additional_core_ui_compatibility_tests": "skipped_by_explicit_user_request",
+    "latest_normal_run_cancelled": "40228543617",
+    "anonymous_latest_ipa_download": "passed",
+    "feed_release_ipa_hash_size_identity_version": "matched",
+    "mybrowser_url_scheme": "present",
+    "extensions": "none",
+    "full_suite_on_release_source_passed": false
+  },
+  "preceding_run36": {
+    "ci_run": "https://github.com/koyuuuuu/personal-browser/actions/runs/40226190317",
+    "core_passed": 53,
+    "ui_passed": 29,
+    "ui_failed": 1,
+    "failure": "Existing HTTP fallback UI test lost address-field focus during keyboard animation; test-only timing fix is in the released source, without a completed full rerun."
+  },
+  "device_acceptance": {
+    "sidestore_update": "user_reported_success",
+    "all_features_verified": false,
+    "user_data_retention_verified": false
+  },
+  "baseline": {
+    "version": "0.4.2",
+    "build": "27",
+    "source_commit": "0064cf7d7047ba94f27b4722f88ff91641918b77",
+    "original_source_commit": "70052bb73a2170eb516bb99aece43b13918a0553",
+    "sha256": "3d3477697c89d15cd3cc955c442b486bee65ccd62917195f2ef130cc5e75a4ad",
+    "retained_in_feed": true
+  },
+  "one_time_workflow": "removed_after_delivery; normal ios.yml unchanged",
+  "next_release_requirement": "Bump marketing version to at least 0.5.1 before next app push; normal workflow may next use build38. Never overwrite v0.5.0-build.38.",
+  "known_device_acceptance_remaining": [
+    "X authenticated pages and actual app handoff",
+    "Individual feature behavior and retained on-device data; update success alone does not establish all acceptance"
+  ]
+}
