@@ -80,7 +80,7 @@ final class BrowserUITests: XCTestCase {
         XCTAssertTrue(favorites.element(boundBy: 2).waitForExistence(timeout: 10))
         let first = favorites.element(boundBy: 0), third = favorites.element(boundBy: 2)
         let firstID = first.identifier, thirdID = third.identifier
-        first.press(forDuration: 0.7, thenDragTo: third)
+        first.press(forDuration: 0.7, thenDragTo: third, withVelocity: .slow, thenHoldForDuration: 0.5)
         let moved = app.buttons[firstID], target = app.buttons[thirdID]
         XCTAssertEqual(XCTWaiter.wait(for: [XCTNSPredicateExpectation(predicate: NSPredicate { _, _ in moved.frame.minX > target.frame.minX }, object: nil)], timeout: 5), .completed)
         tapMenuControl("menuButton"); app.buttons["設定"].tap(); tapMenuControl("favoritesSettingsLink")

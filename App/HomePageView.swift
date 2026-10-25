@@ -1,10 +1,13 @@
 import SwiftUI
+import UniformTypeIdentifiers
 
 @MainActor
 struct HomePageView: View {
     @ObservedObject var store: BrowserStore
     let isPrivate: Bool
     @State private var editing: Bookmark?
+    @State private var draggingFavorite: UUID?
+    @State private var lastDragTarget: UUID?
     var body: some View {
         GeometryReader { geometry in
             let columns = store.features.favoriteColumns
@@ -34,12 +37,12 @@ struct HomePageView: View {
                                 }
                                 .buttonStyle(.plain)
                                 .accessibilityIdentifier("favorite-" + item.id.uuidString)
-                                .draggable(item.id.uuidString)
-                                .dropDestination(for: String.self) { values, _ in
-                                    guard values.count == 1, let id = UUID(uuidString: values[0]), store.extras.favorites.contains(where: { $0.id == id }) else { return false }
-                                    withAnimation(.snappy(duration: 0.2)) { store.moveFavorite(id, onto: item.id) }
-                                    return true
+                                .onDrag {
+                                    draggingFavorite = item.id; lastDragTarget = nil
+                                    return NSItemProvider(object: item.id.uuidString as NSString)
                                 }
+                                .onDrop(of: [UTType.text], delegate: FavoriteDropDelegate(
+                                    target: item.id, dragging: $draggingFavorite, lastTarget: $lastDragTarget, store: store))
                                 .contextMenu {
                                     Button("新しいタブで開く", systemImage: "plus.square") { _ = store.newTab(isPrivate: isPrivate, url: item.url) }
                                     Button("編集", systemImage: "pencil") { editing = item }
@@ -70,5 +73,24 @@ struct SiteIcon: View {
             .foregroundStyle(.white).frame(width: size, height: size)
             .background(Color(hue: hue, saturation: 0.55, brightness: 0.7), in: RoundedRectangle(cornerRadius: size * 0.23))
             .accessibilityHidden(true)
+    }
+}
+
+@MainActor
+private struct FavoriteDropDelegate: DropDelegate {
+    let target: UUID
+    @Binding var dragging: UUID?
+    @Binding var lastTarget: UUID?
+    let store: BrowserStore
+    func validateDrop(info: DropInfo) -> Bool { dragging != nil }
+    func dropEntered(info: DropInfo) {
+        guard let dragging, dragging != target, lastTarget != target else { return }
+        lastTarget = target
+        withAnimation(.snappy(duration: 0.2)) { store.moveFavorite(dragging, onto: target) }
+    }
+    func dropUpdated(info: DropInfo) -> DropProposal? { DropProposal(operation: .move) }
+    func performDrop(info: DropInfo) -> Bool {
+        guard dragging != nil else { return false }
+        dragging = nil; lastTarget = nil; return true
     }
 }
