@@ -153,6 +153,12 @@ public enum LibraryTransfer {
         return text.trimmingCharacters(in: CharacterSet(charactersIn: "\u{FEFF}"))
     }
 
+    /// Repair only the exact title transformation caused by the old HTML entity
+    /// parser. Do not overwrite custom titles or guess at unrelated mojibake.
+    public static func canRepairImportedTitle(_ old: String, with new: String) -> Bool {
+        old != new && old.contains("&") && unescape(old) == new
+    }
+
     private static func unescape(_ text: String) -> String {
         let plain = text.replacingOccurrences(of: #"<[^>]+>"#, with: "", options: .regularExpression)
         guard let regex = try? NSRegularExpression(pattern: #"&(#x[0-9a-fA-F]+|#X[0-9a-fA-F]+|#[0-9]+|[A-Za-z][A-Za-z0-9]+);"#) else { return plain }

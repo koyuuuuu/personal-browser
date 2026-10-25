@@ -200,8 +200,11 @@ struct BrowserChrome: View {
         }
         .background(.regularMaterial).contentShape(Rectangle())
     }
+    private var addressMatches: [HistoryEntry] {
+        addressFocused.wrappedValue ? HistoryPresentation.suggestions(address, history: store.snapshot.history, limit: compact ? 2 : 4) : []
+    }
     private var suggestions: some View {
-        let matches = addressFocused.wrappedValue ? HistoryPresentation.suggestions(address, history: store.snapshot.history, limit: compact ? 2 : 4) : []
+        let matches = Array(addressMatches.dropFirst())
         return Group {
             if !matches.isEmpty {
                 ScrollView {
@@ -227,10 +230,20 @@ struct BrowserChrome: View {
     private var addressEntry: some View {
         HStack(spacing: compact ? 6 : 8) {
             Image(systemName: tab.url?.scheme == "http" ? "exclamationmark.circle" : "globe").font(.system(size: compact ? 12 : 15)).foregroundStyle(.secondary)
-            TextField("URLまたは検索語", text: $address)
-                .font(.system(size: compact ? addressFont * 0.875 : addressFont)).textInputAutocapitalization(.never).autocorrectionDisabled().keyboardType(.webSearch).submitLabel(.go)
+            VStack(alignment: .leading, spacing: 2) {
+                TextField("URLまたは検索語", text: $address)
+                    .font(.system(size: compact ? addressFont * 0.875 : addressFont)).textInputAutocapitalization(.never).autocorrectionDisabled().keyboardType(.webSearch).submitLabel(.go)
                 .focused(addressFocused).accessibilityIdentifier("addressField")
                 .onSubmit { let input = address; addressFocused.wrappedValue = false; store.navigate(input) }
+                if let match = addressMatches.first {
+                    Button {
+                        address = match.url.absoluteString; addressFocused.wrappedValue = false; store.open(match.url)
+                    } label: {
+                        Label(match.url.absoluteString, systemImage: "clock").font(.caption2).lineLimit(1)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                    }.buttonStyle(.plain).foregroundStyle(.blue).accessibilityIdentifier("addressSuggestion-" + match.id.uuidString)
+                }
+            }
             if addressFocused.wrappedValue {
                 Button("入力を消去", systemImage: "xmark.circle.fill") { address = "" }.labelStyle(.iconOnly).foregroundStyle(.secondary)
             }

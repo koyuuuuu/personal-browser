@@ -46,6 +46,12 @@ final class BrowserInteractionTests: XCTestCase {
         XCTAssertEqual(page.folders, ["お気に入り"])
         XCTAssertEqual(page.url.absoluteString, "https://example.com/?a=1&b=2")
     }
+    func testReimportRepairsOnlyExactEntityCorruptionAndPreservesCustomTitles() {
+        XCTAssertTrue(LibraryTransfer.canRepairImportedTitle("&#x65E5;&#x672C;&#35486;", with: "日本語"))
+        XCTAssertFalse(LibraryTransfer.canRepairImportedTitle("自分で付けた名前", with: "日本語"))
+        XCTAssertFalse(LibraryTransfer.canRepairImportedTitle("Rock & Roll", with: "Other"))
+        XCTAssertFalse(LibraryTransfer.canRepairImportedTitle("日本語", with: "日本語"))
+    }
     func testUTF16SafariImportAndMalformedEncodingDoesNotSilentlyCorrupt() throws {
         let html = "<DL><A HREF='https://example.com'>日本語 🎸</A></DL>"
         let data = try XCTUnwrap(html.data(using: .utf16))

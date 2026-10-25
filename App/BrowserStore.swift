@@ -465,7 +465,12 @@ final class BrowserStore: ObservableObject {
         for page in pages {
             switch kind {
             case .bookmarks:
-                guard bookmarkURLs.insert(page.url).inserted else { continue }
+                guard bookmarkURLs.insert(page.url).inserted else {
+                    if let index = snapshot.bookmarks.firstIndex(where: { $0.url == page.url }), LibraryTransfer.canRepairImportedTitle(snapshot.bookmarks[index].title, with: page.title) {
+                        snapshot.bookmarks[index].title = page.title; count += 1
+                    }
+                    continue
+                }
                 let bookmark = Bookmark(title: page.title, url: page.url)
                 snapshot.bookmarks.append(bookmark)
                 var parent: UUID?
@@ -475,7 +480,12 @@ final class BrowserStore: ObservableObject {
                 }
                 extras.bookmarkFolders[bookmark.id.uuidString] = parent
             case .favorites:
-                guard favoriteURLs.insert(page.url).inserted else { continue }
+                guard favoriteURLs.insert(page.url).inserted else {
+                    if let index = extras.favorites.firstIndex(where: { $0.url == page.url }), LibraryTransfer.canRepairImportedTitle(extras.favorites[index].title, with: page.title) {
+                        extras.favorites[index].title = page.title; count += 1
+                    }
+                    continue
+                }
                 extras.favorites.append(Bookmark(title: page.title, url: page.url))
             case .history:
                 guard historyURLs.insert(page.url).inserted else { continue }

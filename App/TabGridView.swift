@@ -1,6 +1,7 @@
 import SwiftUI
 import UIKit
 import ImageIO
+import Combine
 
 /// Decoded previews are shared by cells and swipe overlays. Never decode JPEGs
 /// on each gesture frame; the cache can evict them under memory pressure.
@@ -56,17 +57,15 @@ struct TabGridView: UIViewRepresentable {
                       let cell = collection.dequeueReusableCell(withReuseIdentifier: "tab", for: index) as? SwipeTabCell else { return nil }
                 self.parent.store.loadPreview(tab)
                 cell.resetSwipe()
-                cell.onClose = { [weak self, weak tab] in
-                    guard let self, let tab else { return }
+                cell.onClose = { [weak self, weak tab, weak collection] in
+                    guard let self, let tab, let collection else { return }
                     // Update the collection now, while the finger is still down.
                     self.parent.store.close(tab)
                     self.parent.tabsUpdated(in: collection, coordinator: self)
                 }
-                cell.contentConfiguration = UIHostingConfiguration {
-                    TabCard(tab: tab, selected: self.parent.store.selectedID == id,
-                            select: { [weak self, weak tab] in if let self, let tab { self.parent.select(tab) } },
-                            close: { [weak cell] in cell?.commitClose() })
-                }.margins(.all, 0)
+                cell.configure(tab: tab, selected: self.parent.store.selectedID == id, textSize: self.parent.store.presentation.interfaceTextSize) { [weak self, weak tab] in
+                    if let self, let tab { self.parent.select(tab) }
+                }
                 return cell
             }
         }
@@ -97,9 +96,8 @@ struct TabGridView: UIViewRepresentable {
         }
     }
     private func tabsUpdated(in view: UICollectionView, coordinator: Coordinator) {
-        var updated = self
         let allowed = Set(store.tabs.map(\.id))
-        updated = TabGridView(store: store, tabs: tabs.filter { allowed.contains($0.id) }, columns: columns, reduceMotion: reduceMotion, select: select)
+        let updated = TabGridView(store: store, tabs: tabs.filter { allowed.contains($0.id) }, columns: columns, reduceMotion: reduceMotion, select: select)
         coordinator.parent = updated; coordinator.update(view)
     }
 }
@@ -107,19 +105,110 @@ struct TabGridView: UIViewRepresentable {
 @MainActor
 final class SwipeTabCell: UICollectionViewCell, UIGestureRecognizerDelegate {
     var onClose: (() -> Void)?
+    private var onSelect: (() -> Void)?
     private var committed = false
+    private var observation: AnyCancellable?
+    private weak var tab: BrowserTab?
+    private var selectedTab = false
+    private let header = UIView()
+    private let icon = UIImageView()
+    private let titleLabel = UILabel()
+    private let closeButton = UIButton(type: .system)
+    private let previewButton = UIButton(type: .custom)
+    private let previewImage = UIImageView()
+    private let placeholder = UILabel()
+    private let playing = UIImageView(image: UIImage(systemName: "play.circle.fill"))
     private lazy var pan = UIPanGestureRecognizer(target: self, action: #selector(drag(_:)))
     override init(frame: CGRect) {
-        super.init(frame: frame); pan.delegate = self; contentView.addGestureRecognizer(pan)
+        super.init(frame: frame)
+        pan.delegate = self; pan.cancelsTouchesInView = true; addGestureRecognizer(pan)
         contentView.clipsToBounds = true; contentView.layer.cornerRadius = 14
+        contentView.backgroundColor = .secondarySystemBackground
+        header.backgroundColor = .tertiarySystemBackground
+        contentView.addSubview(header); header.addSubview(icon); header.addSubview(titleLabel); header.addSubview(closeButton)
+        titleLabel.font = .preferredFont(forTextStyle: .caption1); titleLabel.adjustsFontForContentSizeCategory = true
+        titleLabel.lineBreakMode = .byTruncatingTail
+        icon.contentMode = .scaleAspectFit
+        closeButton.setImage(UIImage(systemName: "xmark"), for: .normal)
+        closeButton.accessibilityLabel = "タブを閉じる"
+        closeButton.addTarget(self, action: #selector(closeTapped), for: .touchUpInside)
+        contentView.addSubview(previewButton)
+        previewButton.clipsToBounds = true
+        previewButton.addTarget(self, action: #selector(selectTapped), for: .touchUpInside)
+        previewButton.addSubview(previewImage); previewButton.addSubview(placeholder); previewButton.addSubview(playing)
+        previewImage.contentMode = .scaleToFill; previewImage.isUserInteractionEnabled = false
+        placeholder.font = .preferredFont(forTextStyle: .caption1); placeholder.textAlignment = .center
+        placeholder.numberOfLines = 2; placeholder.textColor = .secondaryLabel; placeholder.isUserInteractionEnabled = false
+        playing.tintColor = .white; playing.contentMode = .scaleAspectFit; playing.isUserInteractionEnabled = false
+        previewButton.isAccessibilityElement = true
     }
     required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }
-    override func prepareForReuse() { super.prepareForReuse(); onClose = nil; resetSwipe() }
+    override func prepareForReuse() {
+        super.prepareForReuse(); observation = nil; tab = nil; onClose = nil; onSelect = nil; resetSwipe()
+    }
+    func configure(tab: BrowserTab, selected: Bool, textSize: InterfaceTextSize, select: @escaping () -> Void) {
+        observation = nil; self.tab = tab; selectedTab = selected; onSelect = select
+        let category: UIContentSizeCategory? = switch textSize {
+        case .system: nil
+        case .small: .small
+        case .standard: .large
+        case .large: .extraLarge
+        case .extraLarge: .extraExtraLarge
+        }
+        let traits = category.map { UITraitCollection(preferredContentSizeCategory: $0) }
+        titleLabel.font = .preferredFont(forTextStyle: .caption1, compatibleWith: traits)
+        placeholder.font = .preferredFont(forTextStyle: .caption1, compatibleWith: traits)
+        refresh()
+        observation = tab.objectWillChange.sink { [weak self] in
+            // @Published announces before changing the value.
+            DispatchQueue.main.async { [weak self] in self?.refresh() }
+        }
+    }
+    private func refresh() {
+        guard let tab else { return }
+        titleLabel.text = tab.title
+        icon.image = UIImage(systemName: tab.isPrivate ? "hand.raised.fill" : "globe")
+        icon.tintColor = tab.isPrivate ? .systemPurple : .systemBlue
+        closeButton.accessibilityIdentifier = "closeTab-" + tab.id.uuidString
+        previewImage.image = PreviewImages.shared.image(tab)
+        placeholder.isHidden = previewImage.image != nil
+        placeholder.text = tab.url?.host ?? "新しいタブ"
+        playing.isHidden = !tab.hasActiveMedia
+        previewButton.accessibilityLabel = tab.title + (selectedTab ? "、選択中" : "")
+        previewButton.accessibilityValue = tab.previewData == nil ? "プレビューなし" : "プレビューあり"
+        contentView.layer.borderWidth = selectedTab ? 3 : 0
+        contentView.layer.borderColor = (tab.isPrivate ? UIColor.systemPurple : .systemBlue).cgColor
+        setNeedsLayout()
+    }
+    override func layoutSubviews() {
+        super.layoutSubviews()
+        let width = contentView.bounds.width
+        header.frame = CGRect(x: 0, y: 0, width: width, height: 44)
+        icon.frame = CGRect(x: 8, y: 13, width: 18, height: 18)
+        closeButton.frame = CGRect(x: width - 40, y: 0, width: 40, height: 44)
+        titleLabel.frame = CGRect(x: 32, y: 0, width: max(0, width - 72), height: 44)
+        previewButton.frame = CGRect(x: 0, y: 44, width: width, height: max(0, contentView.bounds.height - 44))
+        let box = previewButton.bounds
+        if let image = previewImage.image {
+            let scale = max(box.width / image.size.width, box.height / image.size.height)
+            previewImage.frame = CGRect(x: (box.width - image.size.width * scale) / 2, y: 0, width: image.size.width * scale, height: image.size.height * scale)
+        } else { previewImage.frame = box }
+        placeholder.frame = box.insetBy(dx: 10, dy: 10)
+        playing.frame = CGRect(x: box.midX - 18, y: box.midY - 18, width: 36, height: 36)
+    }
     func resetSwipe() { committed = false; contentView.transform = .identity; contentView.alpha = 1 }
     override func gestureRecognizerShouldBegin(_ gestureRecognizer: UIGestureRecognizer) -> Bool {
+        guard gestureRecognizer === pan else { return super.gestureRecognizerShouldBegin(gestureRecognizer) }
         let velocity = pan.velocity(in: self)
         return velocity.x < 0 && abs(velocity.x) > abs(velocity.y) * 1.4
     }
+    func gestureRecognizer(_ gestureRecognizer: UIGestureRecognizer, shouldRecognizeSimultaneouslyWith otherGestureRecognizer: UIGestureRecognizer) -> Bool {
+        // Vertical collection scrolling remains available; our horizontal test
+        // rejects those gestures before moving a cell.
+        gestureRecognizer === pan && otherGestureRecognizer is UIPanGestureRecognizer
+    }
+    @objc private func selectTapped() { guard !committed, pan.state != .began, pan.state != .changed else { return }; onSelect?() }
+    @objc private func closeTapped() { commitClose() }
     @objc private func drag(_ gesture: UIPanGestureRecognizer) {
         guard !committed else { return }
         let x = min(0, gesture.translation(in: self).x)
@@ -140,45 +229,5 @@ final class SwipeTabCell: UICollectionViewCell, UIGestureRecognizerDelegate {
     func commitClose() {
         guard !committed else { return }; committed = true
         onClose?()
-    }
-}
-
-@MainActor
-struct TabCard: View {
-    @ObservedObject var tab: BrowserTab
-    let selected: Bool
-    let select: () -> Void
-    let close: () -> Void
-    var body: some View {
-        GeometryReader { geometry in
-            VStack(spacing: 0) {
-                HStack(spacing: 6) {
-                    Image(systemName: tab.isPrivate ? "hand.raised.fill" : "globe").foregroundStyle(tab.isPrivate ? .purple : .blue)
-                    Text(tab.title).font(.caption.bold()).lineLimit(1)
-                    Spacer(minLength: 0)
-                    Button("タブを閉じる", systemImage: "xmark", action: close).labelStyle(.iconOnly)
-                        .frame(width: 40, height: 44).accessibilityIdentifier("closeTab-" + tab.id.uuidString)
-                }.padding(.leading, 8).frame(height: 44).background(.regularMaterial)
-                Button(action: select) {
-                    ZStack {
-                        Color(uiColor: .secondarySystemBackground)
-                        if let image = PreviewImages.shared.image(tab) {
-                            Image(uiImage: image).resizable().scaledToFill()
-                                .frame(width: geometry.size.width, height: max(0, geometry.size.height - 44), alignment: .top).clipped()
-                        } else {
-                            VStack(spacing: 10) {
-                                Image(systemName: tab.isPrivate ? "hand.raised" : "globe").font(.largeTitle)
-                                Text(tab.url?.host ?? "新しいタブ").font(.caption).lineLimit(2)
-                            }.foregroundStyle(.secondary).padding()
-                        }
-                        if tab.hasActiveMedia { Image(systemName: "play.circle.fill").font(.largeTitle).foregroundStyle(.white).shadow(radius: 3) }
-                    }.frame(width: geometry.size.width, height: max(0, geometry.size.height - 44)).clipped().contentShape(Rectangle())
-                }.buttonStyle(.plain).accessibilityLabel(tab.title + (selected ? "、選択中" : ""))
-                    .accessibilityValue(tab.previewData == nil ? "プレビューなし" : "プレビューあり")
-            }
-            .background(.background).clipShape(RoundedRectangle(cornerRadius: 14))
-            .overlay(RoundedRectangle(cornerRadius: 14).strokeBorder(selected ? Color.accentColor : .clear, lineWidth: 3).allowsHitTesting(false))
-            .accessibilityAction(named: Text("閉じる"), close)
-        }
     }
 }

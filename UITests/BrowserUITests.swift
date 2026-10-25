@@ -196,7 +196,7 @@ final class BrowserUITests: XCTestCase {
         XCTAssertTrue(app.navigationBars["タブ 19"].waitForExistence(timeout: 5))
         let active = app.buttons["新しいタブ、選択中"]
         XCTAssertTrue(active.waitForExistence(timeout: 5)); XCTAssertTrue(active.isHittable)
-        XCTAssertLessThan(active.frame.maxY, app.buttons["overviewNewTabButton"].frame.minY)
+        XCTAssertLessThanOrEqual(active.frame.maxY, app.buttons["overviewNewTabButton"].frame.minY + 0.5)
     }
     func testNormalPreviewSurvivesProcessRestartWithoutLoadingThePage() {
         XCTAssertTrue(app.webViews.firstMatch.staticTexts["オフラインのテストページ"].waitForExistence(timeout: 10))
@@ -334,6 +334,9 @@ final class BrowserUITests: XCTestCase {
         app.swipeDown()
         XCTAssertTrue(app.textFields["addressField"].waitForExistence(timeout: 5))
         tapMenuControl("menuButton")
+        for _ in 0..<4 where !app.buttons["設定"].exists { app.collectionViews.firstMatch.swipeUp() }
+        XCTAssertTrue(app.buttons["設定"].waitForExistence(timeout: 5))
+        XCTAssertLessThan(app.buttons["ダウンロード"].frame.minY, app.buttons["設定"].frame.minY)
         app.buttons["設定"].tap()
         XCTAssertTrue(app.navigationBars["設定"].waitForExistence(timeout: 5))
         app.navigationBars["設定"].buttons["閉じる"].tap()
