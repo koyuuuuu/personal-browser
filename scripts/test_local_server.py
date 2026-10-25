@@ -5,7 +5,6 @@ import html
 import io
 import math
 import struct
-import signal
 import re
 import ssl
 import threading
@@ -98,7 +97,9 @@ def main():
     servers[1].socket = context.wrap_socket(servers[1].socket, server_side=True)
     for server in servers:
         threading.Thread(target=server.serve_forever, daemon=True).start()
-    signal.pause()
+    # A subprocess (simctl) may wake signal.pause through SIGCHLD on macOS.
+    # Keep the fixture alive until the CI cleanup terminates this process.
+    threading.Event().wait()
 
 
 if __name__ == '__main__':

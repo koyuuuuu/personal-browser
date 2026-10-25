@@ -6,7 +6,7 @@ final class BrowserUITests: XCTestCase {
 
     override func setUpWithError() throws {
         continueAfterFailure = false
-        if Self.launchFailure { throw XCTSkip("The initial browser controls failed to appear; see the first failure before spending more runner time") }
+        if Self.launchFailure { throw XCTSkip("Initial controls or the external-URL fixture failed; see the first failure before spending more runner time") }
         XCUIDevice.shared.orientation = .portrait
         app = XCUIApplication()
         app.launchArguments = ["--ui-testing"]
@@ -47,9 +47,15 @@ final class BrowserUITests: XCTestCase {
             finished.fulfill()
         }.resume()
         wait(for: [finished], timeout: 20)
+        let springboard = XCUIApplication(bundleIdentifier: "com.apple.springboard")
+        let open = springboard.alerts.buttons.matching(NSPredicate(format: "label == 'Open' OR label == '開く'")).firstMatch
+        if open.waitForExistence(timeout: 3) { open.tap() }
         XCTAssertTrue(app.wait(for: .runningForeground, timeout: 10))
     }
-    func testExternalURLColdLaunchBackgroundAndInvalidInput() {
+    func test00ExternalURLColdLaunchBackgroundAndInvalidInput() {
+        // Run the OS-delivery prerequisite first and stop cascading UI work if
+        // it leaves a system prompt or unavailable fixture behind.
+        Self.launchFailure = true
         app.terminate()
         XCTAssertTrue(app.wait(for: .notRunning, timeout: 5))
         openExternalFixture("cold")
@@ -65,6 +71,7 @@ final class BrowserUITests: XCTestCase {
         app.alerts.buttons["OK"].tap()
         app.buttons["tabsButton"].tap()
         XCTAssertTrue(app.navigationBars["タブ 3"].waitForExistence(timeout: 5))
+        Self.launchFailure = false
     }
 
     func testFavoriteDragReordersAndSettingsEditsLatestDataAfterRestart() {
