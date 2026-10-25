@@ -29,11 +29,11 @@ public enum LibraryTransferError: Error, LocalizedError {
 public enum LibraryTransfer {
     public static func parse(_ data: Data, kind: LibraryImportKind) throws -> [ImportedPage] {
         guard data.count <= 20 * 1024 * 1024 else { throw LibraryTransferError.tooLarge }
-        guard let text = String(data: data, encoding: .utf8)?.replacingOccurrences(of: "\u{FEFF}", with: "") else { throw LibraryTransferError.malformed }
+        let text = try decodeText(data)
         let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
         let pages: [ImportedPage]
         if trimmed.hasPrefix("{") || trimmed.hasPrefix("[") {
-            let object = try JSONSerialization.jsonObject(with: data)
+            let object = try JSONSerialization.jsonObject(with: Data(trimmed.utf8))
             pages = try parseJSON(object, kind: kind)
         } else if trimmed.lowercased().contains("<a ") || trimmed.lowercased().contains("<dl") {
             pages = parseHTML(trimmed)
@@ -128,10 +128,48 @@ public enum LibraryTransfer {
         return pages
     }
 
+    public static func decodeText(_ data: Data) throws -> String {
+        let bytes = Array(data.prefix(4))
+        let encoding: String.Encoding?
+        if bytes.starts(with: [0xFF, 0xFE, 0, 0]) || bytes.starts(with: [0, 0, 0xFE, 0xFF]) { encoding = .utf32 }
+        else if bytes.starts(with: [0xFF, 0xFE]) || bytes.starts(with: [0xFE, 0xFF]) { encoding = .utf16 }
+        else { encoding = nil }
+        if let encoding, let text = String(data: data, encoding: encoding) { return text.trimmingCharacters(in: CharacterSet(charactersIn: "\u{FEFF}")) }
+        let header = String(decoding: data.prefix(4096), as: UTF8.self)
+        let regex = try NSRegularExpression(pattern: #"(?i)charset\s*=\s*["']?\s*([a-z0-9_-]+)"#)
+        let ns = header as NSString
+        let charset = regex.firstMatch(in: header, range: NSRange(location: 0, length: ns.length)).map { ns.substring(with: $0.range(at: 1)).lowercased() }
+        let declared: String.Encoding? = switch charset {
+        case "shift_jis", "shift-jis", "sjis", "windows-31j", "cp932": .shiftJIS
+        case "euc-jp": .japaneseEUC
+        case "iso-2022-jp": .iso2022JP
+        case "windows-1252": .windowsCP1252
+        case "iso-8859-1": .isoLatin1
+        default: nil
+        }
+        // Honor an explicit legacy charset; do not guess Latin-1 for invalid UTF-8.
+        if let declared, let text = String(data: data, encoding: declared) { return text }
+        guard let text = String(data: data, encoding: .utf8), !text.contains("\u{FFFD}") else { throw LibraryTransferError.malformed }
+        return text.trimmingCharacters(in: CharacterSet(charactersIn: "\u{FEFF}"))
+    }
+
     private static func unescape(_ text: String) -> String {
-        var value = text.replacingOccurrences(of: #"<[^>]+>"#, with: "", options: .regularExpression)
-        for (entity, replacement) in [("&quot;", "\""), ("&#39;", "'"), ("&lt;", "<"), ("&gt;", ">"), ("&amp;", "&")] { value = value.replacingOccurrences(of: entity, with: replacement) }
-        return value
+        let plain = text.replacingOccurrences(of: #"<[^>]+>"#, with: "", options: .regularExpression)
+        guard let regex = try? NSRegularExpression(pattern: #"&(#x[0-9a-fA-F]+|#X[0-9a-fA-F]+|#[0-9]+|[A-Za-z][A-Za-z0-9]+);"#) else { return plain }
+        let names = ["quot": "\"", "apos": "'", "lt": "<", "gt": ">", "amp": "&", "nbsp": " ", "copy": "©", "reg": "®", "hellip": "…", "ndash": "–", "mdash": "—", "lsquo": "‘", "rsquo": "’", "ldquo": "“", "rdquo": "”", "middot": "·", "bull": "•", "trade": "™", "eacute": "é", "uuml": "ü"]
+        let source = plain as NSString; var result = "", end = 0
+        for match in regex.matches(in: plain, range: NSRange(location: 0, length: source.length)) {
+            result += source.substring(with: NSRange(location: end, length: match.range.location - end))
+            let entity = source.substring(with: match.range(at: 1))
+            var replacement = names[entity]
+            if entity.hasPrefix("#") {
+                let hex = entity.lowercased().hasPrefix("#x")
+                if let value = UInt32(entity.dropFirst(hex ? 2 : 1), radix: hex ? 16 : 10), value != 0, let scalar = UnicodeScalar(value) { replacement = String(scalar) }
+            }
+            result += replacement ?? source.substring(with: match.range)
+            end = NSMaxRange(match.range)
+        }
+        return result + source.substring(from: end)
     }
     private static func parseDate(_ text: String?) -> Date {
         guard let text else { return Date() }

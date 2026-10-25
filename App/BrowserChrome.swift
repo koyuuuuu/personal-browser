@@ -10,13 +10,16 @@ struct TabBrowserView: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var address = ""
     @State private var promptText = ""
+    @State private var swipe: AddressSwipeState?
+    @State private var swipeOffset: CGFloat = 0
+    @State private var settlingSwipe = false
     @FocusState private var addressFocused: Bool
 
     var body: some View {
         GeometryReader { geometry in
             let landscape = geometry.size.width > geometry.size.height && geometry.size.width > 550
             VStack(spacing: 0) {
-                if store.chromeVisible && (landscape || store.snapshot.settings.toolbarPosition == .top) { chrome(compact: landscape, width: geometry.size.width) }
+                if store.chromeVisible && (landscape || store.snapshot.settings.toolbarPosition == .top) { chrome(compact: landscape, width: geometry.size.width).zIndex(10) }
                 if tab.isPrivate && !landscape && store.chromeVisible {
                     Label("プライベート · 履歴とタブを端末に保存しません", systemImage: "hand.raised")
                         .font(.caption).foregroundStyle(.purple).padding(6).frame(maxWidth: .infinity)
@@ -29,10 +32,11 @@ struct TabBrowserView: View {
                     }.padding(8).background(Color.orange.opacity(0.12))
                 }
                 viewport(width: geometry.size.width)
-                if !landscape && store.chromeVisible && store.snapshot.settings.toolbarPosition == .bottom { chrome(compact: false, width: geometry.size.width) }
+                if !landscape && store.chromeVisible && store.snapshot.settings.toolbarPosition == .bottom { chrome(compact: false, width: geometry.size.width).zIndex(10) }
             }
+            .frame(width: geometry.size.width, height: geometry.size.height)
             .onAppear { store.setLandscape(landscape) }
-            .onChange(of: landscape) { _, value in addressFocused = false; store.setLandscape(value) }
+            .onChange(of: landscape) { _, value in addressFocused = false; swipe = nil; swipeOffset = 0; settlingSwipe = false; store.setLandscape(value) }
         }
         .background(Color(uiColor: .systemBackground))
         .onAppear { address = tab.url?.absoluteString ?? "" }
@@ -49,22 +53,82 @@ struct TabBrowserView: View {
     }
 
     private func viewport(width: CGFloat) -> some View {
-        ZStack {
-            WebSurface(store: store).accessibilityIdentifier("webContent").accessibilityHidden(!tab.hasContent)
-            if !tab.hasContent {
-                HomePageView(store: store, isPrivate: tab.isPrivate).id(tab.id)
-                    .simultaneousGesture(DragGesture(minimumDistance: 25).onEnded { value in
-                        if value.translation.height > 25 && abs(value.translation.height) > abs(value.translation.width) { store.revealChrome() }
-                    })
+        GeometryReader { geometry in
+            ZStack {
+                WebSurface(store: store).accessibilityIdentifier("webContent").accessibilityHidden(!tab.hasContent)
+                if !tab.hasContent {
+                    HomePageView(store: store, isPrivate: tab.isPrivate).id(tab.id)
+                        .simultaneousGesture(DragGesture(minimumDistance: 25).onEnded { value in
+                            guard abs(value.translation.height) > abs(value.translation.width) else { return }
+                            if value.translation.height > 25 { store.revealChrome() }
+                            else if value.translation.height < -25 { store.scrollChrome(delta: 40) }
+                        })
+                }
+                if let swipe {
+                    ZStack {
+                        swipePage(swipe.source, width: width, height: geometry.size.height).offset(x: swipeOffset)
+                        swipePage(swipe.target, width: width, height: geometry.size.height)
+                            .offset(x: swipeOffset + CGFloat(swipe.towardNext ? 1 : -1) * (width + 12))
+                    }.frame(width: width, height: geometry.size.height).clipped().allowsHitTesting(false).accessibilityHidden(true)
+                }
             }
+            .frame(width: width, height: geometry.size.height)
+            .clipped().contentShape(Rectangle())
         }
-        .frame(width: width).frame(maxHeight: .infinity).clipped()
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
         .accessibilityAction(named: Text("バーを表示")) { store.revealChrome() }
     }
+    @ViewBuilder private func swipePage(_ page: BrowserTab?, width: CGFloat, height: CGFloat) -> some View {
+        ZStack {
+            Color(uiColor: .systemBackground)
+            if let page, page.hasContent {
+                if let image = PreviewImages.shared.image(page) {
+                    Image(uiImage: image).resizable().scaledToFill().frame(width: width, height: height, alignment: .top).clipped()
+                } else {
+                    VStack { Image(systemName: "globe").font(.largeTitle); Text(page.title).lineLimit(2) }.padding()
+                }
+            } else { HomePageView(store: store, isPrivate: page?.isPrivate ?? tab.isPrivate) }
+        }.frame(width: width, height: height).clipShape(RoundedRectangle(cornerRadius: 16))
+    }
+    private func changeSwipe(_ value: DragGesture.Value, width: CGFloat) {
+        guard !settlingSwipe, abs(value.translation.width) > abs(value.translation.height) * 1.5 else { return }
+        let next = value.translation.width < 0
+        if swipe == nil || swipe?.towardNext != next {
+            guard let current = store.tabs.firstIndex(where: { $0.id == tab.id }) else { return }
+            let target: BrowserTab?
+            switch TabNavigation.destination(current: current, count: store.tabs.count, towardNext: next) {
+            case .existing(let index): target = store.tabs[index]; store.loadPreview(store.tabs[index])
+            case .create: target = nil
+            case .none: swipe = nil; swipeOffset = 0; return
+            }
+            tab.capturePreview()
+            swipe = AddressSwipeState(source: tab, target: target, towardNext: next)
+        }
+        swipeOffset = min(width, max(-width, value.translation.width))
+    }
+    private func finishSwipe(_ value: DragGesture.Value, width: CGFloat) {
+        guard let swipe, !settlingSwipe else { return }
+        let commit = abs(value.translation.width) > min(90, width * 0.22) || abs(value.predictedEndTranslation.width) > 130
+        settlingSwipe = true
+        withAnimation(reduceMotion ? nil : .easeOut(duration: 0.20), completionCriteria: .logicallyComplete) {
+            swipeOffset = commit ? CGFloat(swipe.towardNext ? -1 : 1) * (width + 12) : 0
+        } completion: {
+            if commit { store.switchTab(towardNext: swipe.towardNext) }
+            var transaction = Transaction(); transaction.disablesAnimations = true
+            withTransaction(transaction) { self.swipe = nil; swipeOffset = 0; settlingSwipe = false }
+        }
+    }
     private func chrome(compact: Bool, width: CGFloat) -> some View {
-        BrowserChrome(store: store, tab: tab, compact: compact, availableWidth: width, address: $address, addressFocused: $addressFocused, showSheet: showSheet, share: share)
+        BrowserChrome(store: store, tab: tab, compact: compact, availableWidth: width, address: $address, addressFocused: $addressFocused, showSheet: showSheet, share: share,
+                      swipeChanged: { changeSwipe($0, width: width) }, swipeEnded: { finishSwipe($0, width: width) })
     }
     private func finishDialog(_ value: String?) { let dialog = tab.dialog; tab.dialog = nil; dialog?.resolve(value) }
+}
+
+private struct AddressSwipeState {
+    let source: BrowserTab
+    let target: BrowserTab?
+    let towardNext: Bool
 }
 
 @MainActor
@@ -78,13 +142,15 @@ struct BrowserChrome: View {
     var addressFocused: FocusState<Bool>.Binding
     let showSheet: (BrowserSheet) -> Void
     let share: () -> Void
-    private var actions: [BrowserAction] { store.snapshot.settings.actions }
+    let swipeChanged: (DragGesture.Value) -> Void
+    let swipeEnded: (DragGesture.Value) -> Void
+    private var actions: [AddressBarAction] { store.toolbarActions }
     private var middle: Int { (actions.count + 1) / 2 }
     private var leftActions: [AddressBarAction] {
-        store.presentation.customAddressButtons ? store.presentation.addressLeft : (compact ? actions.prefix(middle).map { AddressBarAction(legacy: $0) } : [])
+        store.presentation.customAddressButtons ? store.addressLeftActions : (compact ? Array(actions.prefix(middle)) : [])
     }
     private var rightActions: [AddressBarAction] {
-        store.presentation.customAddressButtons ? store.presentation.addressRight : (compact ? actions.dropFirst(middle).map { AddressBarAction(legacy: $0) } : [])
+        store.presentation.customAddressButtons ? store.addressRightActions : (compact ? Array(actions.dropFirst(middle)) : [])
     }
     private func sideWidth(_ values: [AddressBarAction]) -> CGFloat {
         let total = leftActions.count + rightActions.count
@@ -103,7 +169,8 @@ struct BrowserChrome: View {
         }.frame(width: sideWidth(values), height: 36)
     }
     var body: some View {
-        Group {
+        VStack(spacing: 0) {
+            if !compact && store.snapshot.settings.toolbarPosition == .bottom { suggestions }
             if compact {
                 HStack(spacing: 4) {
                     if !leftActions.isEmpty { sideButtons(leftActions, left: true) }
@@ -129,8 +196,33 @@ struct BrowserChrome: View {
                     }.padding(.horizontal, 4)
                 }.padding(.top, 6)
             }
+            if compact || store.snapshot.settings.toolbarPosition == .top { suggestions }
         }
-        .background(.regularMaterial)
+        .background(.regularMaterial).contentShape(Rectangle())
+    }
+    private var suggestions: some View {
+        let matches = addressFocused.wrappedValue ? HistoryPresentation.suggestions(address, history: store.snapshot.history, limit: compact ? 2 : 4) : []
+        return Group {
+            if !matches.isEmpty {
+                ScrollView {
+                    VStack(spacing: 0) {
+                        ForEach(matches) { item in
+                            Button { address = item.url.absoluteString; addressFocused.wrappedValue = false; store.open(item.url) } label: {
+                                HStack {
+                                    Image(systemName: "clock")
+                                    VStack(alignment: .leading, spacing: 2) {
+                                        Text(item.url.absoluteString).font(.caption).lineLimit(1)
+                                        Text(item.title).font(.caption2).foregroundStyle(.secondary).lineLimit(1)
+                                    }
+                                    Spacer(minLength: 0)
+                                    Image(systemName: "arrow.up.left")
+                                }.padding(.horizontal, 12).padding(.vertical, 7).contentShape(Rectangle())
+                            }.buttonStyle(.plain).accessibilityIdentifier("addressSuggestion-" + item.id.uuidString)
+                        }
+                    }
+                }.frame(height: CGFloat(matches.count) * 47).frame(maxHeight: compact ? 94 : 188)
+            }
+        }
     }
     private var addressEntry: some View {
         HStack(spacing: compact ? 6 : 8) {
@@ -145,10 +237,12 @@ struct BrowserChrome: View {
         }
         .frame(minWidth: compact ? 180 : 110, minHeight: compact ? 28 : 0)
         .contentShape(Rectangle())
-        .highPriorityGesture(DragGesture(minimumDistance: 35).onEnded { value in
-            guard store.features.swipeAddressToSwitchTabs, !addressFocused.wrappedValue,
-                  abs(value.translation.width) > abs(value.translation.height) * 1.5 else { return }
-            store.switchTab(towardNext: value.translation.width < 0)
+        .simultaneousGesture(DragGesture(minimumDistance: 20).onChanged { value in
+            guard store.features.swipeAddressToSwitchTabs, !addressFocused.wrappedValue else { return }
+            swipeChanged(value)
+        }.onEnded { value in
+            guard store.features.swipeAddressToSwitchTabs, !addressFocused.wrappedValue else { return }
+            swipeEnded(value)
         }, including: store.features.swipeAddressToSwitchTabs && !addressFocused.wrappedValue ? .all : .subviews)
         .padding(.horizontal, compact ? 8 : 12).padding(.vertical, compact ? 2 : 12)
         .background(Color(uiColor: .secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: compact ? 8 : 14))
@@ -159,14 +253,14 @@ struct BrowserChrome: View {
         }
         .accessibilityLabel("バーを非表示").accessibilityIdentifier("hideChromeButton")
     }
-    private func actionButton(_ action: BrowserAction) -> some View {
-        Button { perform(action) } label: {
+    private func actionButton(_ action: AddressBarAction) -> some View {
+        Button { performAddress(action) } label: {
             Image(systemName: action == .reload && tab.isLoading ? "xmark" : action.symbol)
                 .font(.system(size: compact ? 17 : 20))
                 .frame(maxWidth: compact ? 32 : .infinity, minHeight: compact ? 36 : 44)
         }
         .accessibilityLabel(action == .reload && tab.isLoading ? "読み込みを停止" : action.label)
-        .accessibilityIdentifier(action.rawValue + "Button").disabled(disabled(action))
+        .accessibilityIdentifier(action.rawValue + "Button").disabled(disabledAddress(action))
     }
     private var menu: some View {
         Menu {
@@ -193,10 +287,13 @@ struct BrowserChrome: View {
             Image(systemName: "ellipsis.circle").font(.system(size: compact ? 18 : 20))
                 .frame(maxWidth: compact ? 32 : .infinity, minHeight: compact ? 36 : 44).contentShape(Rectangle())
         }
+        .menuOrder(.fixed)
         .accessibilityLabel("メニュー").accessibilityIdentifier("menuButton")
     }
     private func disabledAddress(_ action: AddressBarAction) -> Bool {
         if let legacy = action.legacy { return disabled(legacy) }
+        if action == .zoomIn { return store.presentation.pageZoom >= 2 }
+        if action == .zoomOut { return store.presentation.pageZoom <= 0.75 }
         if action == .find { return !tab.hasContent }
         if action == .favorite || action == .addBookmark { return disabled(.share) }
         return false
@@ -205,6 +302,8 @@ struct BrowserChrome: View {
         addressFocused.wrappedValue = false
         if let legacy = action.legacy { perform(legacy); return }
         switch action {
+        case .zoomIn: store.changeZoom(increase: true)
+        case .zoomOut: store.changeZoom(increase: false)
         case .home: store.showHome()
         case .history: showSheet(.history)
         case .find: tab.webView.findInteraction?.presentFindNavigator(showingReplace: false)

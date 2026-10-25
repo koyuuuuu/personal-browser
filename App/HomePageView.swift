@@ -46,8 +46,8 @@ struct HomePageView: View {
                             .font(.footnote).padding(10).background(.regularMaterial, in: RoundedRectangle(cornerRadius: 10))
                     }
                     .padding(20)
-                }
-            }
+                }.contentShape(Rectangle()).clipped()
+            }.frame(width: geometry.size.width, height: geometry.size.height).contentShape(Rectangle()).clipped()
         }
         .sheet(item: $editing) { item in BookmarkEditor(item: item, save: store.updateFavorite) }
     }

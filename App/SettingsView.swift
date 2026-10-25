@@ -32,27 +32,26 @@ struct SettingsView: View {
                     Toggle("スワイプで戻る・進む", isOn: setting(\.swipeNavigation))
                 }
                 Section {
-                    ForEach(store.snapshot.settings.actions) { action in
+                    ForEach(store.toolbarActions) { action in
                         Label(action.label, systemImage: action.symbol)
                     }
                     .onMove { source, destination in
-                        var settings = store.snapshot.settings
-                        settings.actions.move(fromOffsets: source, toOffset: destination)
-                        store.updateSettings(settings)
+                        var settings = store.toolbar; var actions = store.toolbarActions
+                        actions.move(fromOffsets: source, toOffset: destination); settings.main = actions
+                        store.updateToolbar(settings)
                     }
                     .onDelete { offsets in
-                        var settings = store.snapshot.settings
-                        settings.actions.remove(atOffsets: offsets)
-                        store.updateSettings(settings)
+                        var settings = store.toolbar; var actions = store.toolbarActions
+                        actions.remove(atOffsets: offsets); settings.main = actions
+                        store.updateToolbar(settings)
                     }
-                    let missing = BrowserAction.allCases.filter { !store.snapshot.settings.actions.contains($0) }
+                    let missing = AddressBarAction.allCases.filter { !store.toolbarActions.contains($0) }
                     if !missing.isEmpty {
                         Menu("ボタンを追加", systemImage: "plus") {
                             ForEach(missing) { action in
                                 Button(action.label, systemImage: action.symbol) {
-                                    var settings = store.snapshot.settings
-                                    settings.actions.append(action)
-                                    store.updateSettings(settings)
+                                    var settings = store.toolbar; settings.main = store.toolbarActions + [action]
+                                    store.updateToolbar(settings)
                                 }
                             }
                         }

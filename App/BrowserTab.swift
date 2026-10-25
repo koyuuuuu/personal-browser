@@ -64,7 +64,8 @@ final class BrowserTab: NSObject, ObservableObject, Identifiable, WKNavigationDe
     @Published var dialog: JavaScriptDialog?
     @Published private(set) var hasActiveMedia = false
     @Published private(set) var isPictureInPicture = false
-    @Published var previewData: Data?
+    @Published var previewData: Data? { didSet { previewGeneration = UUID() } }
+    private(set) var previewGeneration = UUID()
     var preferences = FeaturePreferences()
     var swipeNavigation = true
     var onVisit: ((URL, String) -> Void)?
@@ -209,16 +210,18 @@ final class BrowserTab: NSObject, ObservableObject, Identifiable, WKNavigationDe
         }
     }
 
-    func scrollViewWillBeginDragging(_ scrollView: UIScrollView) { previousScrollY = scrollView.contentOffset.y }
+    func scrollViewWillBeginDragging(_ scrollView: UIScrollView) { previousScrollY = 0 }
     func scrollViewDidScroll(_ scrollView: UIScrollView) {
-        let current = scrollView.contentOffset.y
+        guard scrollView.isDragging else { return }
+        let current = scrollView.panGestureRecognizer.translation(in: scrollView).y
         defer { previousScrollY = current }
-        guard scrollView.isDragging || scrollView.isDecelerating, let previousScrollY else { return }
-        onVerticalScroll?(current - previousScrollY)
+        guard let previousScrollY else { return }
+        onVerticalScroll?(previousScrollY - current)
     }
     func scrollViewWillEndDragging(_ scrollView: UIScrollView, withVelocity velocity: CGPoint, targetContentOffset: UnsafeMutablePointer<CGPoint>) {
         let translation = scrollView.panGestureRecognizer.translation(in: scrollView)
-        if translation.y > 25 && abs(translation.y) > abs(translation.x) { onRevealChrome?() }
+        // Top-edge pulling can produce no didScroll callback on short pages.
+        if translation.y > 25 && abs(translation.y) > abs(translation.x) && velocity.y <= 0 { onRevealChrome?() }
     }
     func scrollViewDidEndDecelerating(_ scrollView: UIScrollView) { capturePreview() }
     func scrollViewDidEndDragging(_ scrollView: UIScrollView, willDecelerate decelerate: Bool) { if !decelerate { capturePreview() } }
@@ -538,7 +541,7 @@ struct WebSurface: UIViewRepresentable {
     @ObservedObject var store: BrowserStore
     func makeUIView(context: Context) -> WebSurfaceView { WebSurfaceView() }
     func updateUIView(_ host: WebSurfaceView, context: Context) {
-        guard let selected = store.selectedTab else { return }
+        guard !store.overviewPresented, let selected = store.selectedTab else { return }
         let kept = store.tabs.filter { $0.id == selected.id || $0.isProtectedForMedia || $0.isCapturingPreview }
         let views = kept.compactMap { $0.id == selected.id && $0.hasContent ? $0.webView : $0.existingWebView }
         for view in host.subviews where !views.contains(where: { $0 === view }) { view.removeFromSuperview() }

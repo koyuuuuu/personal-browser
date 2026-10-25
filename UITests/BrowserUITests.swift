@@ -328,6 +328,80 @@ final class BrowserUITests: XCTestCase {
         }
     }
 
+    func testLandscapeHomeWithCroppedBackgroundKeepsEveryChromeControlTappable() {
+        app.terminate(); app.launchArguments = ["--ui-testing", "--ui-no-fixture", "--ui-home-background"]; app.launch()
+        XCUIDevice.shared.orientation = .landscapeRight; settlePresentation()
+        app.swipeDown()
+        XCTAssertTrue(app.textFields["addressField"].waitForExistence(timeout: 5))
+        tapMenuControl("menuButton")
+        app.buttons["設定"].tap()
+        XCTAssertTrue(app.navigationBars["設定"].waitForExistence(timeout: 5))
+        app.navigationBars["設定"].buttons["閉じる"].tap()
+        let field = app.textFields["addressField"]
+        field.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).tap()
+        XCTAssertTrue(app.keyboards.firstMatch.waitForExistence(timeout: 5))
+        field.typeText("http://127.0.0.1:18765/home-controls\n")
+        XCTAssertTrue(app.webViews.firstMatch.staticTexts["Local connection /home-controls"].waitForExistence(timeout: 10))
+    }
+
+    func testHistoryFoldersSupportSingleAndHalfDayDeletionAndAddressSuggestions() {
+        app.terminate(); app.launchArguments = ["--ui-testing", "--ui-no-fixture", "--ui-library-fixture"]; app.launch()
+        let field = app.textFields["addressField"]; field.tap(); field.typeText("alpha")
+        let prediction = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH 'addressSuggestion-'")).firstMatch
+        XCTAssertTrue(prediction.waitForExistence(timeout: 5))
+        XCTAssertTrue(prediction.label.contains("https://example.com/alpha"))
+        tapMenuControl("menuButton"); app.buttons["履歴"].tap()
+        let groups = app.buttons.matching(identifier: "historyPeriod")
+        XCTAssertEqual(groups.count, 2)
+        let morning = groups.matching(NSPredicate(format: "label CONTAINS '午前'")).firstMatch
+        morning.tap()
+        let entries = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH 'historyEntry-'")).allElementsBoundByIndex
+        XCTAssertEqual(entries.count, 2)
+        entries[0].swipeLeft(); app.buttons["削除"].tap()
+        XCTAssertEqual(app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH 'historyEntry-'")).count, 1)
+        morning.swipeLeft(); app.buttons["まとめて削除"].tap()
+        XCTAssertEqual(groups.count, 1)
+        XCTAssertFalse(app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH 'historyEntry-'")).firstMatch.exists)
+    }
+
+    func testZoomToolbarButtonsChangeByFivePercentAndPersist() {
+        app.terminate(); app.launchArguments = ["--ui-testing", "--ui-no-fixture", "--ui-library-fixture"]; app.launch()
+        app.buttons["zoomInButton"].tap(); app.buttons["zoomInButton"].tap(); app.buttons["zoomOutButton"].tap()
+        tapMenuControl("menuButton"); app.buttons["設定"].tap(); tapMenuControl("presentationSettingsLink")
+        XCTAssertTrue(app.staticTexts["ページの文字・表示倍率：105％"].waitForExistence(timeout: 5))
+        app.navigationBars["表示・操作"].buttons["設定"].tap(); app.navigationBars["設定"].buttons["閉じる"].tap()
+        relaunchPreservingData()
+        XCTAssertTrue(app.buttons["zoomInButton"].waitForExistence(timeout: 5))
+        tapMenuControl("menuButton"); app.buttons["設定"].tap(); tapMenuControl("presentationSettingsLink")
+        XCTAssertTrue(app.staticTexts["ページの文字・表示倍率：105％"].waitForExistence(timeout: 5))
+    }
+
+    func testPortraitForwardScrollHidesBarsAndBottomBounceDoesNotReveal() {
+        navigate("http://127.0.0.1:18765/scroll-fixture")
+        let page = app.webViews.firstMatch
+        XCTAssertTrue(page.staticTexts["Scroll fixture"].waitForExistence(timeout: 10))
+        for _ in 0..<4 { page.swipeUp() }
+        XCTAssertFalse(app.textFields["addressField"].exists)
+        settlePresentation()
+        XCTAssertFalse(app.textFields["addressField"].exists, "Bottom bounce must not count as deliberate reverse scrolling")
+        page.swipeDown()
+        XCTAssertTrue(app.textFields["addressField"].waitForExistence(timeout: 5))
+    }
+
+    func testSwipeClosingGridReflowsAndRemainsUsableAfterRepeatedDeletions() {
+        app.terminate(); app.launchArguments = ["--ui-testing", "--ui-many-tabs"]; app.launch()
+        tapMenuControl("tabsButton")
+        for remaining in stride(from: 18, through: 16, by: -1) {
+            let tile = app.buttons.matching(NSPredicate(format: "value == 'プレビューなし' AND label CONTAINS '選択中'")).firstMatch
+            XCTAssertTrue(tile.waitForExistence(timeout: 5)); tile.swipeLeft()
+            XCTAssertTrue(app.navigationBars["タブ \(remaining)"].waitForExistence(timeout: 5))
+        }
+        app.buttons["overviewNewTabButton"].tap()
+        XCTAssertTrue(app.textFields["addressField"].waitForExistence(timeout: 5))
+        tapMenuControl("tabsButton")
+        XCTAssertTrue(app.navigationBars["タブ 17"].waitForExistence(timeout: 5))
+    }
+
     private func settlePresentation() {
         let ready = expectation(description: "Keyboard or rotation presentation has settled")
         DispatchQueue.main.asyncAfter(deadline: .now() + 1) { ready.fulfill() }

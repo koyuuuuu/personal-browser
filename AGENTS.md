@@ -78,3 +78,9 @@ See `docs/github-automation.ja.md` and `docs/operations.ja.md`.
 ## 0.4.1 user-requested regression rollback
 
 The latest user instruction overrides the old animation/restore-handle rules: no horizontal page slide, no visible restore arrows. Restore bars with a downward swipe and an accessibility action. Portrait uses build 14 spacing and bottom safe area. Media state script and audio-session behavior are reverted to build 14; do not reintroduce 0.4 background suspend/resume or session reconfiguration without a separately requested improvement. Never snapshot active media or inactive/transparent/background pages. Keep snapshotting views opaque until their request completes. Tile images and cards must have explicit grid widths, including after rotation. Close and reflow in one animation transaction without a deferred timer.
+
+## 0.4.2 interaction updates
+
+The user now requests interactive horizontal transitions specifically for address-bar swipes. Keep WebSurface itself stationary and mounted; animate noninteractive preview overlays only. Plus/menu tab creation still has no horizontal page slide. No restore arrows. Both portrait and landscape chrome follow deliberate finger direction; deceleration/bounce/layout changes never reveal bars. Keep the build 14 media policy.
+
+Tab overview uses a native collection with immediate diffable removal at the horizontal swipe threshold. Cache decoded preview images; do not decode JPEGs per gesture frame. Delay disk cleanup to the normal save flush, never the visible removal. Expanded toolbar actions (including 5% zoom) are persisted in toolbar.json, leaving legacy enum arrays in browser.json/presentation.json readable by previous builds. History grouping is presentation-only, in local calendar morning/afternoon periods.

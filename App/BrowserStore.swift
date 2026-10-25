@@ -31,6 +31,14 @@ final class BrowserStore: ObservableObject {
     private var ignoreChromeScrollUntil = Date.distantPast
     @Published var tabTransition: TabVisualTransition?
     @Published private(set) var presentation = PresentationPreferences()
+    @Published private(set) var toolbar = ToolbarPreferences()
+    var toolbarActions: [AddressBarAction] { toolbar.main ?? snapshot.settings.actions.map { AddressBarAction(legacy: $0) } }
+    var addressLeftActions: [AddressBarAction] { toolbar.left ?? presentation.addressLeft }
+    var addressRightActions: [AddressBarAction] { toolbar.right ?? presentation.addressRight }
+    func updateToolbar(_ value: ToolbarPreferences) { toolbar = value; scheduleSave() }
+    func changeZoom(increase: Bool) {
+        var value = presentation; value.pageZoom = PageMagnification.step(value.pageZoom, increase: increase); updatePresentation(value)
+    }
     @Published private(set) var chromeVisible = true
     @Published private(set) var landscape = false
     private var chromeState = ChromeVisibility()
@@ -45,6 +53,8 @@ final class BrowserStore: ObservableObject {
     @Published private(set) var persistenceBlocked = false
     @Published private(set) var isClearingData = false
     let storage: SnapshotStore
+    @Published var overviewPresented = false
+    private var pendingPreviewRemovals = Set<UUID>()
     private var saveTask: Task<Void, Never>?
     static let maximumTabs = 500
     private var activationOrder: [UUID] = []
@@ -93,6 +103,21 @@ final class BrowserStore: ObservableObject {
         restoring = false
         if testing && !ProcessInfo.processInfo.arguments.contains("--ui-no-fixture") { selectedTab?.loadTestFixture() }
         #if DEBUG
+        if testing, ProcessInfo.processInfo.arguments.contains("--ui-library-fixture") {
+            let day = Calendar.current.startOfDay(for: Date())
+            snapshot.history = [
+                HistoryEntry(title: "Morning alpha", url: URL(string: "https://example.com/alpha")!, visitedAt: day.addingTimeInterval(3600)),
+                HistoryEntry(title: "Morning beta", url: URL(string: "https://example.com/beta")!, visitedAt: day.addingTimeInterval(7200)),
+                HistoryEntry(title: "Afternoon", url: URL(string: "https://example.com/afternoon")!, visitedAt: day.addingTimeInterval(13 * 3600))]
+            toolbar.main = [.back, .newTab, .tabs, .bookmarks, .zoomOut, .zoomIn]
+        }
+        if testing, ProcessInfo.processInfo.arguments.contains("--ui-home-background") {
+            homeBackground = UIGraphicsImageRenderer(size: CGSize(width: 600, height: 1800)).image { context in
+                UIColor.systemIndigo.setFill(); context.fill(CGRect(x: 0, y: 0, width: 600, height: 1800))
+            }
+            features.showHomeBackground = true
+            extras.favorites = (0..<36).map { Bookmark(title: "Favorite \($0)", url: URL(string: "https://example.com/\($0)")!) }
+        }
         if testing, ProcessInfo.processInfo.arguments.contains("--ui-many-tabs") {
             for _ in 0..<18 { _ = newTab() }
             flush()
@@ -208,8 +233,7 @@ final class BrowserStore: ObservableObject {
         closedTabs = Array(closedTabs.prefix(20))
         tab.dispose()
         if !tab.isPrivate, !previewStorageBlocked {
-            do { try previews.remove(id: tab.id); previewRecords.removeValue(forKey: tab.id) }
-            catch { previewStorageBlocked = true }
+            pendingPreviewRemovals.insert(tab.id); previewRecords.removeValue(forKey: tab.id)
         }
         tabs.remove(at: index)
         if selectedID == tab.id {
@@ -250,6 +274,10 @@ final class BrowserStore: ObservableObject {
     func deleteBookmarks(at offsets: IndexSet) {
         snapshot.bookmarks.remove(atOffsets: offsets)
         scheduleSave()
+    }
+
+    func deleteHistory(_ ids: Set<UUID>) {
+        snapshot.history.removeAll { ids.contains($0.id) }; scheduleSave()
     }
 
     func clearHistory() {
@@ -492,6 +520,8 @@ final class BrowserStore: ObservableObject {
             }
             let presentationFile = directory.appendingPathComponent("presentation.json")
             if FileManager.default.fileExists(atPath: presentationFile.path) { presentation = try JSONDecoder().decode(PresentationPreferences.self, from: Data(contentsOf: presentationFile)) }
+            let toolbarFile = directory.appendingPathComponent("toolbar.json")
+            if FileManager.default.fileExists(atPath: toolbarFile.path) { toolbar = try JSONDecoder().decode(ToolbarPreferences.self, from: Data(contentsOf: toolbarFile)) }
             homeBackground = UIImage(contentsOfFile: directory.appendingPathComponent("home-background.jpg").path)
         } catch { extraStorageBlocked = true; notice = "追加データを読み込めませんでした。元のファイルを保持し、上書きを停止しています。" }
     }
@@ -502,6 +532,7 @@ final class BrowserStore: ObservableObject {
             let encoder = JSONEncoder(); encoder.outputFormatting = [.sortedKeys]
             try encoder.encode(extras).write(to: directory.appendingPathComponent("library-extras.json"), options: [.atomic, .completeFileProtectionUntilFirstUserAuthentication])
             try encoder.encode(features).write(to: directory.appendingPathComponent("features.json"), options: [.atomic, .completeFileProtectionUntilFirstUserAuthentication])
+            try encoder.encode(toolbar).write(to: directory.appendingPathComponent("toolbar.json"), options: [.atomic, .completeFileProtectionUntilFirstUserAuthentication])
             try encoder.encode(presentation).write(to: directory.appendingPathComponent("presentation.json"), options: [.atomic, .completeFileProtectionUntilFirstUserAuthentication])
         } catch { extraStorageBlocked = true; notice = "追加データを保存できませんでした。空き容量を確認してください。" }
     }
@@ -540,6 +571,10 @@ final class BrowserStore: ObservableObject {
         saveTask?.cancel()
         guard !persistenceBlocked else { return }
         captureSession()
+        if !previewStorageBlocked {
+            do { for id in pendingPreviewRemovals { try previews.remove(id: id) }; pendingPreviewRemovals.removeAll() }
+            catch { previewStorageBlocked = true }
+        }
         do {
             try storage.save(snapshot)
             saveAdditionalData()

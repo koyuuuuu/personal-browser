@@ -28,7 +28,7 @@ struct PresentationSettingsView: View {
                 Toggle("ホームインジケータを自動的に隠す", isOn: preference(\.hideHomeIndicator))
                 Text("動画・音声の再生はbuild 14の方式を使用しています。").font(.footnote)
             } header: { Text("閲覧と再生") }
-            footer: { Text("横画面のバーは最初は隠れ、ページの上側へ戻るスクロールで表示します。小さな矢印でも戻せます。ホームインジケータの一時表示はiOSが制御します。サイト側が再生を停止する場合や、通信・DRMの制限までは解除できません。") }
+            footer: { Text("横画面のバーは最初は隠れ、ページの上側へ戻るスクロールで表示します。縦画面も下へ読み進めると隠れ、上へ戻すと表示します。ホームインジケータの一時表示はiOSが制御します。サイト側が再生を停止する場合や、通信・DRMの制限までは解除できません。") }
             Section {
                 Toggle("アドレスバーの左右を個別に設定", isOn: preference(\.customAddressButtons))
                 Text("縦画面にも左右のボタンを置けます。横画面は、個別設定がオフなら下段ツールバーのボタンを左右に並べます。ボタンが多いとアドレス欄が縮み、左右のボタン欄を横スクロールできます。")
@@ -39,6 +39,7 @@ struct PresentationSettingsView: View {
             Section {
                 Button("アドレスバーの左右を標準に戻す") {
                     var p = store.presentation; p.customAddressButtons = false; p.addressLeft = []; p.addressRight = []; store.updatePresentation(p)
+                    var controls = store.toolbar; controls.left = nil; controls.right = nil; store.updateToolbar(controls)
                 }
                 NavigationLink("ホーム背景の位置・ズーム") { BackgroundAdjustmentView(store: store) }
             }
@@ -63,7 +64,7 @@ struct PresentationSettingsView: View {
         Binding(get: { store.presentation[keyPath: path] }, set: { value in var p = store.presentation; p[keyPath: path] = value; store.updatePresentation(p) })
     }
     private func addressSection(left: Bool) -> some View {
-        let values = left ? store.presentation.addressLeft : store.presentation.addressRight
+        let values = left ? store.addressLeftActions : store.addressRightActions
         return Section {
             ForEach(values) { action in Label(action.label, systemImage: action.symbol) }
                 .onMove { source, destination in editAddress(left: left) { $0.move(fromOffsets: source, toOffset: destination) } }
@@ -83,8 +84,10 @@ struct PresentationSettingsView: View {
     }
     private func editAddress(left: Bool, operation: (inout [AddressBarAction]) -> Void) {
         var p = store.presentation; p.customAddressButtons = true
-        if left { operation(&p.addressLeft) } else { operation(&p.addressRight) }
-        store.updatePresentation(p)
+        var controls = store.toolbar
+        var values = left ? store.addressLeftActions : store.addressRightActions; operation(&values)
+        if left { controls.left = values } else { controls.right = values }
+        store.updateToolbar(controls); store.updatePresentation(p)
     }
 }
 
@@ -99,7 +102,7 @@ struct HomeBackgroundImage: View {
                 Image(uiImage: image).resizable().frame(width: placement.width, height: placement.height)
                     .position(x: placement.x, y: placement.y)
             }
-        }.clipped().accessibilityHidden(true)
+        }.clipped().allowsHitTesting(false).accessibilityHidden(true)
     }
 }
 

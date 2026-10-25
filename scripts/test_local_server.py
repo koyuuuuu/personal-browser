@@ -32,6 +32,9 @@ def main():
         def do_GET(self):
             if self.path == '/audio.wav':
                 data, mime = audio, 'audio/wav'
+            elif self.path == '/scroll-fixture':
+                data = b'<!doctype html><meta name="viewport" content="width=device-width,initial-scale=1"><title>Scroll fixture</title><h1>Scroll fixture</h1><div style="height:1100px;background:linear-gradient(white,lightblue)">Scroll down</div><p>Bottom</p>'
+                mime = 'text/html; charset=utf-8'
             elif self.path == '/media':
                 data = b'''<!doctype html><meta name="viewport" content="width=device-width,initial-scale=1"><title>Audio fixture</title>
                 <audio id="audio" src="/audio.wav" preload="auto"></audio>

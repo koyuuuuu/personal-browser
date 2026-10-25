@@ -148,14 +148,43 @@ struct HistoryList: View {
     @ObservedObject var store: BrowserStore
     @State private var query = ""
     @State private var confirmClear = false
+    @State private var expanded = Set<Date>()
+    private var groups: [HistoryPeriod] { HistoryPresentation.periods(store.snapshot.history) }
     var body: some View {
         List {
-            ForEach(store.snapshot.history.filter { query.isEmpty || $0.title.localizedCaseInsensitiveContains(query) || $0.url.absoluteString.localizedCaseInsensitiveContains(query) }) { item in
-                Button { store.open(item.url); NotificationCenter.default.post(name: .closeBrowserLibrary, object: nil) } label: {
-                    VStack(alignment: .leading) {
-                        Text(item.title).foregroundStyle(.primary).lineLimit(1)
-                        Text(item.url.absoluteString).font(.caption).foregroundStyle(.secondary).lineLimit(1)
-                        Text(item.visitedAt, style: .date).font(.caption2).foregroundStyle(.secondary)
+            ForEach(groups) { group in
+                let matches = group.entries.filter { query.isEmpty || $0.title.localizedCaseInsensitiveContains(query) || $0.url.absoluteString.localizedCaseInsensitiveContains(query) }
+                if !matches.isEmpty {
+                    Button {
+                        withAnimation(.easeInOut(duration: 0.18)) {
+                            if !expanded.insert(group.id).inserted { expanded.remove(group.id) }
+                        }
+                    } label: {
+                        HStack {
+                            Image(systemName: expanded.contains(group.id) ? "folder.fill" : "folder")
+                            Text(group.id, format: .dateTime.year().month().day().weekday())
+                            Text(group.afternoon ? "午後" : "午前")
+                            Spacer()
+                            Text("\(group.entries.count)").foregroundStyle(.secondary)
+                            Image(systemName: expanded.contains(group.id) ? "chevron.down" : "chevron.right").font(.caption)
+                        }.font(.subheadline).foregroundStyle(.primary)
+                    }
+                    .accessibilityIdentifier("historyPeriod")
+                    .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+                        Button(role: .destructive) { store.deleteHistory(Set(group.entries.map(\.id))) } label: { Label("まとめて削除", systemImage: "xmark") }
+                    }
+                    if expanded.contains(group.id) || !query.isEmpty {
+                        ForEach(matches) { item in
+                            Button { store.open(item.url); NotificationCenter.default.post(name: .closeBrowserLibrary, object: nil) } label: {
+                                VStack(alignment: .leading, spacing: 3) {
+                                    Text(item.title).foregroundStyle(.primary).lineLimit(1)
+                                    Text(item.url.absoluteString).font(.caption).foregroundStyle(.secondary).lineLimit(1)
+                                    Text(item.visitedAt, style: .time).font(.caption2).foregroundStyle(.secondary)
+                                }.padding(.leading, 20)
+                            }
+                            .accessibilityIdentifier("historyEntry-" + item.id.uuidString)
+                            .swipeActions { Button("削除", systemImage: "xmark", role: .destructive) { store.deleteHistory([item.id]) } }
+                        }
                     }
                 }
             }

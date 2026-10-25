@@ -77,7 +77,7 @@ public struct ChromeVisibility: Equatable, Sendable {
         if delta * accumulated < 0 { accumulated = 0 }
         accumulated += delta
         if accumulated <= -18 { reveal() }
-        else if landscape && accumulated >= 28 { visible = false; accumulated = 0 }
+        else if accumulated >= 28 { visible = false; accumulated = 0 }
     }
 }
 
