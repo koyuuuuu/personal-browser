@@ -93,3 +93,9 @@ Tab overview uses a native collection with immediate diffable removal at the hor
 - Search suggestions are opt-in and normal-home-only; no requests in private tabs. Use ephemeral no-cookie sessions, debounce/cancel requests, and tolerate provider failures. Preferences live in search-preferences.json, not legacy BrowserSettings.
 - Keep per-frame address-swipe state in the preview overlay. Freeze decoded images at gesture start, use an opaque overview-colored 4pt gap, and keep WebSurface mounted. Plus/menu creation has no horizontal slide.
 - Cold/background URL tests must exercise OS URL delivery, not pass URL text directly into the store. The loopback CI fixture invokes simctl with three fixed cases; never accept arbitrary shell commands or user URLs there.
+
+## Mandatory author privacy and rewritten IDs
+
+The user explicitly authorized rewriting every branch/tag to remove personal author/committer email before publication. Use `266257694+koyuuuuu@users.noreply.github.com` for BOTH author and committer of every future commit/tag. Set repository-local user.name/user.email, and pass this identity explicitly to API commit creation. Do not use connector create_commit with its default author, which previously used a personal account email. Do not commit a mailmap containing the old address. Before pushing, inspect every new commit/tag identity and changed file for personal emails.
+
+`distribution/history-rewrite.json` maps original source IDs to sanitized IDs and records original immutable build-info/IPA digests. This authorized identity rewrite supersedes the old instruction not to move historical tags for this migration only. App/core/test trees of delivered tags are unchanged; do not replace delivered IPA or build-info assets. Use sanitized baseline SHAs for compatibility checks. Preserve this correspondence in future release verification.

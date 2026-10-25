@@ -19,7 +19,7 @@ from distribution import BUNDLE_ID, inspect_release, release_config, release_tag
 
 ROOT = Path(__file__).resolve().parents[1]
 LEGACY_IPA_BLOB = "146a48247f1e95119ff40332f46aa369635266dc"
-LEGACY_SOURCE = "438292f5622801bf56525381576b789f65e4d203"
+LEGACY_SOURCE = "12f15dbe922d7d6f7a5de86345b2d5ee2d2b346f"
 
 
 class SafeRedirect(urllib.request.HTTPRedirectHandler):
@@ -70,6 +70,16 @@ class GitHub:
         return self.request(f"/releases/assets/{asset['id']}", binary=True)
 
 
+def canonical_source_commit(commit):
+    # Original build-info/IPA assets remain immutable. Only explicitly recorded
+    # identity-only rewrites are equivalent when verifying an old release.
+    path = ROOT / "distribution/history-rewrite.json"
+    if not path.exists():
+        return commit
+    mapping = json.loads(path.read_text())["commits"]
+    return mapping.get(commit, commit)
+
+
 def publish(github, info, ipa):
     tag = info["tag"]
     existing = github.request(f"/releases/tags/{tag}", allow_missing=True)
@@ -77,7 +87,7 @@ def publish(github, info, ipa):
         existing = next((release for release in all_releases(github) if release["tag_name"] == tag), None)
     if existing and not existing["draft"]:
         previous = json.loads(github.asset(existing, "build-info.json"))
-        if previous["source_commit"] != info["source_commit"]:
+        if canonical_source_commit(previous["source_commit"]) != canonical_source_commit(info["source_commit"]):
             raise ValueError("A published version already points to different source; never overwrite it")
         original = github.asset(existing, "PersonalBrowser.ipa")
         verify_bytes(original, previous)

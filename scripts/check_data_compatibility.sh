@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 cd "$(dirname "$0")/.."
-baseline=438292f5622801bf56525381576b789f65e4d203
+baseline=12f15dbe922d7d6f7a5de86345b2d5ee2d2b346f
 directory="$(mktemp -d "${TMPDIR:-/tmp}/browser-compatibility.XXXXXX")"
 trap 'rm -rf "$directory"' EXIT
 mkdir -p "$directory/legacy"
@@ -19,7 +19,7 @@ echo 'Legacy → current → legacy → current: latest bookmarks and history pr
 
 # The user's accepted rollback baseline: preserve current favorites and ordering.
 mkdir -p "$directory/stable"
-git archive 70052bb73a2170eb516bb99aece43b13918a0553 Sources/BrowserCore | tar -x -C "$directory/stable"
+git archive 0064cf7d7047ba94f27b4722f88ff91641918b77 Sources/BrowserCore | tar -x -C "$directory/stable"
 swiftc -parse-as-library "$directory"/stable/Sources/BrowserCore/*.swift scripts/favorites_compatibility_runner.swift -o "$directory/stable-app"
 swiftc -parse-as-library Sources/BrowserCore/*.swift scripts/favorites_compatibility_runner.swift -o "$directory/current-favorites"
 extras="$directory/library-extras.json"

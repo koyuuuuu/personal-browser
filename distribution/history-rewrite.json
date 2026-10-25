@@ -1,0 +1,194 @@
+{
+  "reason": "Replace personal email identities with GitHub no-reply before public release",
+  "commits": {
+    "0215b2371c3066362d2310cbe808f517b9d6038a": "74c756c0979a729aba5232eeea80824ded8f4ade",
+    "0868055cdae535b648013ffd8aad2a48a77b6044": "37d3a83de9599aac4b39660e83aef44cec644516",
+    "0a9cbe4ffe9bac82544ded97b6aa236a2c4bfae8": "e111b953acc0a0f84c9a61c5b757baa07004113b",
+    "0bc1c537b7e009a7c361cffc8fe917034d7262fb": "7263582d300aefcb73edca06fa0bf1afe4e54767",
+    "12401948095c0507107f63c9dadf110fd8864802": "4dcf1b29c561a20cd18c3020053b5dd1d35497a8",
+    "1f6370e7ba7a9831029c06bafbf7000ffb8345c3": "be262e98aa7bb20f3e79741ca4cbc041f39c2ede",
+    "3313aad2751a9f6312a4bd4e6dbd11d209087a59": "ca508904146d973a175375b8f58fec1ee214af83",
+    "3e1a278d3f92533a24763f6f05ca24bcf2c7045f": "b0ad33dc20132a3412ccd117795f178b311d01ed",
+    "438292f5622801bf56525381576b789f65e4d203": "12f15dbe922d7d6f7a5de86345b2d5ee2d2b346f",
+    "47b42a3af83ae52696c2c91f1c47e54a7d00bf30": "6992377eaf21a79f6f34760ef2e3321975111ad0",
+    "4934e82e49c589df0b64d7f3ed113a77a9577a21": "20b37c6bf8e0252588029fac7a04aa561ef08ffd",
+    "4eff6acc7609a3f337401df62fea8c7afa14400c": "02ac9960bc7a54d7fe199fd73d277a6d94a3b792",
+    "4f5f5557572a04d25245974ef6990b547a584f4c": "40cb896130e96c429678b6c9ea35940809ca7a1a",
+    "5085ce12ffe5a5d94867afffd6f8543e882af76f": "1e1a067bfb3055d1519c4085f27fb23ca8374a13",
+    "55a0f0a2f106d23fcb1901940b5d5488c7264acc": "cc01889ae7230840ecbda11d5a8c2a988cca9c8c",
+    "5a909b9b334ab8320aa8d863e8f1067e96c91308": "916d4485de00266bee0ce6e4f47c2e5d8668f905",
+    "5bda6e33718aab0eee65317c67feaf2b0d29b565": "26765a78c51292c7b5ec3a5de1934af9fdb60dcc",
+    "5f13a56089c19c70293e55c5eb6ee7292fcc1b67": "b38209c33ab06136bb95fdfa822ca7c3b493ca78",
+    "658e7f5f3f1152bb804d74c843d8c8c90145d56a": "abeb06d92d1320c17522ab5bcba738a31c2cac73",
+    "695450e180476d7a25bb09fc6f538d0659b222a9": "56746d147caf921a46af546f2705998098753c80",
+    "6d383226687fa67b6be8869410f8f98754ea58de": "de733e360b72869665859fa11f69abf1f66478ed",
+    "70052bb73a2170eb516bb99aece43b13918a0553": "0064cf7d7047ba94f27b4722f88ff91641918b77",
+    "768dd71c2d7a9f73cc51759a1eff4881b71c30ab": "cadbf34b80cdc848d719c6cf2acb088812c69e61",
+    "76e5c5c0ef5ae7d7fb920d0bab034e1d3f4ff592": "f9ec493c25307cd5bd19071bb6c818d212af9667",
+    "898317e6ab41c1d9c6244dafd0de48bb4119e18e": "55fede4a3a0dbeb59bc151b0ba97a827b18a0e2b",
+    "8efdc52159ba1a35ba25cb5219da1b5cbda5cce8": "81d4220e18fd0dd801faccee36d0c5b90d46b13c",
+    "90507e9a86a6ce41d491f289ce0b381eec09ac52": "a982865078affd0ab59567155a3c60d6df01781c",
+    "967a303cc8d70d2a977b13d6bbaa3571306189a1": "54c221c802e0ca2f154f6462256bb9d4f7d0ed88",
+    "a77ed6341b431b7fb1f9e64a7512e30a78f560f5": "c022074a97d7ae106ec513763c8ec3322b97c4f8",
+    "a82be5917441411dd59e43b13e61182057ca87d9": "ce2d6c8b5fde5258b60285a7137596bdc2f6487e",
+    "b5a9dd6814b274dc0460e5f29b2532f7b26237b5": "8b2f86c3b08dc28e95871fc1255bd6a773db18bf",
+    "b66d56a6dce2a64702102aa542208395138649b3": "1d33867030d2fbdca7f61b3e55f30220031444b5",
+    "b8e7c97873d5adeb347728d6e18d8139748b9ecc": "eea31b241837053be8a8f5c370131bc0ead8cd53",
+    "bf0b1c8b50a97a7eca182c522c1763f9c773a953": "ffa88d155ee677c4af90d6ef006e79eefd8f0eec",
+    "c72144d4d330f2daf8436552e51a42debcf9463a": "5b189c7545c5fe0f0cf05cb4b5ebdc3d63c49276",
+    "c84fedaad4c8f8bb7ab372b65c6a71c03d063bad": "d7ba604b18eb434d91849b15c1c4258f70c4bd3b",
+    "c8ddca4f256b969d70253c896a01d9eb95780210": "d2f5f579461d25f027bb46d791fa2b689140d46e",
+    "d9a187ebba5e8453829e32271a533ea474254958": "80ba7b72e79578ba26277108d3b7c2384e91ae11",
+    "dee3d71aacdc5baeb5e71055e3ffed8353146d6e": "47b9fc261dfb4c9802cbae5055001bbcbe7a4705",
+    "df63c095fd74b75419754f43d2cb722b0eaab1ed": "be2396310948e356e04d6b7aedf4c3777f09270b",
+    "e0c2b54e24899a96ed884d6ea02f40cb4cacb019": "de2193c109b41a62e7d2676e550522f85fc2f98c",
+    "e1c70220c38ee23ee0731ecd19e677198f8a0fa7": "1aa9d6af1a1e287b0f224dae768b93840290291d",
+    "e5bae491b1dbe6127bce500608bbca9d24d88433": "eefbb253c283447ce4c50d47d5714c80238ca98a",
+    "e5d4bc56ca3acb79ea4ee1c93f24ee75bd4d664d": "6e226d1d0486f3349c6e1fb7f54f76ab774024d4",
+    "eeef682b58e58c4ceb1ddf9dfc29a02504a9c562": "fc654440bdc4230a1ddcae03ae65fa9700a98c7c",
+    "ef478204d7bb8e4cff8d6a4d3c6290eb46a54461": "7bbb2ab32e2898f93786cac2fec3acb3e2b6e86e",
+    "ef5f09428b312e6c064ba4e50e99eab9cde8195a": "850c0ad197d67cc9acd21de4aa10e76b08f5c3b0",
+    "f108c0f8b156427d9c8ee355da2457b825b25a6f": "3273559c507ac3ff24e9b333dffaa2de229783f9",
+    "f2381f56d1eab2d14f83e214c5295d3f04f3fec8": "476a363b2d86970f846d1ed8a2e6bb266373930a",
+    "f71a789b5eaca1da452d450511f62bc1187e0f3e": "adee2477c39c1ee84bfba08794d517c123b4a996",
+    "fbf204028701a3eaefc03eefa1c2a5e5692e8f4a": "2a6ff296ed8e644146070ae250d8fc2615c31a76",
+    "fe04eaaa71cce537c53e7da77158331724651e31": "11744ded8149e04ddf2508ec4f954c21e5ad93d2",
+    "fe8ae41da993d4d04f912cb3048b705892eb54e4": "d3cccfc7995c76a0e28dca9746608c15ff70c8b7"
+  },
+  "refs": [
+    {
+      "ref": "refs/heads/distribution",
+      "old": "4934e82e49c589df0b64d7f3ed113a77a9577a21",
+      "new": "20b37c6bf8e0252588029fac7a04aa561ef08ffd"
+    },
+    {
+      "ref": "refs/heads/ipa-archive",
+      "old": "5bda6e33718aab0eee65317c67feaf2b0d29b565",
+      "new": "26765a78c51292c7b5ec3a5de1934af9fdb60dcc"
+    },
+    {
+      "ref": "refs/heads/main",
+      "old": "6d383226687fa67b6be8869410f8f98754ea58de",
+      "new": "de733e360b72869665859fa11f69abf1f66478ed"
+    },
+    {
+      "ref": "refs/tags/v0.1.0",
+      "old": "438292f5622801bf56525381576b789f65e4d203",
+      "new": "12f15dbe922d7d6f7a5de86345b2d5ee2d2b346f"
+    },
+    {
+      "ref": "refs/tags/v0.2.0-build.10",
+      "old": "4eff6acc7609a3f337401df62fea8c7afa14400c",
+      "new": "02ac9960bc7a54d7fe199fd73d277a6d94a3b792"
+    },
+    {
+      "ref": "refs/tags/v0.2.0-build.8",
+      "old": "695450e180476d7a25bb09fc6f538d0659b222a9",
+      "new": "56746d147caf921a46af546f2705998098753c80"
+    },
+    {
+      "ref": "refs/tags/v0.2.0-build.9",
+      "old": "5f13a56089c19c70293e55c5eb6ee7292fcc1b67",
+      "new": "b38209c33ab06136bb95fdfa822ca7c3b493ca78"
+    },
+    {
+      "ref": "refs/tags/v0.3.0-build.12",
+      "old": "c8ddca4f256b969d70253c896a01d9eb95780210",
+      "new": "d2f5f579461d25f027bb46d791fa2b689140d46e"
+    },
+    {
+      "ref": "refs/tags/v0.3.0-build.14",
+      "old": "0bc1c537b7e009a7c361cffc8fe917034d7262fb",
+      "new": "7263582d300aefcb73edca06fa0bf1afe4e54767"
+    },
+    {
+      "ref": "refs/tags/v0.4.0-build.20",
+      "old": "12401948095c0507107f63c9dadf110fd8864802",
+      "new": "4dcf1b29c561a20cd18c3020053b5dd1d35497a8"
+    },
+    {
+      "ref": "refs/tags/v0.4.1-build.24",
+      "old": "47b42a3af83ae52696c2c91f1c47e54a7d00bf30",
+      "new": "6992377eaf21a79f6f34760ef2e3321975111ad0"
+    },
+    {
+      "ref": "refs/tags/v0.4.2-build.27",
+      "old": "70052bb73a2170eb516bb99aece43b13918a0553",
+      "new": "0064cf7d7047ba94f27b4722f88ff91641918b77"
+    }
+  ],
+  "delivered_releases": [
+    {
+      "tag": "v0.2.0-build.8",
+      "version": "0.2.0",
+      "build": "8",
+      "original_source_commit": "695450e180476d7a25bb09fc6f538d0659b222a9",
+      "source_commit": "56746d147caf921a46af546f2705998098753c80",
+      "ipa_sha256": "bc79930e5f2286260d7a1411f4d05487d8f928ec28a1a80937e04a90d44b85fc",
+      "build_info_sha256": "3fc1ef93e2d584229233afff6430fa1ae5f4bdf705e2559be4d1f1e2f58cc03d"
+    },
+    {
+      "tag": "v0.2.0-build.9",
+      "version": "0.2.0",
+      "build": "9",
+      "original_source_commit": "5f13a56089c19c70293e55c5eb6ee7292fcc1b67",
+      "source_commit": "b38209c33ab06136bb95fdfa822ca7c3b493ca78",
+      "ipa_sha256": "a052ef77a81a1e26d160cfa1cc9093894b63ac3c4283440c0000032eb8e76d7c",
+      "build_info_sha256": "a9c0b26573524f1f418c973c6843b05733b0f9b6ef98f5a883b0742e12d0c959"
+    },
+    {
+      "tag": "v0.2.0-build.10",
+      "version": "0.2.0",
+      "build": "10",
+      "original_source_commit": "4eff6acc7609a3f337401df62fea8c7afa14400c",
+      "source_commit": "02ac9960bc7a54d7fe199fd73d277a6d94a3b792",
+      "ipa_sha256": "72439533eba9884be23f82117e8bf5930b7df7a4a0c59eee1b6e8c3e8b335717",
+      "build_info_sha256": "ab9bf63787b65b8b4a061c3c4cdfff9c1d6c5b303af0cad9f74a54a6b12ab1dd"
+    },
+    {
+      "tag": "v0.3.0-build.12",
+      "version": "0.3.0",
+      "build": "12",
+      "original_source_commit": "c8ddca4f256b969d70253c896a01d9eb95780210",
+      "source_commit": "d2f5f579461d25f027bb46d791fa2b689140d46e",
+      "ipa_sha256": "833cd995b9da3420ac5846c663cc2eb27f934061f136d1a3c6f842bdfe7d4cf9",
+      "build_info_sha256": "561014196a4f8e14b167230ea70d49407482f394c4fc22bbe5507467f720bed4"
+    },
+    {
+      "tag": "v0.3.0-build.14",
+      "version": "0.3.0",
+      "build": "14",
+      "original_source_commit": "0bc1c537b7e009a7c361cffc8fe917034d7262fb",
+      "source_commit": "7263582d300aefcb73edca06fa0bf1afe4e54767",
+      "ipa_sha256": "5e17e41c229bb3f6097cc26522e3d58969198db8e2301467664086e87bcf2125",
+      "build_info_sha256": "5e4e37e719e948638a8490e9392c710f59e3e4f8c62a180627d3d138bb09cb64"
+    },
+    {
+      "tag": "v0.4.0-build.20",
+      "version": "0.4.0",
+      "build": "20",
+      "original_source_commit": "12401948095c0507107f63c9dadf110fd8864802",
+      "source_commit": "4dcf1b29c561a20cd18c3020053b5dd1d35497a8",
+      "ipa_sha256": "0fec29654dd75e5311b9bc0da215e496c0e3a5561fdd965be2bc42846951f31f",
+      "build_info_sha256": "bd08785e03ca461fb2a990aebd75bc87e3e8f5ecc497b078a98c95a30fa0b674"
+    },
+    {
+      "tag": "v0.4.1-build.24",
+      "version": "0.4.1",
+      "build": "24",
+      "original_source_commit": "47b42a3af83ae52696c2c91f1c47e54a7d00bf30",
+      "source_commit": "6992377eaf21a79f6f34760ef2e3321975111ad0",
+      "ipa_sha256": "b7d265a110775baf04a42772459f35affd0fd69936113aa499b35c373c815b8b",
+      "build_info_sha256": "71663597cbc58fe97fe1e78dfeff928bf63305fba7bfa62c19321bc5ef9a6aa8"
+    },
+    {
+      "tag": "v0.4.2-build.27",
+      "version": "0.4.2",
+      "build": "27",
+      "original_source_commit": "70052bb73a2170eb516bb99aece43b13918a0553",
+      "source_commit": "0064cf7d7047ba94f27b4722f88ff91641918b77",
+      "ipa_sha256": "3d3477697c89d15cd3cc955c442b486bee65ccd62917195f2ef130cc5e75a4ad",
+      "build_info_sha256": "8bd2ce98ac55f3a7b13190216f54f771ffd2309aa2497c956fde196ae385eb9d"
+    }
+  ]
+}
