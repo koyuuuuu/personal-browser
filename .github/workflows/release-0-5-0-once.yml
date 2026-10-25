@@ -1,0 +1,103 @@
+name: One-time authorized 0.5.0 release
+run-name: One-time user-authorized 0.5.0 build 38
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-0-5-0-build-38
+  cancel-in-progress: false
+
+jobs:
+  device:
+    if: github.repository == 'koyuuuuu/personal-browser' && github.actor == 'koyuuuuu' && github.ref == 'refs/heads/main'
+    runs-on: macos-15
+    timeout-minutes: 20
+    env:
+      BROWSER_XCODE_PATH: ${{ vars.BROWSER_XCODE_PATH }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ef8a61549807173f81a4710c2c6e81fe3a72cc5d
+          persist-credentials: false
+      - name: Build the fixed source as an unsigned device IPA
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ -n "${BROWSER_XCODE_PATH:-}" ]]; then
+            export DEVELOPER_DIR="${BROWSER_XCODE_PATH}/Contents/Developer"
+          fi
+          mkdir -p build dist
+          xcodebuild build -project PersonalBrowser.xcodeproj -scheme PersonalBrowser \
+            -configuration Release -sdk iphoneos -destination 'generic/platform=iOS' \
+            -derivedDataPath build/device CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO \
+            'CODE_SIGN_IDENTITY=' ARCHS=arm64 ONLY_ACTIVE_ARCH=YES \
+            BROWSER_BUNDLE_ID=local.personalbrowser.app CURRENT_PROJECT_VERSION=38 \
+            COMPILER_INDEX_STORE_ENABLE=NO 2>&1 | tee build/device-build.log
+          package_dir="$(mktemp -d)"
+          trap 'rm -rf "$package_dir"' EXIT
+          mkdir -p "$package_dir/Payload"
+          ditto build/device/Build/Products/Release-iphoneos/PersonalBrowser.app "$package_dir/Payload/PersonalBrowser.app"
+          ditto -c -k --keepParent "$package_dir/Payload" dist/PersonalBrowser.ipa
+          python3 scripts/inspect_ipa.py dist/PersonalBrowser.ipa --unsigned \
+            --target-ios 18.4.1 --bundle-id local.personalbrowser.app > dist/build-info.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: PersonalBrowser-one-time-0.5.0-38
+          path: dist/*
+          retention-days: 1
+          if-no-files-found: error
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: one-time-device-build-log
+          path: build/device-build.log
+          retention-days: 1
+
+  publish:
+    needs: device
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ef8a61549807173f81a4710c2c6e81fe3a72cc5d
+          persist-credentials: false
+      - uses: actions/download-artifact@v4
+        with:
+          name: PersonalBrowser-one-time-0.5.0-38
+          path: dist
+      - name: Publish this fixed version through the existing release checks
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          DISTRIBUTION_TOKEN: ${{ secrets.BROWSER_DISTRIBUTION_TOKEN }}
+        run: |
+          python3 - <<'PY'
+          import json, os, sys
+          from pathlib import Path
+          sys.path.insert(0, 'scripts')
+          from publish_release import GitHub, ROOT, inspect_release, publish, prepare_delivery, all_releases, store_private_source, publish_public_mirror, release_config
+          if os.environ['GITHUB_REPOSITORY'] != 'koyuuuuu/personal-browser':
+              raise ValueError('Unexpected release repository')
+          source = 'ef8a61549807173f81a4710c2c6e81fe3a72cc5d'
+          info = inspect_release('dist/PersonalBrowser.ipa', ROOT, source, '38')
+          if info['version'] != '0.5.0':
+              raise ValueError('This one-time operation is only for version 0.5.0')
+          info['verification'] = {'tests': 'skipped_by_explicit_user_request', 'native_device_build': 'passed'}
+          github = GitHub()
+          info = publish(github, info, 'dist/PersonalBrowser.ipa')
+          Path('dist/build-info.json').write_text(json.dumps(info, ensure_ascii=False, indent=2) + '\n')
+          records = prepare_delivery(github, all_releases(github), 'dist/distribution')
+          store_private_source(github, 'dist/distribution')
+          token = os.environ.get('DISTRIBUTION_TOKEN')
+          if not token:
+              raise ValueError('Existing BROWSER_DISTRIBUTION_TOKEN is required for delivery')
+          mirror = GitHub(repo=release_config(ROOT)['public_repository'], token=token)
+          publish_public_mirror(mirror, records, 'dist/distribution')
+          print('Published fixed 0.5.0 build 38 and refreshed the existing SideStore feed.')
+          PY
