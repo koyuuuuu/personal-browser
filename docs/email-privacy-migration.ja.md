@@ -13,3 +13,7 @@ GitHubの古いオブジェクトの扱いには注意が必要。force pushだ�
 参考: https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/removing-sensitive-data-from-a-repository
 
 2026-10-26確認結果: GitHubの全ブランチ・タグ更新後も、旧コミットをGitHub APIで直接参照すると個人メールが返ることを確認した。このため公開へ変更していない。Python31件、Core52件（1件skip）、新旧往復の履歴・ブックマーク・お気に入り互換性検査が成功。配信済み9 IPAと8 build-infoのハッシュを保持。
+
+## その後の本人の方針変更
+
+本人は旧コミットのメール参照が残る説明を受けた後、新規リポジトリへの移行を取りやめ、元のpersonal-browserを公開してビルド・更新を進めるよう明示した。今後は元のリポジトリと既存配布先を使用する。no-reply化した履歴・新旧対応表・旧IPAは維持し、古いメールを新たなコミットへ戻さない。公開設定の変更APIが403のため、GitHub画面で本人による切り替えが必要。確認後は最新mainに対するiOS workflowを一度実行する。
