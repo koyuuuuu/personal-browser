@@ -15,7 +15,7 @@ import urllib.parse
 import urllib.request
 from pathlib import Path
 
-from distribution import BUNDLE_ID, inspect_release, release_config, release_tag, verify_bytes, version_key, write_assets
+from distribution import build_number, BUNDLE_ID, inspect_release, release_config, release_tag, verify_bytes, version_key, write_assets
 
 ROOT = Path(__file__).resolve().parents[1]
 LEGACY_IPA_BLOB = "146a48247f1e95119ff40332f46aa369635266dc"
@@ -142,6 +142,22 @@ def prepare_delivery(github, releases, destination):
         verify_bytes(data, info)
         (ipa_dir / f"{info['tag']}.ipa").write_bytes(data)
         records.append(info)
+    # The former source repository stays private. Preserve every delivered IPA
+    # using the already approved public binary mirror; never need its secrets.
+    inherited_file = ROOT / "distribution/inherited-releases.json"
+    if inherited_file.exists():
+        config = release_config(ROOT)
+        for info in json.loads(inherited_file.read_text()):
+            if any(r["tag"] == info["tag"] for r in records):
+                continue
+            if info["bundle_id"] != BUNDLE_ID or info.get("data_schema") != 1 or release_tag(info) != info["tag"]:
+                raise ValueError("Invalid inherited release identity")
+            url = f"https://github.com/{config['public_repository']}/releases/download/{info['tag']}/PersonalBrowser.ipa"
+            with urllib.request.urlopen(url, timeout=90) as response:
+                data = response.read(100 * 1024 * 1024 + 1)
+            verify_bytes(data, info)
+            (ipa_dir / f"{info['tag']}.ipa").write_bytes(data)
+            records.append(info)
     # Retain the already installed initial version as an explicit rollback entry.
     legacy = json.loads((ROOT / "docs/validation-2026-10-22.json").read_text())["artifact"]
     blob = github.request(f"/git/blobs/{LEGACY_IPA_BLOB}")
@@ -247,9 +263,9 @@ def main():
     parser.add_argument("--assets", default="dist/distribution")
     args = parser.parse_args()
     github = GitHub()
-    if github.repo != "koyuuuuu/personal-browser":
+    if github.repo != release_config(ROOT).get("source_repository", "koyuuuuu/personal-browser"):
         raise ValueError("The build must run in the established source repository")
-    info = inspect_release(args.ipa, ROOT, os.environ["GITHUB_SHA"], os.environ["GITHUB_RUN_NUMBER"])
+    info = inspect_release(args.ipa, ROOT, os.environ["GITHUB_SHA"], build_number(ROOT, os.environ["GITHUB_RUN_NUMBER"]))
     info = publish(github, info, args.ipa)
     (ROOT / "dist/build-info.json").write_text(json.dumps(info, ensure_ascii=False, indent=2) + "\n")
     records = prepare_delivery(github, all_releases(github), args.assets)

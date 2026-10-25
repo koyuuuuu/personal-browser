@@ -22,7 +22,17 @@ def release_config(root):
         raise ValueError("Bundle ID and data schema must remain compatible with v0.1.0")
     if not re.fullmatch(r"koyuuuuu/[A-Za-z0-9_.-]+", config["public_repository"]) or config["public_repository"] == "koyuuuuu/personal-browser":
         raise ValueError("A distinct public binary-only distribution repository is required")
+    source = config.get("source_repository", "koyuuuuu/personal-browser")
+    if source not in ["koyuuuuu/personal-browser", "koyuuuuu/personal-browser-public"] or source == config["public_repository"]:
+        raise ValueError("Unexpected source repository")
     return config
+
+
+def build_number(root, run_number):
+    offset = release_config(root).get("build_number_offset", 0)
+    if type(offset) is not int or offset < 0 or not str(run_number).isdigit() or int(run_number) < 1:
+        raise ValueError("Invalid workflow build number")
+    return str(offset + int(run_number))
 
 
 def version_key(version):
