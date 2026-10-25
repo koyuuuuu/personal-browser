@@ -116,7 +116,7 @@ final class SwipeTabCell: UICollectionViewCell, UIGestureRecognizerDelegate {
     required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }
     override func prepareForReuse() { super.prepareForReuse(); onClose = nil; resetSwipe() }
     func resetSwipe() { committed = false; contentView.transform = .identity; contentView.alpha = 1 }
-    func gestureRecognizerShouldBegin(_ gestureRecognizer: UIGestureRecognizer) -> Bool {
+    override func gestureRecognizerShouldBegin(_ gestureRecognizer: UIGestureRecognizer) -> Bool {
         let velocity = pan.velocity(in: self)
         return velocity.x < 0 && abs(velocity.x) > abs(velocity.y) * 1.4
     }
