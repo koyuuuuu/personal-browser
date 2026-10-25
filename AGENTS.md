@@ -84,3 +84,12 @@ The latest user instruction overrides the old animation/restore-handle rules: no
 The user now requests interactive horizontal transitions specifically for address-bar swipes. Keep WebSurface itself stationary and mounted; animate noninteractive preview overlays only. Plus/menu tab creation still has no horizontal page slide. No restore arrows. Both portrait and landscape chrome follow deliberate finger direction; deceleration/bounce/layout changes never reveal bars. Keep the build 14 media policy.
 
 Tab overview uses a native collection with immediate diffable removal at the horizontal swipe threshold. Cache decoded preview images; do not decode JPEGs per gesture frame. Delay disk cleanup to the normal save flush, never the visible removal. Expanded toolbar actions (including 5% zoom) are persisted in toolbar.json, leaving legacy enum arrays in browser.json/presentation.json readable by previous builds. History grouping is presentation-only, in local calendar morning/afternoon periods.
+
+## 0.5 link routing, favorites and suggestions
+
+- The user accepted 0.4.2 build27 as a rollback baseline. Retain its immutable tag/IPA; keep latest favorites and order readable by that build. The compatibility runner covers the library-extras.json round trip in addition to legacy bookmarks/history.
+- mybrowser://open?url= is the free-signing external entry point. Validate and decode once, open a new tab, keep bundle identity. No managed default-browser entitlement, app groups or extensions are added.
+- Universal-link preferences are local to this browser, never described as an iOS-wide setting. Use public APIs only, preserve POST/download semantics, and bound safe GET/HEAD interruption retries. Link choices live in link-preferences.json.
+- Search suggestions are opt-in and normal-home-only; no requests in private tabs. Use ephemeral no-cookie sessions, debounce/cancel requests, and tolerate provider failures. Preferences live in search-preferences.json, not legacy BrowserSettings.
+- Keep per-frame address-swipe state in the preview overlay. Freeze decoded images at gesture start, use an opaque overview-colored 4pt gap, and keep WebSurface mounted. Plus/menu creation has no horizontal slide.
+- Cold/background URL tests must exercise OS URL delivery, not pass URL text directly into the store. The loopback CI fixture invokes simctl with three fixed cases; never accept arbitrary shell commands or user URLs there.

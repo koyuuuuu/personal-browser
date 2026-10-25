@@ -1,0 +1,39 @@
+{
+  "recorded_date_jst": "2026-10-26",
+  "version": "0.5.0",
+  "source_commit": "8efdc52159ba1a35ba25cb5219da1b5cbda5cce8",
+  "delivery_status": "not_published",
+  "ci_run": "https://github.com/koyuuuuu/personal-browser/actions/runs/40214742507",
+  "blocker": {
+    "stage": "check job not started",
+    "github_annotation": "The job was not started because recent account payments have failed or your spending limit needs to be increased. Please check the Billing & plans section in your settings",
+    "billing_settings_changed": false
+  },
+  "previous_run30": {
+    "source_commit": "f108c0f8b156427d9c8ee355da2457b825b25a6f",
+    "macos_core": 53,
+    "ui_passed": 29,
+    "ui_failed": 1,
+    "failure": "Favorite drag did not reorder reliably; changed to onDrag/onDrop hover delegate in latest source"
+  },
+  "latest_local_checks": {
+    "swift_syntax": "passed",
+    "linux_core_executed": 52,
+    "linux_core_skipped": 1,
+    "python": 30,
+    "generated_project": "current"
+  },
+  "baseline": {
+    "version": "0.4.2",
+    "build": 27,
+    "source_commit": "70052bb73a2170eb516bb99aece43b13918a0553",
+    "sha256": "3d3477697c89d15cd3cc955c442b486bee65ccd62917195f2ef130cc5e75a4ad",
+    "still_latest_in_public_feed": true
+  },
+  "remaining": [
+    "Native validation of the final favorite drag correction",
+    "Unsigned device IPA generation and inspection",
+    "Release and SideStore feed publication",
+    "Real-device X/app handoff acceptance"
+  ]
+}
