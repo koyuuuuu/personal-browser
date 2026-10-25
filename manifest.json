@@ -2,6 +2,38 @@
   "releases": [
     {
       "file": "PersonalBrowser.ipa",
+      "sha256": "695f90d84ec04ec5f793b2dd55387eceab6b72fd5e0aacfb592ced13691d2a5f",
+      "bundle_id": "local.personalbrowser.app",
+      "version": "0.5.0",
+      "build": "38",
+      "minimum_ios": "17.0",
+      "target_ios": "18.4.1",
+      "architecture": "arm64",
+      "platform": "iOS device",
+      "embedded_profile": false,
+      "signature_resources": false,
+      "installation_verified": false,
+      "source_commit": "ef8a61549807173f81a4710c2c6e81fe3a72cc5d",
+      "data_schema": 1,
+      "size": 992118,
+      "date": "2026-10-25T20:10:12.317833+00:00",
+      "description": "0.4.2 build 27を復帰基準として保持。お気に入りのホームでのドラッグ配置と設定からの編集、サイトごとのアプリ連携選択、検索結果での検索語表示・再検索、軽量なタブ遷移と灰色の狭い隙間、mybrowser URLスキームによる外部共有リンクの新規タブ受信を追加。 ホーム画面の検索候補を設定で切替（初期オフ）。",
+      "appPermissions": {
+        "entitlements": [],
+        "privacy": {
+          "NSCameraUsageDescription": "閲覧中のWebサイトでカメラを使用するために必要です。",
+          "NSLocalNetworkUsageDescription": "自宅のネットワークにある自作アプリや動画サーバーへ接続するために使用します。",
+          "NSMicrophoneUsageDescription": "閲覧中のWebサイトでマイクを使用するために必要です。"
+        }
+      },
+      "tag": "v0.5.0-build.38",
+      "verification": {
+        "tests": "skipped_by_explicit_user_request",
+        "native_device_build": "passed"
+      }
+    },
+    {
+      "file": "PersonalBrowser.ipa",
       "sha256": "3d3477697c89d15cd3cc955c442b486bee65ccd62917195f2ef130cc5e75a4ad",
       "bundle_id": "local.personalbrowser.app",
       "version": "0.4.2",
@@ -242,7 +274,7 @@
       "data_schema": 1,
       "size": 330871,
       "date": "2026-10-22T01:17:49Z",
-      "source_commit": "438292f5622801bf56525381576b789f65e4d203",
+      "source_commit": "12f15dbe922d7d6f7a5de86345b2d5ee2d2b346f",
       "description": "初期版。最新のschema 1の履歴・ブックマークをそのまま使用します。",
       "appPermissions": {
         "entitlements": [],
