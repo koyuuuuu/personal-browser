@@ -11,3 +11,5 @@ GitHubの古いオブジェクトの扱いには注意が必要。force pushだ�
 今後、古い履歴を持つcloneからmerge/pushしない。GitHub側を更新した後、古いcloneは取り直す。ローカルの元履歴バックアップは非公開の作業領域だけに保管し、公開リポジトリへアップロードしない。
 
 参考: https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/removing-sensitive-data-from-a-repository
+
+2026-10-26確認結果: GitHubの全ブランチ・タグ更新後も、旧コミットをGitHub APIで直接参照すると個人メールが返ることを確認した。このため公開へ変更していない。Python31件、Core52件（1件skip）、新旧往復の履歴・ブックマーク・お気に入り互換性検査が成功。配信済み9 IPAと8 build-infoのハッシュを保持。

@@ -1,0 +1,20 @@
+{
+  "date_jst": "2026-10-26",
+  "repository_private": true,
+  "rewritten_branches": 3,
+  "rewritten_tags": 9,
+  "mapped_original_commits": 53,
+  "personal_email_matches_in_reachable_history_and_files": 0,
+  "future_author_email": "266257694+koyuuuuu@users.noreply.github.com",
+  "delivered_app_core_test_project_trees_unchanged": true,
+  "unchanged_ipa_versions_verified": 9,
+  "unchanged_build_info_assets_verified": 8,
+  "python_tests_passed": 31,
+  "linux_core_tests_executed": 52,
+  "linux_core_tests_skipped": 1,
+  "baseline_latest_bookmarks_history_round_trip": "passed",
+  "baseline_042_latest_favorites_order_round_trip": "passed",
+  "github_old_commit_still_returns_personal_email": true,
+  "public_visibility_change": "blocked pending cache purge or clean new repository",
+  "release_assets_replaced": false
+}
