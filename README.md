@@ -2,7 +2,7 @@
 
 iPhone 12 / iOS 18.4.1向けの個人用ブラウザ。SwiftUIとWKWebViewで新規実装し、Windowsで編集、クラウドmacOSでビルド、SideStoreで実機へ導入・再署名する。
 
-**初期版0.1.0（build 6）のビルド・UIテスト・未署名IPA生成に成功。2026-10-24に本人がiPhoneで利用できたと報告。全機能・継続再署名の検証はこれから。** 非公開の[koyuuuuu/personal-browser](https://github.com/koyuuuuu/personal-browser)で無料枠内・超過時停止の方針。支払い方法は未登録との本人回答を受けてCIを実行した。
+**初期版0.1.0（build 6）のビルド・UIテスト・未署名IPA生成に成功。2026-10-24に本人がiPhoneで利用できたと報告。全機能・継続再署名の検証はこれから。** [koyuuuuu/personal-browser](https://github.com/koyuuuuu/personal-browser)で無料枠内・超過時停止の方針。支払い方法は未登録との本人回答を受けてCIを実行した。
 
 [v0.1.0の保存済みリリース](https://github.com/koyuuuuu/personal-browser/releases/tag/v0.1.0)から、ビルド元のソースとIPA保管先を参照できる。IPAは非公開の`ipa-archive`ブランチに保存し、Actionsの1日保持期限が過ぎても取得できる。約323 KiB、arm64実機用、最低iOS 17.0。SideStoreで個人用に署名して導入する。[検証記録](docs/validation-2026-10-22.json)にハッシュとビルド元を記録した。
 
@@ -45,3 +45,5 @@ mainへのアプリ・テスト・ビルド・配信コードのpushで、Linux�
 0.4.2 build 27では横画面ホームの操作領域、ネイティブのタブ一覧・スワイプ削除、アドレスバーの指に追従するタブ遷移、午前・午後別の履歴、アドレス候補、5％刻みの倍率ボタン、Safari取り込み、縦横バーのスクロール判定を改善。[使い方と変更点](docs/changes-0.4.2.ja.md)、[検証記録](docs/validation-0.4.2-2026-10-25.json)。
 
 0.5.0は実装済み・未配信。2026-10-26時点でGitHubの料金・利用制限により最終ネイティブ検証とIPA生成が停止している。配信中の版は0.4.2 build27。[変更点と検証状況](docs/changes-0.5.0.ja.md)、[共有ショートカット手順](docs/shortcuts.ja.md)。
+
+2026-10-26: 利用者の指示で全ブランチ・タグの履歴を監査したうえ、本体ソースを公開する方針へ変更。以前の非公開方針の記述は当時の運用記録。[公開前の確認](docs/publication-audit-2026-10-26.ja.md)。標準の公開リポジトリ用Actionsランナーを使い、有料ランナーや課金設定は追加しない。

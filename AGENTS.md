@@ -3,9 +3,9 @@
 ## Established project decisions
 
 - Native SwiftUI + WKWebView, iPhone 12 / iOS 18.4.1; no third-party browser fork.
-- Private source repository: `koyuuuuu/personal-browser`. Keep it private. The user explicitly approved publishing only unsigned IPAs, the required app icon, and SideStore source JSON to the separate public `koyuuuuu/personal-browser-distribution` repository. Never publish Swift source, private build logs, credentials, or browsing data there.
+- On 2026-10-26 the user authorized making `koyuuuuu/personal-browser` public after auditing source and Git history, to use free standard Actions runners. This supersedes earlier private-source restrictions. Keep credentials and browsing data out of all Git history, logs and assets. The separate `personal-browser-distribution` mirror remains binary/metadata only.
 - Free allowance only. The user reported no registered payment method. Do not enable paid usage, add paid AI services, or change billing settings.
-- The user wants the assistant to perform routine development, commits, CI dispatch, log inspection, fixes, and artifact retrieval without asking them to log into GitHub for each step. This does not authorize unrelated changes or publishing the source.
+- The user wants the assistant to perform routine development, commits, CI dispatch, log inspection, fixes, and artifact retrieval without asking them to log into GitHub for each step. This does not authorize unrelated changes. Source publication is authorized by the later instruction above.
 
 ## Authentication and execution
 

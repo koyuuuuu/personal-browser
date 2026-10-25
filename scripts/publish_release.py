@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
-"""Publish private releases using the workflow's ephemeral GITHUB_TOKEN.
+"""Publish source-repository releases using the workflow's ephemeral GITHUB_TOKEN.
 
-Run only inside the contents:write CI job. Private publishing uses the job token;
+Run only inside the contents:write CI job. Source-repository publishing uses the job token;
 the optional public mirror uses DISTRIBUTION_TOKEN scoped only to its public repo.
 """
 import argparse
@@ -238,9 +238,7 @@ def main():
     args = parser.parse_args()
     github = GitHub()
     if github.repo != "koyuuuuu/personal-browser":
-        raise ValueError("The build must run in the established private source repository")
-    if not github.request("")["private"]:
-        raise ValueError("The repository must remain private")
+        raise ValueError("The build must run in the established source repository")
     info = inspect_release(args.ipa, ROOT, os.environ["GITHUB_SHA"], os.environ["GITHUB_RUN_NUMBER"])
     info = publish(github, info, args.ipa)
     (ROOT / "dist/build-info.json").write_text(json.dumps(info, ensure_ascii=False, indent=2) + "\n")
