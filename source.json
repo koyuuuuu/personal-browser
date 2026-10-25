@@ -12,6 +12,16 @@
       "iconURL": "https://raw.githubusercontent.com/koyuuuuu/personal-browser-distribution/main/icon.png",
       "versions": [
         {
+          "version": "0.4.2",
+          "buildVersion": "27",
+          "date": "2026-10-25T07:14:58.042834+00:00",
+          "localizedDescription": "タブ一覧をネイティブのグリッドに変更し、削除判定と同時に周囲のタブを移動。アドレスバーのスワイプに指に追従する遷移を追加。横画面ホームの操作領域を修正。午前・午後別の履歴と個別・一括削除、履歴からのアドレス候補、5％刻みの倍率ボタン、Safari取り込みの文字参照・文字コード対応を追加。縦横のバーをスクロール方向で表示し、最下部の跳ね返りでの誤表示を防止。",
+          "downloadURL": "https://github.com/koyuuuuu/personal-browser-distribution/releases/download/v0.4.2-build.27/PersonalBrowser.ipa",
+          "size": 916001,
+          "minOSVersion": "17.0",
+          "sha256": "3d3477697c89d15cd3cc955c442b486bee65ccd62917195f2ef130cc5e75a4ad"
+        },
+        {
           "version": "0.4.1",
           "buildVersion": "24",
           "date": "2026-10-24T22:25:56.219443+00:00",

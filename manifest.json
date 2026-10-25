@@ -2,6 +2,34 @@
   "releases": [
     {
       "file": "PersonalBrowser.ipa",
+      "sha256": "3d3477697c89d15cd3cc955c442b486bee65ccd62917195f2ef130cc5e75a4ad",
+      "bundle_id": "local.personalbrowser.app",
+      "version": "0.4.2",
+      "build": "27",
+      "minimum_ios": "17.0",
+      "target_ios": "18.4.1",
+      "architecture": "arm64",
+      "platform": "iOS device",
+      "embedded_profile": false,
+      "signature_resources": false,
+      "installation_verified": false,
+      "source_commit": "70052bb73a2170eb516bb99aece43b13918a0553",
+      "data_schema": 1,
+      "size": 916001,
+      "date": "2026-10-25T07:14:58.042834+00:00",
+      "description": "タブ一覧をネイティブのグリッドに変更し、削除判定と同時に周囲のタブを移動。アドレスバーのスワイプに指に追従する遷移を追加。横画面ホームの操作領域を修正。午前・午後別の履歴と個別・一括削除、履歴からのアドレス候補、5％刻みの倍率ボタン、Safari取り込みの文字参照・文字コード対応を追加。縦横のバーをスクロール方向で表示し、最下部の跳ね返りでの誤表示を防止。",
+      "appPermissions": {
+        "entitlements": [],
+        "privacy": {
+          "NSCameraUsageDescription": "閲覧中のWebサイトでカメラを使用するために必要です。",
+          "NSLocalNetworkUsageDescription": "自宅のネットワークにある自作アプリや動画サーバーへ接続するために使用します。",
+          "NSMicrophoneUsageDescription": "閲覧中のWebサイトでマイクを使用するために必要です。"
+        }
+      },
+      "tag": "v0.4.2-build.27"
+    },
+    {
+      "file": "PersonalBrowser.ipa",
       "sha256": "b7d265a110775baf04a42772459f35affd0fd69936113aa499b35c373c815b8b",
       "bundle_id": "local.personalbrowser.app",
       "version": "0.4.1",
