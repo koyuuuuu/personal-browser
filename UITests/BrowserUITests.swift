@@ -37,20 +37,34 @@ final class BrowserUITests: XCTestCase {
         XCTAssertTrue(page.staticTexts["POST kept: value=one"].waitForExistence(timeout: 10))
     }
 
+    private func openExternalFixture(_ name: String) {
+        // XCUIApplication.open can launch without delivering its URL on this
+        // SDK and always relaunches. simctl uses the real OS URL dispatch path.
+        let finished = expectation(description: "System delivered external URL")
+        URLSession.shared.dataTask(with: URL(string: "http://127.0.0.1:18765/test-open-" + name)!) { _, response, error in
+            XCTAssertNil(error)
+            XCTAssertEqual((response as? HTTPURLResponse)?.statusCode, 204)
+            finished.fulfill()
+        }.resume()
+        wait(for: [finished], timeout: 20)
+        XCTAssertTrue(app.wait(for: .runningForeground, timeout: 10))
+    }
     func testExternalURLColdLaunchBackgroundAndInvalidInput() {
-        app.launchArguments = ["--ui-testing", "--ui-keep-data", "--ui-no-fixture"]
         app.terminate()
-        app.open(URL(string: "mybrowser://open?url=http%3A%2F%2F127.0.0.1%3A18765%2Fexternal-cold%3Fa%3D1%26b%3D2")!)
+        XCTAssertTrue(app.wait(for: .notRunning, timeout: 5))
+        openExternalFixture("cold")
         XCTAssertTrue(app.webViews.staticTexts["Local connection /external-cold?a=1&b=2"].waitForExistence(timeout: 15))
         XCUIDevice.shared.press(.home)
-        app.open(URL(string: "mybrowser://open?url=http%3A%2F%2F127.0.0.1%3A18765%2Fexternal-warm")!)
+        openExternalFixture("warm")
         XCTAssertTrue(app.webViews.staticTexts["Local connection /external-warm"].waitForExistence(timeout: 15))
         app.buttons["tabsButton"].tap()
         XCTAssertTrue(app.navigationBars["タブ 3"].waitForExistence(timeout: 5))
-        app.open(URL(string: "mybrowser://open?url=javascript%3Aalert(1)")!)
+        tapMenuControl("閉じる")
+        openExternalFixture("invalid")
         XCTAssertTrue(app.alerts["お知らせ"].waitForExistence(timeout: 5))
         app.alerts.buttons["OK"].tap()
-        XCTAssertTrue(app.navigationBars["タブ 3"].exists)
+        app.buttons["tabsButton"].tap()
+        XCTAssertTrue(app.navigationBars["タブ 3"].waitForExistence(timeout: 5))
     }
 
     func testFavoriteDragReordersAndSettingsEditsLatestDataAfterRestart() {
@@ -236,6 +250,7 @@ final class BrowserUITests: XCTestCase {
     }
     func testLandscapeChromeIsHiddenCompactAndRevealsOnReverseScroll() {
         XCUIDevice.shared.orientation = .landscapeRight
+        settlePresentation()
         XCTAssertFalse(app.buttons["showChromeButton"].exists)
         XCTAssertFalse(app.textFields["addressField"].exists)
         app.swipeDown()

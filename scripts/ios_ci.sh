@@ -53,7 +53,7 @@ subjectAltName=DNS:localhost,IP:127.0.0.1
 CERT_CONFIG
 openssl req -x509 -newkey rsa:2048 -nodes -days 1 -config "$fixture_dir/openssl.cnf" \
     -keyout "$fixture_dir/key.pem" -out "$fixture_dir/cert.pem" >/dev/null 2>&1
-python3 scripts/test_local_server.py --cert "$fixture_dir/cert.pem" --key "$fixture_dir/key.pem" &
+python3 scripts/test_local_server.py --cert "$fixture_dir/cert.pem" --key "$fixture_dir/key.pem" --simulator-id "$simulator_id" &
 fixture_pid=$!
 for attempt in {1..50}; do
     if curl --silent --fail http://127.0.0.1:18765/health >/dev/null; then break; fi

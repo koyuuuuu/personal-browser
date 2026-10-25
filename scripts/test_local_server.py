@@ -9,6 +9,7 @@ import signal
 import re
 import ssl
 import threading
+import subprocess
 import wave
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
@@ -17,6 +18,7 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--cert', required=True)
     parser.add_argument('--key', required=True)
+    parser.add_argument('--simulator-id')
     args = parser.parse_args()
     audio = io.BytesIO()
     with wave.open(audio, 'wb') as stream:
@@ -30,6 +32,18 @@ def main():
         protocol_version = 'HTTP/1.1'
 
         def do_GET(self):
+            external_cases = {
+                '/test-open-cold': 'mybrowser://open?url=http%3A%2F%2F127.0.0.1%3A18765%2Fexternal-cold%3Fa%3D1%26b%3D2',
+                '/test-open-warm': 'mybrowser://open?url=http%3A%2F%2F127.0.0.1%3A18765%2Fexternal-warm',
+                '/test-open-invalid': 'mybrowser://open?url=javascript%3Aalert(1)',
+            }
+            if self.path in external_cases and args.simulator_id:
+                # Exercise actual OS delivery, including a terminated app. No
+                # URL/command supplied by a request is executed by this helper.
+                result = subprocess.run(['xcrun', 'simctl', 'openurl', args.simulator_id, external_cases[self.path]],
+                                        capture_output=True, timeout=12, check=False)
+                self.send_response(204 if result.returncode == 0 else 500)
+                self.send_header('Content-Length', '0'); self.end_headers(); return
             if self.path == '/audio.wav':
                 data, mime = audio, 'audio/wav'
             elif self.path == '/navigation-fixture':
