@@ -1,0 +1,57 @@
+{
+  "recorded_date_jst": "2026-10-25",
+  "version": "0.4.2",
+  "build": 27,
+  "source_commit": "70052bb73a2170eb516bb99aece43b13918a0553",
+  "ci_run": "https://github.com/koyuuuuu/personal-browser/actions/runs/40171456412",
+  "release": "v0.4.2-build.27",
+  "artifact": {
+    "file": "PersonalBrowser-0.4.2-build.27.ipa",
+    "sha256": "3d3477697c89d15cd3cc955c442b486bee65ccd62917195f2ef130cc5e75a4ad",
+    "bundle_id": "local.personalbrowser.app",
+    "version": "0.4.2",
+    "build": "27",
+    "minimum_ios": "17.0",
+    "target_ios": "18.4.1",
+    "architecture": "arm64",
+    "platform": "iOS device",
+    "embedded_profile": false,
+    "signature_resources": false,
+    "installation_verified": false,
+    "size": 916001
+  },
+  "data_schema": 1,
+  "checks": {
+    "python": 30,
+    "macos_core": 46,
+    "ios_ui": 26,
+    "latest_bookmark_history_old_new_old_new": "passed",
+    "landscape_home_cropped_background_menu_scroll_settings_and_address_input": "passed",
+    "address_swipe_previous_next_create_and_landscape_controls": "passed",
+    "grid_swipe_close_repeated_close_remaining_tab_selection_rotation_and_active_position": "passed",
+    "normal_preview_process_restart": "passed",
+    "history_morning_afternoon_individual_and_period_delete": "passed",
+    "history_partial_match_address_prediction": "passed",
+    "toolbar_zoom_five_points_and_restart": "passed",
+    "portrait_bottom_bounce_does_not_reveal_chrome": "passed",
+    "safari_numeric_entities_utf16_shiftjis_and_safe_reimport": "passed",
+    "build14_media_policy": "retained; controlled background audio test passed"
+  },
+  "distribution": {
+    "source_url": "https://raw.githubusercontent.com/koyuuuuu/personal-browser-distribution/main/source.json",
+    "anonymous_download": true,
+    "retained_ipas_verified": 9,
+    "source_repository_private": true,
+    "public_git_tree": [
+      "README.md",
+      "icon.png",
+      "source.json"
+    ],
+    "private_release_ipa_digest_matches_public": true
+  },
+  "limits": [
+    "Real iPhone frame rate and this release installation were not measured in the simulator.",
+    "Safari files already containing irreversibly garbled text require the original export; only exact old HTML entity corruption is repaired on reimport.",
+    "PiP/site-specific media behavior was not expanded; build 14 policy retained."
+  ]
+}
