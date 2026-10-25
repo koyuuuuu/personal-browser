@@ -1,6 +1,6 @@
 # 洗浄済み履歴の公開先への移行
 
-移行先は `koyuuuuu/personal-browser-public`。旧 `personal-browser` は非公開のまま保持する。旧コミットのキャッシュがある旧リポジトリ自体を公開しない。
+移行先は `koyuuuuu/personal-browser-clean`。旧 `personal-browser` は非公開のまま保持する。旧コミットのキャッシュがある旧リポジトリ自体を公開しない。
 
 移すものは、no-replyで洗浄したmain・distribution・ipa-archiveの3ブランチと配信済み9タグ。新旧ID対応表も含める。個人メールを含む古いオブジェクトや、履歴洗浄前のバックアップは移さない。
 
@@ -12,6 +12,8 @@
 
 ## 初回の作成
 
-GitHub連携は新規リポジトリ作成APIで403となったため、本人が https://github.com/new で `personal-browser-public` をPublicとして作成する。README・.gitignore・Licenseは追加せず空で作成する。旧personal-browserはPrivateのまま。作成後、Codexが空であることを確認し、洗浄済みrefだけを送信して標準Actionsで再検証する。
+GitHub連携は新規リポジトリ作成APIで403となったため、本人が https://github.com/new で `personal-browser-clean` をPublicとして作成する。README・.gitignore・Licenseは追加せず空で作成する。旧personal-browserはPrivateのまま。作成後、Codexが空であることを確認し、洗浄済みrefだけを送信して標準Actionsで再検証する。
 
 公開までの準備コミットには個人メールを使用しない。元の非公開GitHubから直接mirror pushする操作は禁止する。
+
+追加確認: 最初に作成されたpersonal-browser-publicにはREADME初期コミットがあり、作者はno-replyだがコミッターに個人メールが含まれていた。匿名APIでも参照できたため、このリポジトリには送信していない。非公開への変更APIは403となったため、本人が非公開へ戻す必要がある。次の公開先は別名personal-browser-cleanとし、README等を追加せず、コミット0件の空の状態で作成する。

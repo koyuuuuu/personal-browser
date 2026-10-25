@@ -7,6 +7,6 @@
   "developer_name": "Personal Browser",
   "description": "自分専用のブラウザ。タブ、履歴、ブックマーク、プライベート閲覧、UIカスタマイズに対応。",
   "release_notes": "0.4.2 build 27を復帰基準として保持。お気に入りのホームでのドラッグ配置と設定からの編集、サイトごとのアプリ連携選択、検索結果での検索語表示・再検索、軽量なタブ遷移と灰色の狭い隙間、mybrowser URLスキームによる外部共有リンクの新規タブ受信を追加。 ホーム画面の検索候補を設定で切替（初期オフ）。",
-  "source_repository": "koyuuuuu/personal-browser-public",
+  "source_repository": "koyuuuuu/personal-browser-clean",
   "build_number_offset": 1000
 }

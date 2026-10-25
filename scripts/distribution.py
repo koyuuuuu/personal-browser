@@ -23,7 +23,7 @@ def release_config(root):
     if not re.fullmatch(r"koyuuuuu/[A-Za-z0-9_.-]+", config["public_repository"]) or config["public_repository"] == "koyuuuuu/personal-browser":
         raise ValueError("A distinct public binary-only distribution repository is required")
     source = config.get("source_repository", "koyuuuuu/personal-browser")
-    if source not in ["koyuuuuu/personal-browser", "koyuuuuu/personal-browser-public"] or source == config["public_repository"]:
+    if source not in ["koyuuuuu/personal-browser", "koyuuuuu/personal-browser-public", "koyuuuuu/personal-browser-clean"] or source == config["public_repository"]:
         raise ValueError("Unexpected source repository")
     return config
 

@@ -12,7 +12,7 @@ class PublicMigrationTests(unittest.TestCase):
         self.assertEqual(build_number(ROOT, '2'), '1002')
         for value in ['0', '-1', 'bad']:
             with self.assertRaises(ValueError): build_number(ROOT, value)
-        self.assertEqual(release_config(ROOT)['source_repository'], 'koyuuuuu/personal-browser-public')
+        self.assertEqual(release_config(ROOT)['source_repository'], 'koyuuuuu/personal-browser-clean')
 
     def test_inherited_releases_match_the_verified_identity_migration(self):
         inherited = json.loads((ROOT/'distribution/inherited-releases.json').read_text())
