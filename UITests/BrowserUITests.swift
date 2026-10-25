@@ -53,10 +53,9 @@ final class BrowserUITests: XCTestCase {
         while Date() < deadline {
             if open.exists {
                 open.tap()
-                // Attach XCTest to the OS-launched process after termination.
-                // activate() does not terminate/relaunch a running application;
-                // the real URL destination must still appear below.
-                app.activate()
+                // Wait for the OS to finish launching with its URL context.
+                // activate/launch can start a new process without that URL.
+                XCTAssertTrue(app.wait(for: .runningForeground, timeout: 90))
             }
             if app.state == .runningForeground {
                 if name == "invalid", app.alerts["お知らせ"].exists { return }
