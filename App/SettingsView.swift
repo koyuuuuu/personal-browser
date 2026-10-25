@@ -15,8 +15,15 @@ struct SettingsView: View {
                         .accessibilityIdentifier("updateSettingsLink")
                     NavigationLink("ブラウザ機能") { FeatureSettingsView(store: store) }
                         .accessibilityIdentifier("featureSettingsLink")
+                    NavigationLink("お気に入り") { FavoritesSettingsView(store: store) }.accessibilityIdentifier("favoritesSettingsLink")
+                    NavigationLink("外部リンク・ショートカット") { ExternalLinksSettingsView(store: store) }
                     NavigationLink("データの取り込み・書き出し") { LibraryTransferView(store: store) }
                 }
+                Section {
+                    Toggle("ホーム画面に検索候補を表示", isOn: Binding(get: { store.searchSuggestions.enabled }, set: { store.setSearchSuggestions($0) }))
+                        .accessibilityIdentifier("searchSuggestionsToggle")
+                } header: { Text("検索候補") }
+                footer: { Text("オンにするとホーム画面で入力中の検索語を、選択した検索エンジンへ送信します。プライベートタブでは送信・表示しません。") }
                 Section("操作") {
                     NavigationLink("表示・操作") { PresentationSettingsView(store: store) }.accessibilityIdentifier("presentationSettingsLink")
                     Picker("縦画面のバーの位置", selection: setting(\.toolbarPosition)) {

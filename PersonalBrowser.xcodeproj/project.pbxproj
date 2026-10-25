@@ -65,6 +65,16 @@
 			"isa" = "PBXBuildFile";
 			"fileRef" = "9AB7B064CE0B98587CD37030";
 		};
+		"A9CCEDB582C1DDC4DEA293C4" = {
+			"isa" = "PBXFileReference";
+			"lastKnownFileType" = "sourcecode.swift";
+			"path" = "FavoritesSettingsView.swift";
+			"sourceTree" = "<group>";
+		};
+		"C276B1C88341F830C225ACB9" = {
+			"isa" = "PBXBuildFile";
+			"fileRef" = "A9CCEDB582C1DDC4DEA293C4";
+		};
 		"8C5B487D86FCE088DB72D7EF" = {
 			"isa" = "PBXFileReference";
 			"lastKnownFileType" = "sourcecode.swift";
@@ -84,6 +94,16 @@
 		"C8EFF5B7D307612D29CB2DB3" = {
 			"isa" = "PBXBuildFile";
 			"fileRef" = "25F24719363985F7CAED328B";
+		};
+		"7F17D9354EEC9248D830A539" = {
+			"isa" = "PBXFileReference";
+			"lastKnownFileType" = "sourcecode.swift";
+			"path" = "HomeSearchSuggestions.swift";
+			"sourceTree" = "<group>";
+		};
+		"4F3B9EA07863F46CB504FF0B" = {
+			"isa" = "PBXBuildFile";
+			"fileRef" = "7F17D9354EEC9248D830A539";
 		};
 		"1238188354BD19180AF05EE7" = {
 			"isa" = "PBXFileReference";
@@ -206,8 +226,10 @@
 				"E7A2536D3C797A21F68AD776",
 				"FDFF98B80400028AC5F76A26",
 				"9AB7B064CE0B98587CD37030",
+				"A9CCEDB582C1DDC4DEA293C4",
 				"8C5B487D86FCE088DB72D7EF",
 				"25F24719363985F7CAED328B",
+				"7F17D9354EEC9248D830A539",
 				"1238188354BD19180AF05EE7",
 				"6F9F31D3C004020DBE918D32",
 				"7DFF5690D9E43389F782B650",
@@ -294,6 +316,16 @@
 			"isa" = "PBXBuildFile";
 			"fileRef" = "569E783A45A9624CE9A07852";
 		};
+		"45A530510519E6D25DAD872F" = {
+			"isa" = "PBXFileReference";
+			"lastKnownFileType" = "sourcecode.swift";
+			"path" = "LinkRouting.swift";
+			"sourceTree" = "<group>";
+		};
+		"50BECF23DECAA0FC7BF7C48B" = {
+			"isa" = "PBXBuildFile";
+			"fileRef" = "45A530510519E6D25DAD872F";
+		};
 		"0258D0175D953E32562EF129" = {
 			"isa" = "PBXFileReference";
 			"lastKnownFileType" = "sourcecode.swift";
@@ -313,6 +345,16 @@
 		"32356271187395332A71A4E6" = {
 			"isa" = "PBXBuildFile";
 			"fileRef" = "35634339432D2526FB455AA5";
+		};
+		"91A51E60D9EB4278FCB2CF14" = {
+			"isa" = "PBXFileReference";
+			"lastKnownFileType" = "sourcecode.swift";
+			"path" = "SearchSuggestions.swift";
+			"sourceTree" = "<group>";
+		};
+		"F739ADBFE475305DF67409B3" = {
+			"isa" = "PBXBuildFile";
+			"fileRef" = "91A51E60D9EB4278FCB2CF14";
 		};
 		"3FB677C06874B7AF4A9D1DEF" = {
 			"isa" = "PBXFileReference";
@@ -364,8 +406,10 @@
 				"C8A7B7B204B9565A7A0CDBCD",
 				"AE82A4788118E76A82B54F3B",
 				"569E783A45A9624CE9A07852",
+				"45A530510519E6D25DAD872F",
 				"0258D0175D953E32562EF129",
 				"35634339432D2526FB455AA5",
+				"91A51E60D9EB4278FCB2CF14",
 				"3FB677C06874B7AF4A9D1DEF",
 				"78C9EB6E90645B6BBB80CCE9",
 				"8B4758279FF832AA45C1A5B4",
@@ -478,7 +522,7 @@
 				"INFOPLIST_FILE" = "App/Info.plist";
 				"GENERATE_INFOPLIST_FILE" = "NO";
 				"CURRENT_PROJECT_VERSION" = "1";
-				"MARKETING_VERSION" = "0.4.2";
+				"MARKETING_VERSION" = "0.5.0";
 				"CODE_SIGN_STYLE" = "Automatic";
 				"TARGETED_DEVICE_FAMILY" = "1";
 				"SUPPORTED_PLATFORMS" = "iphoneos iphonesimulator";
@@ -503,7 +547,7 @@
 				"INFOPLIST_FILE" = "App/Info.plist";
 				"GENERATE_INFOPLIST_FILE" = "NO";
 				"CURRENT_PROJECT_VERSION" = "1";
-				"MARKETING_VERSION" = "0.4.2";
+				"MARKETING_VERSION" = "0.5.0";
 				"CODE_SIGN_STYLE" = "Automatic";
 				"TARGETED_DEVICE_FAMILY" = "1";
 				"SUPPORTED_PLATFORMS" = "iphoneos iphonesimulator";
@@ -586,8 +630,10 @@
 				"C6150AF80F394D78175E2EEB",
 				"2B9766949F79DD811AFDAC89",
 				"6A29F5F7C6BA8B045ADE92C3",
+				"C276B1C88341F830C225ACB9",
 				"0539191F016B3AF6021E9DE8",
 				"C8EFF5B7D307612D29CB2DB3",
+				"4F3B9EA07863F46CB504FF0B",
 				"E82967650E1C993CC0CA32FF",
 				"9F347C723944C0DAC55AB56C",
 				"E8DADFD4782657A82EC9A258",
@@ -605,8 +651,10 @@
 				"CEE395D96017EB67FE8FC99C",
 				"37533709DD86F68E142AF6A4",
 				"F2301E9DF7FCD0E1655D50A0",
+				"50BECF23DECAA0FC7BF7C48B",
 				"DA9C3EB926325121D508F8D5",
 				"32356271187395332A71A4E6",
+				"F739ADBFE475305DF67409B3",
 				"89486FF53386963565AE6659",
 				"473CECE2B44791EB74BA7976",
 				"000BB7D1ED578BD248A461DD",

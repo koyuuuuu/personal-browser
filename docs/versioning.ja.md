@@ -14,6 +14,10 @@
 
 実機での利用報告がある初期版は[v0.1.0 / build 6](https://github.com/koyuuuuu/personal-browser/releases/tag/v0.1.0)。タグのビルド元は`438292f5622801bf56525381576b789f65e4d203`、保存形式はschema 1。2026-10-24に本人がiPhoneで利用できたと報告した。
 
+## 現在の復帰基準
+
+2026-10-25に利用者が良好と確認した **0.4.2 build27** を固定して保持する。タグ `v0.4.2-build.27`、ソース `70052bb73a2170eb516bb99aece43b13918a0553`。[公開IPA](https://github.com/koyuuuuu/personal-browser-distribution/releases/download/v0.4.2-build.27/PersonalBrowser.ipa) は916001 bytes、SHA-256 `3d3477697c89d15cd3cc955c442b486bee65ccd62917195f2ef130cc5e75a4ad`。新機能は0.5.0から追加し、このタグ・IPAは差し替えない。
+
 ## IPAの保管先
 
 初期版の保存時は、会話側のGitHub連携から`uploads.github.com`へのアップロードが401になった。そのため初期IPAは[非公開のipa-archiveブランチ](https://github.com/koyuuuuu/personal-browser/tree/ipa-archive/v0.1.0)をIPA保管専用に使う。ソース用のmainとは分け、保管ブランチをmainへマージしない。

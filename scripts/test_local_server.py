@@ -32,6 +32,9 @@ def main():
         def do_GET(self):
             if self.path == '/audio.wav':
                 data, mime = audio, 'audio/wav'
+            elif self.path == '/navigation-fixture':
+                data = b'<!doctype html><meta name="viewport" content="width=device-width,initial-scale=1"><a href="/linked">Browser link</a><form method="post" action="/submitted"><input type="hidden" name="value" value="one"><button>Submit POST</button></form>'
+                mime = 'text/html; charset=utf-8'
             elif self.path == '/scroll-fixture':
                 data = b'<!doctype html><meta name="viewport" content="width=device-width,initial-scale=1"><title>Scroll fixture</title><h1>Scroll fixture</h1><div style="height:1100px;background:linear-gradient(white,lightblue)">Scroll down</div><p>Bottom</p>'
                 mime = 'text/html; charset=utf-8'
@@ -66,6 +69,12 @@ def main():
             self.send_header('Accept-Ranges', 'bytes')
             self.send_header('Content-Length', str(len(data))); self.send_header('Cache-Control', 'no-store')
             self.end_headers(); self.wfile.write(data)
+
+        def do_POST(self):
+            body = self.rfile.read(min(4096, int(self.headers.get('Content-Length', '0')))).decode('utf-8')
+            data = ('<!doctype html><meta name="viewport" content="width=device-width,initial-scale=1"><p>POST kept: ' + html.escape(body) + '</p>').encode()
+            self.send_response(200); self.send_header('Content-Type', 'text/html; charset=utf-8')
+            self.send_header('Content-Length', str(len(data))); self.end_headers(); self.wfile.write(data)
 
         def log_message(self, *args):
             pass

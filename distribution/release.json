@@ -1,10 +1,10 @@
 {
-  "version": "0.4.2",
+  "version": "0.5.0",
   "bundle_id": "local.personalbrowser.app",
   "data_schema": 1,
   "public_repository": "koyuuuuu/personal-browser-distribution",
   "name": "Personal Browser",
   "developer_name": "Personal Browser",
   "description": "自分専用のブラウザ。タブ、履歴、ブックマーク、プライベート閲覧、UIカスタマイズに対応。",
-  "release_notes": "タブ一覧をネイティブのグリッドに変更し、削除判定と同時に周囲のタブを移動。アドレスバーのスワイプに指に追従する遷移を追加。横画面ホームの操作領域を修正。午前・午後別の履歴と個別・一括削除、履歴からのアドレス候補、5％刻みの倍率ボタン、Safari取り込みの文字参照・文字コード対応を追加。縦横のバーをスクロール方向で表示し、最下部の跳ね返りでの誤表示を防止。"
+  "release_notes": "0.4.2 build 27を復帰基準として保持。お気に入りのホームでのドラッグ配置と設定からの編集、サイトごとのアプリ連携選択、検索結果での検索語表示・再検索、軽量なタブ遷移と灰色の狭い隙間、mybrowser URLスキームによる外部共有リンクの新規タブ受信を追加。 ホーム画面の検索候補を設定で切替（初期オフ）。"
 }

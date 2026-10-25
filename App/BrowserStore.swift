@@ -49,6 +49,11 @@ final class BrowserStore: ObservableObject {
     @Published var homeBackground: UIImage?
     @Published private(set) var extraStorageBlocked = false
     @Published var notice: String?
+    @Published private(set) var links = LinkPreferences()
+    private var linkStorageBlocked = false
+    @Published private(set) var searchSuggestions = SearchSuggestionPreferences()
+    private var searchSuggestionStorageBlocked = false
+    private var pendingIncomingLinks: [URL] = []
     @Published var externalURL: URL?
     @Published private(set) var persistenceBlocked = false
     @Published private(set) var isClearingData = false
@@ -131,6 +136,7 @@ final class BrowserStore: ObservableObject {
     @discardableResult
     func newTab(isPrivate: Bool = false, url: URL? = nil) -> BrowserTab? {
         guard !isClearingData else { return nil }
+        if let url { preferBrowser(for: url) }
         return makeTab(url: url, isPrivate: isPrivate)
     }
 
@@ -180,6 +186,9 @@ final class BrowserStore: ObservableObject {
             guard let self, let origin = ConnectionSecurity.origin(url), ConnectionSecurity.isLocal(url) else { return }
             if !self.connectionPreferences.httpOrigins.contains(origin) { self.connectionPreferences.httpOrigins.append(origin); self.saveConnectionPreferences() }
         }
+        tab.prefersApplication = { [weak self] url in self?.links.opensApplication(url) ?? false }
+        tab.onPreferBrowser = { [weak self] url in self?.preferBrowser(for: url) }
+        tab.onPreferApplication = { [weak self] url in self?.preferApplication(for: url) }
         tab.onExternalURL = { [weak self] url in self?.externalURL = url }
         tab.onOpenLink = { [weak self] url, isPrivate in _ = self?.newTab(isPrivate: isPrivate, url: url) }
         tab.onShareLink = { [weak self] url in self?.shareRequest = ShareRequest(url: url) }
@@ -248,16 +257,57 @@ final class BrowserStore: ObservableObject {
         if let tab = newTab(isPrivate: record.isPrivate, url: record.url) { tab.title = record.title; closedTabs.removeFirst() }
     }
 
+    func receiveExternalURL(_ incoming: URL) {
+        do {
+            let url = try IncomingBrowserLink.destination(incoming)
+            if isClearingData {
+                if pendingIncomingLinks.count < 20 { pendingIncomingLinks.append(url) }
+                else { notice = "受信したリンクが多すぎます。処理完了後にもう一度共有してください。" }
+                return
+            }
+            preferBrowser(for: url)
+            if newTab(url: url) != nil { NotificationCenter.default.post(name: .closeBrowserLibrary, object: nil) }
+        } catch { notice = "共有されたURLを開けません。HTTP・HTTPSのリンクをURLエンコードして渡してください。" }
+    }
+    func preferBrowser(for url: URL) {
+        guard links.opensApplication(url) else { return }
+        links.preferApplication(false, for: url); saveLinkPreferences()
+    }
+    func preferApplication(for url: URL) { links.preferApplication(true, for: url); saveLinkPreferences() }
+    func resetApplicationPreference(_ site: String) { links.applicationSites.remove(site); saveLinkPreferences() }
+    private func saveLinkPreferences() {
+        guard !linkStorageBlocked else { return }
+        do {
+            try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+            try JSONEncoder().encode(links).write(to: directory.appendingPathComponent("link-preferences.json"), options: [.atomic, .completeFileProtectionUntilFirstUserAuthentication])
+        } catch { linkStorageBlocked = true; notice = "リンクの開き方を保存できませんでした。既存の設定は保持しています。" }
+    }
+
+    func setSearchSuggestions(_ enabled: Bool) {
+        searchSuggestions.enabled = enabled
+        guard !searchSuggestionStorageBlocked else { return }
+        do {
+            try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+            try JSONEncoder().encode(searchSuggestions).write(to: directory.appendingPathComponent("search-preferences.json"), options: [.atomic, .completeFileProtectionUntilFirstUserAuthentication])
+        } catch { searchSuggestionStorageBlocked = true; notice = "検索候補の設定を保存できませんでした。" }
+    }
+    func search(_ query: String) {
+        guard !query.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return }
+        open(snapshot.settings.searchEngine.searchURL(for: query))
+    }
+
     func navigate(_ text: String) {
         guard !isClearingData else { return }
         do {
-            let url = try AddressResolver.resolve(text, engine: snapshot.settings.searchEngine)
+            let url = try SearchAddress.submission(text, current: selectedTab?.url, defaultEngine: snapshot.settings.searchEngine)
+            preferBrowser(for: url)
             selectedTab?.load(ConnectionSecurity.preferredURL(url, preferences: connectionPreferences))
         } catch { notice = error.localizedDescription }
     }
 
     func open(_ url: URL) {
         guard WebURLPolicy.allows(url), !isClearingData else { return }
+        preferBrowser(for: url)
         selectedTab?.load(ConnectionSecurity.preferredURL(url, preferences: connectionPreferences))
     }
 
@@ -307,6 +357,8 @@ final class BrowserStore: ObservableObject {
             }
             isClearingData = false
             _ = newTab()
+            let incoming = pendingIncomingLinks; pendingIncomingLinks = []
+            for url in incoming { preferBrowser(for: url); _ = newTab(url: url) }
             flush()
         }
     }
@@ -418,6 +470,13 @@ final class BrowserStore: ObservableObject {
         guard WebURLPolicy.allows(item.url), let index = extras.favorites.firstIndex(where: { $0.id == item.id }) else { return }
         extras.favorites[index] = item; saveAdditionalData()
     }
+    func saveFavorite(_ item: Bookmark) {
+        guard WebURLPolicy.allows(item.url) else { return }
+        if extras.favorites.contains(where: { $0.id == item.id }) { updateFavorite(item) }
+        else { extras.favorites.append(item); scheduleSave() }
+    }
+    func moveFavorite(_ id: UUID, onto target: UUID) { extras.moveFavorite(id, onto: target); scheduleSave() }
+    func reorderFavorites(_ source: IndexSet, destination: Int) { extras.favorites.move(fromOffsets: source, toOffset: destination); scheduleSave() }
     func moveFavorite(_ id: UUID, by distance: Int) {
         guard let i = extras.favorites.firstIndex(where: { $0.id == id }) else { return }
         let j = i + distance; guard extras.favorites.indices.contains(j) else { return }
@@ -527,6 +586,16 @@ final class BrowserStore: ObservableObject {
             if FileManager.default.fileExists(atPath: securityFile.path) {
                 do { connectionPreferences = try JSONDecoder().decode(ConnectionPreferences.self, from: Data(contentsOf: securityFile)) }
                 catch { connectionStorageBlocked = true }
+            }
+            let linkFile = directory.appendingPathComponent("link-preferences.json")
+            if FileManager.default.fileExists(atPath: linkFile.path) {
+                do { links = try JSONDecoder().decode(LinkPreferences.self, from: Data(contentsOf: linkFile)) }
+                catch { linkStorageBlocked = true }
+            }
+            let searchFile = directory.appendingPathComponent("search-preferences.json")
+            if FileManager.default.fileExists(atPath: searchFile.path) {
+                do { searchSuggestions = try JSONDecoder().decode(SearchSuggestionPreferences.self, from: Data(contentsOf: searchFile)) }
+                catch { searchSuggestionStorageBlocked = true }
             }
             let presentationFile = directory.appendingPathComponent("presentation.json")
             if FileManager.default.fileExists(atPath: presentationFile.path) { presentation = try JSONDecoder().decode(PresentationPreferences.self, from: Data(contentsOf: presentationFile)) }

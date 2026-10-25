@@ -17,6 +17,11 @@ public struct LibraryExtras: Codable, Equatable, Sendable {
     public var bookmarkFolders: [String: UUID] = [:]
     public init() {}
 
+    public mutating func moveFavorite(_ id: UUID, onto targetID: UUID) {
+        guard id != targetID, let source = favorites.firstIndex(where: { $0.id == id }), let target = favorites.firstIndex(where: { $0.id == targetID }) else { return }
+        let item = favorites.remove(at: source); favorites.insert(item, at: target)
+    }
+
     public func canMoveFolder(_ id: UUID, to parent: UUID?) -> Bool {
         var next = parent
         var visited = Set<UUID>()

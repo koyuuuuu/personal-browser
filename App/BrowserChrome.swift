@@ -10,9 +10,9 @@ struct TabBrowserView: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var address = ""
     @State private var promptText = ""
-    @State private var swipe: AddressSwipeState?
-    @State private var swipeOffset: CGFloat = 0
-    @State private var settlingSwipe = false
+    // Only the overlay observes per-frame gesture changes. WebSurface and chrome
+    // do not rebuild for every finger position.
+    @State private var swipe = AddressSwipeController()
     @FocusState private var addressFocused: Bool
 
     var body: some View {
@@ -36,13 +36,13 @@ struct TabBrowserView: View {
             }
             .frame(width: geometry.size.width, height: geometry.size.height)
             .onAppear { store.setLandscape(landscape) }
-            .onChange(of: landscape) { _, value in addressFocused = false; swipe = nil; swipeOffset = 0; settlingSwipe = false; store.setLandscape(value) }
+            .onChange(of: landscape) { _, value in addressFocused = false; swipe.cancel(); store.setLandscape(value) }
         }
         .background(Color(uiColor: .systemBackground))
-        .onAppear { address = tab.url?.absoluteString ?? "" }
-        .onChange(of: tab.id) { _, _ in address = tab.url?.absoluteString ?? ""; addressFocused = false }
-        .onChange(of: tab.url) { _, url in if !addressFocused { address = url?.absoluteString ?? "" } }
-        .onChange(of: addressFocused) { _, focused in if !focused { address = tab.url?.absoluteString ?? "" } }
+        .onAppear { address = SearchAddress.display(tab.url) }
+        .onChange(of: tab.id) { _, _ in address = SearchAddress.display(tab.url); addressFocused = false }
+        .onChange(of: tab.url) { _, url in if !addressFocused { address = SearchAddress.display(url) } }
+        .onChange(of: addressFocused) { _, focused in if !focused { address = SearchAddress.display(tab.url) } }
         .onChange(of: tab.dialog?.id) { _, _ in promptText = tab.dialog?.defaultText ?? "" }
         .onDisappear { tab.dialog?.resolve(nil); tab.dialog = nil }
         .alert("Webページからのメッセージ", isPresented: Binding(get: { tab.dialog != nil }, set: { if !$0 { finishDialog(nil) } }), presenting: tab.dialog) { dialog in
@@ -64,13 +64,13 @@ struct TabBrowserView: View {
                             else if value.translation.height < -25 { store.scrollChrome(delta: 40) }
                         })
                 }
-                if let swipe {
-                    ZStack {
-                        swipePage(swipe.source, width: width, height: geometry.size.height).offset(x: swipeOffset)
-                        swipePage(swipe.target, width: width, height: geometry.size.height)
-                            .offset(x: swipeOffset + CGFloat(swipe.towardNext ? 1 : -1) * (width + 12))
-                    }.frame(width: width, height: geometry.size.height).clipped().allowsHitTesting(false).accessibilityHidden(true)
+                if !tab.hasContent && !tab.isPrivate && addressFocused && store.searchSuggestions.enabled {
+                    HomeSearchSuggestions(query: address, engine: store.snapshot.settings.searchEngine) { value in
+                        addressFocused = false; store.search(value)
+                    }
                 }
+                AddressSwipeOverlay(controller: swipe, store: store, width: width, height: geometry.size.height)
+                    .allowsHitTesting(false).accessibilityHidden(true)
             }
             .frame(width: width, height: geometry.size.height)
             .clipped().contentShape(Rectangle())
@@ -78,44 +78,34 @@ struct TabBrowserView: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .accessibilityAction(named: Text("バーを表示")) { store.revealChrome() }
     }
-    @ViewBuilder private func swipePage(_ page: BrowserTab?, width: CGFloat, height: CGFloat) -> some View {
-        ZStack {
-            Color(uiColor: .systemBackground)
-            if let page, page.hasContent {
-                if let image = PreviewImages.shared.image(page) {
-                    Image(uiImage: image).resizable().scaledToFill().frame(width: width, height: height, alignment: .top).clipped()
-                } else {
-                    VStack { Image(systemName: "globe").font(.largeTitle); Text(page.title).lineLimit(2) }.padding()
-                }
-            } else { HomePageView(store: store, isPrivate: page?.isPrivate ?? tab.isPrivate) }
-        }.frame(width: width, height: height).clipShape(RoundedRectangle(cornerRadius: 16))
-    }
     private func changeSwipe(_ value: DragGesture.Value, width: CGFloat) {
-        guard !settlingSwipe, abs(value.translation.width) > abs(value.translation.height) * 1.5 else { return }
+        guard !swipe.settling, abs(value.translation.width) > abs(value.translation.height) * 1.5 else { return }
         let next = value.translation.width < 0
-        if swipe == nil || swipe?.towardNext != next {
+        if swipe.session == nil || swipe.session?.towardNext != next {
             guard let current = store.tabs.firstIndex(where: { $0.id == tab.id }) else { return }
             let target: BrowserTab?
             switch TabNavigation.destination(current: current, count: store.tabs.count, towardNext: next) {
             case .existing(let index): target = store.tabs[index]; store.loadPreview(store.tabs[index])
             case .create: target = nil
-            case .none: swipe = nil; swipeOffset = 0; return
+            case .none: swipe.cancel(); return
             }
-            tab.capturePreview()
-            swipe = AddressSwipeState(source: tab, target: target, towardNext: next)
+            // Freeze decoded images once. Capturing/encoding a WebKit snapshot
+            // on gesture start caused work on the main thread during dragging.
+            swipe.session = AddressSwipeState(source: AddressSwipePage(tab), target: AddressSwipePage(target, isPrivate: tab.isPrivate), towardNext: next)
         }
-        swipeOffset = min(width, max(-width, value.translation.width))
+        swipe.offset = min(width, max(-width, value.translation.width))
     }
     private func finishSwipe(_ value: DragGesture.Value, width: CGFloat) {
-        guard let swipe, !settlingSwipe else { return }
+        guard let session = swipe.session, !swipe.settling else { return }
         let commit = abs(value.translation.width) > min(90, width * 0.22) || abs(value.predictedEndTranslation.width) > 130
-        settlingSwipe = true
-        withAnimation(reduceMotion ? nil : .easeOut(duration: 0.20), completionCriteria: .logicallyComplete) {
-            swipeOffset = commit ? CGFloat(swipe.towardNext ? -1 : 1) * (width + 12) : 0
+        swipe.settling = true
+        withAnimation(reduceMotion ? nil : .easeOut(duration: 0.18), completionCriteria: .logicallyComplete) {
+            swipe.offset = commit ? CGFloat(session.towardNext ? -1 : 1) * (width + 4) : 0
         } completion: {
-            if commit { store.switchTab(towardNext: swipe.towardNext) }
+            guard swipe.session?.id == session.id else { return }
+            if commit { store.switchTab(towardNext: session.towardNext) }
             var transaction = Transaction(); transaction.disablesAnimations = true
-            withTransaction(transaction) { self.swipe = nil; swipeOffset = 0; settlingSwipe = false }
+            withTransaction(transaction) { swipe.cancel() }
         }
     }
     private func chrome(compact: Bool, width: CGFloat) -> some View {
@@ -125,10 +115,56 @@ struct TabBrowserView: View {
     private func finishDialog(_ value: String?) { let dialog = tab.dialog; tab.dialog = nil; dialog?.resolve(value) }
 }
 
+@MainActor
+private final class AddressSwipeController: ObservableObject {
+    @Published var session: AddressSwipeState?
+    @Published var offset: CGFloat = 0
+    var settling = false
+    func cancel() { session = nil; offset = 0; settling = false }
+}
 private struct AddressSwipeState {
-    let source: BrowserTab
-    let target: BrowserTab?
+    let id = UUID()
+    let source: AddressSwipePage
+    let target: AddressSwipePage
     let towardNext: Bool
+}
+private struct AddressSwipePage {
+    let image: UIImage?
+    let title: String
+    let home: Bool
+    let isPrivate: Bool
+    @MainActor init(_ tab: BrowserTab?, isPrivate: Bool = false) {
+        image = tab.flatMap { PreviewImages.shared.image($0) }
+        title = tab?.title ?? "新しいタブ"
+        home = tab?.hasContent != true
+        self.isPrivate = tab?.isPrivate ?? isPrivate
+    }
+}
+@MainActor
+private struct AddressSwipeOverlay: View {
+    @ObservedObject var controller: AddressSwipeController
+    let store: BrowserStore
+    let width: CGFloat
+    let height: CGFloat
+    var body: some View {
+        if let session = controller.session {
+            ZStack {
+                // Opaque overview gray: never reveal the old live page in gaps.
+                Color(uiColor: .systemGroupedBackground)
+                page(session.source).offset(x: controller.offset)
+                page(session.target).offset(x: controller.offset + CGFloat(session.towardNext ? 1 : -1) * (width + 4))
+            }.frame(width: width, height: height).clipped()
+        }
+    }
+    private func page(_ value: AddressSwipePage) -> some View {
+        ZStack {
+            Color(uiColor: .systemBackground)
+            if value.home { HomePageView(store: store, isPrivate: value.isPrivate) }
+            else if let image = value.image {
+                Image(uiImage: image).resizable().scaledToFill().frame(width: width, height: height, alignment: .top).clipped()
+            } else { VStack { Image(systemName: "globe").font(.largeTitle); Text(value.title).lineLimit(2) }.padding() }
+        }.frame(width: width, height: height).clipShape(RoundedRectangle(cornerRadius: 10))
+    }
 }
 
 @MainActor

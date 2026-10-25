@@ -25,6 +25,80 @@ final class BrowserUITests: XCTestCase {
         }
     }
 
+    func testOrdinaryLinkAndFormStayInBrowserWithoutFrameInterruption() {
+        navigate("http://127.0.0.1:18765/navigation-fixture")
+        let page = app.webViews.firstMatch
+        XCTAssertTrue(page.links["Browser link"].waitForExistence(timeout: 10))
+        page.links["Browser link"].tap()
+        XCTAssertTrue(page.staticTexts["Local connection /linked"].waitForExistence(timeout: 10))
+        XCTAssertFalse(app.staticTexts.matching(NSPredicate(format: "label CONTAINS 'フレームの読み込み' OR label CONTAINS 'Frame load interrupted'")).firstMatch.exists)
+        navigate("http://127.0.0.1:18765/navigation-fixture")
+        XCTAssertTrue(page.buttons["Submit POST"].waitForExistence(timeout: 10)); page.buttons["Submit POST"].tap()
+        XCTAssertTrue(page.staticTexts["POST kept: value=one"].waitForExistence(timeout: 10))
+    }
+
+    func testExternalURLColdLaunchBackgroundAndInvalidInput() {
+        app.launchArguments = ["--ui-testing", "--ui-keep-data", "--ui-no-fixture"]
+        app.terminate()
+        app.open(URL(string: "mybrowser://open?url=http%3A%2F%2F127.0.0.1%3A18765%2Fexternal-cold%3Fa%3D1%26b%3D2")!)
+        XCTAssertTrue(app.webViews.staticTexts["Local connection /external-cold?a=1&b=2"].waitForExistence(timeout: 15))
+        XCUIDevice.shared.press(.home)
+        app.open(URL(string: "mybrowser://open?url=http%3A%2F%2F127.0.0.1%3A18765%2Fexternal-warm")!)
+        XCTAssertTrue(app.webViews.staticTexts["Local connection /external-warm"].waitForExistence(timeout: 15))
+        app.buttons["tabsButton"].tap()
+        XCTAssertTrue(app.navigationBars["タブ 3"].waitForExistence(timeout: 5))
+        app.open(URL(string: "mybrowser://open?url=javascript%3Aalert(1)")!)
+        XCTAssertTrue(app.alerts["お知らせ"].waitForExistence(timeout: 5))
+        app.alerts.buttons["OK"].tap()
+        XCTAssertTrue(app.navigationBars["タブ 3"].exists)
+    }
+
+    func testFavoriteDragReordersAndSettingsEditsLatestDataAfterRestart() {
+        app.terminate(); app.launchArguments = ["--ui-testing", "--ui-no-fixture", "--ui-home-background"]; app.launch()
+        let favorites = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH 'favorite-'"))
+        XCTAssertTrue(favorites.element(boundBy: 2).waitForExistence(timeout: 10))
+        let first = favorites.element(boundBy: 0), third = favorites.element(boundBy: 2)
+        let firstID = first.identifier, thirdID = third.identifier
+        first.press(forDuration: 0.7, thenDragTo: third)
+        let moved = app.buttons[firstID], target = app.buttons[thirdID]
+        XCTAssertEqual(XCTWaiter.wait(for: [XCTNSPredicateExpectation(predicate: NSPredicate { _, _ in moved.frame.minX > target.frame.minX }, object: nil)], timeout: 5), .completed)
+        tapMenuControl("menuButton"); app.buttons["設定"].tap(); tapMenuControl("favoritesSettingsLink")
+        let row = app.buttons["favoriteEditor-" + firstID.replacingOccurrences(of: "favorite-", with: "")]
+        XCTAssertTrue(row.waitForExistence(timeout: 5)); row.tap()
+        let title = app.textFields["タイトル"]; XCTAssertTrue(title.waitForExistence(timeout: 5))
+        title.tap(); title.press(forDuration: 1.1)
+        if app.menuItems["Select All"].exists { app.menuItems["Select All"].tap() }
+        else if app.menuItems["すべてを選択"].exists { app.menuItems["すべてを選択"].tap() }
+        else { title.typeText(String(repeating: XCUIKeyboardKey.delete.rawValue, count: (title.value as? String ?? "").count)) }
+        title.typeText("Edited favorite")
+        app.buttons["保存"].tap()
+        XCUIDevice.shared.press(.home); app.terminate()
+        app.launchArguments = ["--ui-testing", "--ui-keep-data", "--ui-no-fixture"]; app.launch()
+        XCTAssertTrue(app.buttons[firstID].waitForExistence(timeout: 10))
+        XCTAssertTrue(app.buttons[firstID].label.contains("Edited favorite"))
+        XCTAssertGreaterThan(app.buttons[firstID].frame.minX, app.buttons[thirdID].frame.minX)
+    }
+
+    func testHomeSearchSuggestionsCanBeEnabledAndDisabled() {
+        app.terminate(); app.launchArguments = ["--ui-testing", "--ui-no-fixture", "--ui-suggestion-fixture"]; app.launch()
+        tapMenuControl("menuButton"); app.buttons["設定"].tap()
+        let toggle = app.switches["searchSuggestionsToggle"]
+        XCTAssertTrue(toggle.waitForExistence(timeout: 5)); XCTAssertEqual(toggle.value as? String, "0")
+        toggle.coordinate(withNormalizedOffset: CGVector(dx: 0.9, dy: 0.5)).tap()
+        app.navigationBars["設定"].buttons["閉じる"].tap()
+        let field = app.textFields["addressField"]; field.tap(); field.typeText("browser")
+        XCTAssertTrue(app.buttons["searchCandidate-browser one"].waitForExistence(timeout: 5))
+        app.buttons["searchCandidate-browser one"].tap()
+        XCTAssertEqual(XCTWaiter.wait(for: [XCTNSPredicateExpectation(predicate: NSPredicate { _, _ in (field.value as? String) == "browser one" }, object: nil)], timeout: 5), .completed)
+        tapMenuControl("menuButton"); app.buttons["設定"].tap()
+        XCTAssertEqual(toggle.value as? String, "1")
+        toggle.coordinate(withNormalizedOffset: CGVector(dx: 0.9, dy: 0.5)).tap()
+        app.navigationBars["設定"].buttons["閉じる"].tap()
+        tapMenuControl("menuButton"); app.buttons["ホーム"].tap()
+        field.tap(); field.typeText("hidden")
+        XCTAssertFalse(app.otherElements["homeSearchSuggestions"].exists)
+    }
+
     func testWebKitRendersAndExecutesOfflinePage() {
         let page = app.webViews.firstMatch
         XCTAssertTrue(page.waitForExistence(timeout: 15))

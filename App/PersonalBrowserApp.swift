@@ -10,6 +10,7 @@ struct PersonalBrowserApp: App {
         WindowGroup {
             BrowserRootView(store: store)
                 .environmentObject(updates)
+                .onOpenURL { store.receiveExternalURL($0) }
                 .task { await updates.check(automatically: true) }
                 .onChange(of: scenePhase) { _, phase in
                     if phase != .active { store.applicationBackgrounded() }

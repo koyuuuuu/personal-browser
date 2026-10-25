@@ -73,6 +73,12 @@ final class BrowserTab: NSObject, ObservableObject, Identifiable, WKNavigationDe
     var onPopup: ((WKWebViewConfiguration, Bool) -> WKWebView?)?
     var onClose: (() -> Void)?
     var onExternalURL: ((URL) -> Void)?
+    var prefersApplication: ((URL) -> Bool)?
+    var onPreferBrowser: ((URL) -> Void)?
+    var onPreferApplication: ((URL) -> Void)?
+    private var lastTopLevelRequest: URLRequest?
+    private var expectedInterruptions: [URL: Date] = [:]
+    private var retriedInterruptedURLs = Set<URL>()
     var onOpenLink: ((URL, Bool) -> Void)?
     var onShareLink: ((URL) -> Void)?
     var onAnalyzeLink: ((URL) -> Void)?
@@ -100,6 +106,8 @@ final class BrowserTab: NSObject, ObservableObject, Identifiable, WKNavigationDe
         if configuration.websiteDataStore.isPersistent != !isPrivate {
             configuration.websiteDataStore = isPrivate ? .nonPersistent() : .default()
         }
+        let os = ProcessInfo.processInfo.operatingSystemVersion
+        configuration.applicationNameForUserAgent = "Version/\(os.majorVersion).\(os.minorVersion) Mobile/15E148 Safari/604.1"
         configuration.allowsInlineMediaPlayback = true
         configuration.allowsPictureInPictureMediaPlayback = preferences.enablePictureInPicture
         configuration.mediaTypesRequiringUserActionForPlayback = [.audio, .video]
@@ -179,6 +187,8 @@ final class BrowserTab: NSObject, ObservableObject, Identifiable, WKNavigationDe
     func load(_ url: URL) {
         guard WebURLPolicy.allows(url) else { return }
         pendingConnection?.resolve(allow: false); pendingConnection = nil; navigationGrants = [:]; certificateWarningShown = false
+        retriedInterruptedURLs.removeAll()
+        lastTopLevelRequest = URLRequest(url: url)
         errorMessage = nil; hasContent = true; self.url = url
         if let view = liveWebView {
             Task { @MainActor [weak self, weak view] in
@@ -299,6 +309,7 @@ final class BrowserTab: NSObject, ObservableObject, Identifiable, WKNavigationDe
         }
         pendingConnection?.resolve(allow: false); pendingConnection = nil
         downloads.removeAll(); releaseWebView()
+        prefersApplication = nil; onPreferBrowser = nil; onPreferApplication = nil
         onConnectionRequest = nil; trustsCertificate = nil; rememberCertificate = nil; rememberHTTP = nil
         onPreview = nil; onVerticalScroll = nil; onRevealChrome = nil; onVisit = nil; onStateChange = nil; onPopup = nil; onClose = nil; onExternalURL = nil
         onAnalyzeLink = nil; onMessageLink = nil; onSaveLink = nil; onOpenLink = nil; onShareLink = nil; onOpenInSafari = nil; onOpenInBrowser = nil; onDownload = nil
@@ -326,8 +337,22 @@ final class BrowserTab: NSObject, ObservableObject, Identifiable, WKNavigationDe
     }
 
     private func show(_ error: Error) {
-        let code = (error as NSError).code
-        guard code != NSURLErrorCancelled else { return }
+        let failure = error as NSError, code = (error as NSError).code
+        if failure.domain == NSURLErrorDomain && code == NSURLErrorCancelled { return }
+        if BrowserNavigationPolicy.isInterrupted(domain: failure.domain, code: code) {
+            let failedURL = (failure.userInfo[NSURLErrorFailingURLErrorKey] as? URL)
+                ?? (failure.userInfo[NSURLErrorFailingURLStringErrorKey] as? String).flatMap(URL.init(string:))
+            expectedInterruptions = expectedInterruptions.filter { $0.value > Date() }
+            if let failedURL, expectedInterruptions.removeValue(forKey: failedURL) != nil { return }
+            if let request = lastTopLevelRequest, let target = request.url,
+               failedURL == nil || failedURL == target,
+               BrowserNavigationPolicy.canReplay(method: request.httpMethod, hasBody: request.httpBody != nil || request.httpBodyStream != nil),
+               WebURLPolicy.allows(target), retriedInterruptedURLs.insert(target).inserted, let view = liveWebView {
+                // Retry once through public load(_:), without the link-activation
+                // app handoff. Never replay POSTs or hide persistent failures.
+                view.load(request); return
+            }
+        }
         errorMessage = error.localizedDescription
         if [NSURLErrorSecureConnectionFailed, NSURLErrorServerCertificateUntrusted, NSURLErrorServerCertificateHasBadDate,
             NSURLErrorServerCertificateHasUnknownRoot, NSURLErrorServerCertificateNotYetValid].contains(code),
@@ -384,22 +409,54 @@ final class BrowserTab: NSObject, ObservableObject, Identifiable, WKNavigationDe
             return
         }
         let scheme = url.scheme?.lowercased() ?? ""
-        if ["http", "https", "about", "blob", "data"].contains(scheme) {
-            if navigationAction.shouldPerformDownload {
-                decisionHandler(.download)
-            } else {
-                if navigationAction.targetFrame?.isMainFrame == true {
-                    Task { @MainActor in
-                        await self.configureBlocking(for: url, view: webView)
-                        decisionHandler(.allow)
-                    }
-                } else { decisionHandler(.allow) }
-            }
-        } else {
+        let topLevel = navigationAction.targetFrame?.isMainFrame != false
+        let safeReplay = BrowserNavigationPolicy.canReplay(method: navigationAction.request.httpMethod,
+            hasBody: navigationAction.request.httpBody != nil || navigationAction.request.httpBodyStream != nil)
+        if WebURLPolicy.allows(url) && topLevel { lastTopLevelRequest = navigationAction.request }
+        if WebURLPolicy.allows(url), topLevel, safeReplay,
+           navigationAction.navigationType == .linkActivated, !navigationAction.shouldPerformDownload {
+            let useApplication = prefersApplication?(url) == true
+            if useApplication { expectedInterruptions[url] = Date().addingTimeInterval(5) }
             decisionHandler(.cancel)
-            if ["mailto", "tel", "sms", "itms-apps"].contains(scheme),
-               navigationAction.targetFrame?.isMainFrame != false {
-                onExternalURL?(url)
+            if useApplication {
+                openRelatedApplication(url, remember: false) { [weak self] in self?.loadInBrowser(navigationAction.request, newWindow: navigationAction.targetFrame == nil) }
+            } else { loadInBrowser(navigationAction.request, newWindow: navigationAction.targetFrame == nil) }
+            return
+        }
+        if ["http", "https", "about", "blob", "data"].contains(scheme) {
+            if navigationAction.shouldPerformDownload { decisionHandler(.download) }
+            else if navigationAction.targetFrame?.isMainFrame == true {
+                Task { @MainActor in
+                    await self.configureBlocking(for: url, view: webView)
+                    decisionHandler(.allow)
+                }
+            } else { decisionHandler(.allow) }
+        } else {
+            expectedInterruptions[url] = Date().addingTimeInterval(5)
+            decisionHandler(.cancel)
+            if ["mailto", "tel", "sms", "itms-apps"].contains(scheme), topLevel,
+               navigationAction.navigationType == .linkActivated { onExternalURL?(url) }
+        }
+    }
+
+    private func loadInBrowser(_ request: URLRequest, newWindow: Bool) {
+        guard let url = request.url, WebURLPolicy.allows(url) else { return }
+        if newWindow { if preferences.allowPopups { onOpenLink?(url, isPrivate) }; return }
+        guard let view = liveWebView else { load(url); return }
+        Task { @MainActor [weak self, weak view] in
+            guard let self, let view else { return }
+            await self.configureBlocking(for: url, view: view)
+            guard self.liveWebView === view else { return }
+            self.hasContent = true; self.url = url; view.load(request)
+        }
+    }
+    private func openRelatedApplication(_ url: URL, remember: Bool = true, fallback: (() -> Void)? = nil) {
+        UIApplication.shared.open(url, options: [.universalLinksOnly: true]) { [weak self] opened in
+            Task { @MainActor in
+                guard let self else { return }
+                if opened { if remember { self.onPreferApplication?(url) } }
+                else if let fallback { fallback() }
+                else { self.errorMessage = "このリンクに対応するアプリを開けませんでした。ブラウザで開くこともできます。" }
             }
         }
     }
@@ -436,16 +493,12 @@ final class BrowserTab: NSObject, ObservableObject, Identifiable, WKNavigationDe
                 }
             }
             let related = UIAction(title: "対応するアプリ", image: UIImage(systemName: "app")) { [weak self] _ in
-                UIApplication.shared.open(link, options: [.universalLinksOnly: true]) { opened in
-                    if !opened { Task { @MainActor in self?.errorMessage = "このリンクに対応するアプリが見つかりません。" } }
-                }
+                self?.openRelatedApplication(link)
             }
             var appActions: [UIMenuElement] = []
             if WatchHTML.youtubeURL(link) != nil {
                 appActions.append(UIAction(title: "YouTube", image: UIImage(systemName: "play.rectangle")) { [weak self] _ in
-                    UIApplication.shared.open(link, options: [.universalLinksOnly: true]) { opened in
-                        if !opened { Task { @MainActor in self?.errorMessage = "YouTubeアプリを開けませんでした。ブラウザで開くこともできます。" } }
-                    }
+                    self?.openRelatedApplication(link)
                 })
             }
             appActions += [related]
@@ -464,8 +517,8 @@ final class BrowserTab: NSObject, ObservableObject, Identifiable, WKNavigationDe
                 appActions.append(UIAction(title: name + "（共有から選択）", image: UIImage(systemName: "square.and.arrow.up")) { [weak self] _ in self?.onShareLink?(link) })
             }
             return UIMenu(children: [
-                UIAction(title: "このタブで開く", image: UIImage(systemName: "arrow.up.right")) { [weak self] _ in self?.load(link) },
-                UIAction(title: "新しいタブで開く", image: UIImage(systemName: "plus.square")) { [weak self] _ in self?.onOpenLink?(link, self?.isPrivate ?? false) },
+                UIAction(title: "このタブで開く", image: UIImage(systemName: "arrow.up.right")) { [weak self] _ in self?.onPreferBrowser?(link); self?.load(link) },
+                UIAction(title: "新しいタブで開く", image: UIImage(systemName: "plus.square")) { [weak self] _ in self?.onPreferBrowser?(link); self?.onOpenLink?(link, self?.isPrivate ?? false) },
                 UIAction(title: "リンクをコピー", image: UIImage(systemName: "doc.on.doc")) { _ in UIPasteboard.general.url = link },
                 UIAction(title: "共有", image: UIImage(systemName: "square.and.arrow.up")) { [weak self] _ in self?.onShareLink?(link) },
                 UIAction(title: "Watch HTMLで解析", image: UIImage(systemName: "play.rectangle.on.rectangle")) { [weak self] _ in self?.onAnalyzeLink?(link) },

@@ -33,6 +33,13 @@ struct HomePageView: View {
                                     .padding(6).background(.regularMaterial, in: RoundedRectangle(cornerRadius: 14))
                                 }
                                 .buttonStyle(.plain)
+                                .accessibilityIdentifier("favorite-" + item.id.uuidString)
+                                .draggable(item.id.uuidString)
+                                .dropDestination(for: String.self) { values, _ in
+                                    guard values.count == 1, let id = UUID(uuidString: values[0]), store.extras.favorites.contains(where: { $0.id == id }) else { return false }
+                                    withAnimation(.snappy(duration: 0.2)) { store.moveFavorite(id, onto: item.id) }
+                                    return true
+                                }
                                 .contextMenu {
                                     Button("新しいタブで開く", systemImage: "plus.square") { _ = store.newTab(isPrivate: isPrivate, url: item.url) }
                                     Button("編集", systemImage: "pencil") { editing = item }

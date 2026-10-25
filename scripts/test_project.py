@@ -23,7 +23,7 @@ class ProjectTests(unittest.TestCase):
         with (ROOT / "App/Info.plist").open("rb") as file:
             info = plistlib.load(file)
         self.assertNotIn("WKAppBoundDomains", info)
-        self.assertNotIn("CFBundleURLTypes", info)
+        self.assertEqual([scheme for item in info["CFBundleURLTypes"] for scheme in item["CFBundleURLSchemes"]], ["mybrowser"])
         self.assertEqual(info["CFBundlePackageType"], "APPL")
         self.assertTrue(info["NSAppTransportSecurity"]["NSAllowsArbitraryLoadsInWebContent"])
         self.assertNotIn("NSAllowsArbitraryLoads", info["NSAppTransportSecurity"])
