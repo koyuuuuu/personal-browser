@@ -49,8 +49,17 @@ final class BrowserUITests: XCTestCase {
         wait(for: [finished], timeout: 20)
         let springboard = XCUIApplication(bundleIdentifier: "com.apple.springboard")
         let open = springboard.alerts.buttons.matching(NSPredicate(format: "label == 'Open' OR label == '開く'")).firstMatch
-        if open.waitForExistence(timeout: 3) { open.tap() }
-        XCTAssertTrue(app.wait(for: .runningForeground, timeout: 10))
+        let deadline = Date().addingTimeInterval(60)
+        while Date() < deadline {
+            if open.exists { open.tap() }
+            if app.state == .runningForeground {
+                if name == "invalid", app.alerts["お知らせ"].exists { return }
+                let label = name == "cold" ? "Local connection /external-cold?a=1&b=2" : "Local connection /external-warm"
+                if name != "invalid", app.webViews.staticTexts[label].exists { return }
+            }
+            RunLoop.current.run(until: Date().addingTimeInterval(0.2))
+        }
+        XCTFail("The OS URL dispatch must display the requested destination or invalid-input alert")
     }
     func test00ExternalURLColdLaunchBackgroundAndInvalidInput() {
         // Run the OS-delivery prerequisite first and stop cascading UI work if

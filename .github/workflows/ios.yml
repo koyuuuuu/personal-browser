@@ -43,7 +43,7 @@ jobs:
   ios:
     needs: check
     runs-on: macos-15
-    timeout-minutes: 30
+    timeout-minutes: 45
     env:
       BROWSER_BUNDLE_ID: local.personalbrowser.app
       BROWSER_XCODE_PATH: ${{ vars.BROWSER_XCODE_PATH }}

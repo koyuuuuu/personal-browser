@@ -67,6 +67,7 @@ xcodebuild test \
     -configuration Debug \
     -destination "platform=iOS Simulator,id=${simulator_id}" \
     -parallel-testing-enabled NO \
+    ONLY_ACTIVE_ARCH=YES \
     -derivedDataPath build/simulator \
     -resultBundlePath "build/UI-${GITHUB_RUN_ID:-local}-${GITHUB_RUN_ATTEMPT:-1}.xcresult" \
     "${signing[@]}" \

@@ -39,9 +39,12 @@ def main():
             if self.path in external_cases and args.simulator_id:
                 # Exercise actual OS delivery, including a terminated app. No
                 # URL/command supplied by a request is executed by this helper.
-                result = subprocess.run(['xcrun', 'simctl', 'openurl', args.simulator_id, external_cases[self.path]],
-                                        capture_output=True, timeout=12, check=False)
-                self.send_response(204 if result.returncode == 0 else 500)
+                # Reply before waiting for launch: simctl can wait for the OS
+                # confirmation that the UI test must tap after this response.
+                child = subprocess.Popen(['xcrun', 'simctl', 'openurl', args.simulator_id, external_cases[self.path]],
+                                         stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+                threading.Thread(target=child.wait, daemon=True).start()
+                self.send_response(204)
                 self.send_header('Content-Length', '0'); self.end_headers(); return
             if self.path == '/audio.wav':
                 data, mime = audio, 'audio/wav'
