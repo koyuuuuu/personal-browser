@@ -263,8 +263,17 @@ final class BrowserUITests: XCTestCase {
 
     private func navigate(_ address: String) {
         if !app.textFields["addressField"].exists { app.swipeDown() }
-        let field = app.textFields["addressField"]; XCTAssertTrue(field.waitForExistence(timeout: 5)); field.tap()
-        if app.buttons["入力を消去"].exists { app.buttons["入力を消去"].tap() }
+        let field = app.textFields["addressField"]
+        XCTAssertTrue(field.waitForExistence(timeout: 5))
+        field.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).tap()
+        XCTAssertTrue(app.keyboards.firstMatch.waitForExistence(timeout: 10))
+        // Keyboard animation moves bottom chrome. Tapping Clear before it
+        // settles can hit the toolbar underneath on a slow hosted simulator.
+        settlePresentation()
+        let clear = app.buttons["入力を消去"]
+        if clear.exists { clear.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).tap() }
+        field.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).tap()
+        XCTAssertTrue(app.keyboards.firstMatch.waitForExistence(timeout: 5))
         field.typeText(address + "\n")
     }
     private func relaunchPreservingData(extra: [String] = []) {
