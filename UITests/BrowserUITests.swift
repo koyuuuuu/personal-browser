@@ -360,53 +360,6 @@ final class BrowserUITests: XCTestCase {
         XCTAssertTrue(app.webViews.firstMatch.staticTexts["Local connection /remembered-http"].waitForExistence(timeout: 10))
         XCTAssertTrue((app.textFields["addressField"].value as? String)?.hasPrefix("http://") == true)
     }
-    func testAudioCanContinueInBackgroundWithoutPiP() {
-        navigate("http://127.0.0.1:18765/media")
-        let page = app.webViews.firstMatch
-        XCTAssertTrue(page.buttons["Play test audio"].waitForExistence(timeout: 10)); page.buttons["Play test audio"].tap()
-        // Poll a fresh, numbered JS sample: paused == false alone does not
-        // prove that the media clock has started or continued in background.
-        var sample = 0
-        func readClock() -> (media: Double, wall: Double) {
-            sample += 1
-            page.buttons["Check audio state"].coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).tap()
-            let state = page.staticTexts.matching(NSPredicate(format: "label BEGINSWITH %@", "Sample \(sample):")).firstMatch
-            XCTAssertTrue(state.waitForExistence(timeout: 5))
-            let fields = state.label.split(separator: ":")
-            XCTAssertEqual(fields.count, 6, state.label)
-            XCTAssertEqual(fields.dropFirst().first.map(String.init), "Playing", state.label)
-            print("Audio clock sample: \(state.label)")
-            guard fields.count == 6, let media = Double(fields[2]),
-                  let wall = Double(fields[5].split(separator: "=").last ?? "") else {
-                XCTFail("Invalid audio clock sample: \(state.label)"); return (-1, -1)
-            }
-            return (media, wall / 1000)
-        }
-        var before = readClock()
-        for _ in 0..<6 {
-            if before.media >= 1 { break }
-            let tick = expectation(description: "Wait for media clock to start")
-            DispatchQueue.main.asyncAfter(deadline: .now() + 1) { tick.fulfill() }; wait(for: [tick], timeout: 3)
-            before = readClock()
-        }
-        XCTAssertGreaterThanOrEqual(before.media, 1, "The audio fixture must actually start before backgrounding")
-        XCUIDevice.shared.press(.home)
-        let elapsed = expectation(description: "Audio runs while the app is backgrounded")
-        DispatchQueue.main.asyncAfter(deadline: .now() + 4) { elapsed.fulfill() }; wait(for: [elapsed], timeout: 6)
-        app.activate()
-        XCTAssertTrue(app.wait(for: .runningForeground, timeout: 5))
-        // XCUITest's activation returns before SpringBoard's zoom animation.
-        // Run 19 recorded a 349x759 animated window and a displaced tap, even
-        // though the settled accessibility frame was 402x874. Let it settle.
-        let restored = expectation(description: "SpringBoard activation animation has finished")
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1) { restored.fulfill() }; wait(for: [restored], timeout: 3)
-        let after = readClock()
-        let wallElapsed = after.wall - before.wall
-        XCTAssertGreaterThanOrEqual(wallElapsed, 4)
-        XCTAssertGreaterThanOrEqual(after.media - before.media, wallElapsed - 1,
-                                   "Media time must follow wall time across backgrounding, without PiP")
-    }
-
     func testAddressSideActionsAndTabSizeCanBeConfigured() {
         tapMenuControl("menuButton"); app.buttons["設定"].tap()
         XCTAssertTrue(app.navigationBars["設定"].waitForExistence(timeout: 5)); tapMenuControl("presentationSettingsLink")

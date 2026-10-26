@@ -28,7 +28,7 @@ python3 scripts/inspect_ipa.py browser.ipa --target-ios 18.4.1 --unsigned
 
 Swiftファイルを追加・削除したら`python3 scripts/generate_project.py`でプロジェクトを再生成する。Windowsでは`py -3`を利用でき、CoreのSwiftテストはWSL等のSwift環境かCIで実行する。
 
-mainへのアプリ・テスト・ビルド・配信コードのpushで、Linux検査、標準`macos-15`でのCore/UIテスト、新旧版のデータ互換性検査、未署名IPA生成、Release保存、SideStoreソース更新を自動実行する。文書のみの変更はビルドしない。手動実行も可能だがpushと重複して起動しない。Actions成果物は1日保持し、配布版のIPAはReleaseへ残す。macOSとXcodeがある場合は`bash scripts/ios_ci.sh`でも実行できる。
+mainへのアプリ・テスト・ビルド・配信コードのpushで、Linux検査、標準`macos-15`でのCoreテスト、未署名IPA生成・検査を自動実行する。UIテストは変更した機能の代表ケースのみ、旧版とのデータ互換性検査は保存処理等を変更した場合のみ実行する。アプリ本体やリリース設定の変更時はRelease保存・SideStoreソース更新も行う。検証設定だけの変更では同じアプリを再配信しない。[検証の実行条件](docs/verification-policy.ja.md)。文書のみの変更はビルドしない。手動実行も可能だがpushと重複して起動しない。Actions成果物は1日保持し、配布版のIPAはReleaseへ残す。macOSとXcodeがある場合は`bash scripts/ios_ci.sh`でも実行できる。
 
 アプリ本体に第三者のブラウザソースや外部パッケージを組み込んでいない。0.2.0ではCore 19件（LinuxとmacOS）、Simulator UI 5件、Python検査30件、新旧版を往復するデータ互換性検査に成功。アカウントの課金設定変更やAppleの署名操作は行っていない。
 

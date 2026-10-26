@@ -8,7 +8,7 @@ from unittest.mock import patch
 from pathlib import Path
 
 from distribution import BUNDLE_ID, release_config, release_tag, source_document, verify_bytes
-from publish_release import SafeRedirect, publish, publish_public_mirror, store_public_source
+from publish_release import SafeRedirect, publish, publish_public_mirror, store_public_source, prepare_delivery
 
 
 class DistributionTests(unittest.TestCase):
@@ -155,6 +155,59 @@ class DistributionTests(unittest.TestCase):
                 publish_public_mirror(PublicRepository(), records, root)
         self.assertEqual(tags, [records[1]["tag"], records[0]["tag"]])
         self.assertEqual(latest_flags, ["false", "true"])
+
+    def test_routine_delivery_does_not_redownload_old_public_ipas(self):
+        old, latest = self.record("0.4.2", "27"), self.record("0.5.0", "38")
+        downloaded = []
+        class Mirror:
+            repo = "koyuuuuu/personal-browser-distribution"
+            def request(self, path, **kwargs):
+                if path == "": return {"private": False}
+                if path == "/git/ref/heads/main": return {"object": {"sha": "e" * 40}}
+                if path.startswith("/releases?"):
+                    return [{"tag_name": r["tag"], "draft": False,
+                             "assets": [{"name": "PersonalBrowser.ipa", "size": 3}]} for r in [old, latest]]
+                raise AssertionError(path)
+            def asset(self, release, name):
+                downloaded.append(release["tag_name"])
+                return b"ipa"
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "versions"; path.mkdir()
+            (path / f"{latest['tag']}.ipa").write_bytes(b"ipa")
+            with patch("publish_release.store_public_source"):
+                publish_public_mirror(Mirror(), [old, latest], directory)
+        self.assertEqual(downloaded, [latest["tag"]])
+
+    def test_archive_audit_detects_changed_old_ipa(self):
+        old, latest = self.record("0.4.2", "27"), self.record("0.5.0", "38")
+        class Mirror:
+            repo = "koyuuuuu/personal-browser-distribution"
+            def request(self, path, **kwargs):
+                if path == "": return {"private": False}
+                if path == "/git/ref/heads/main": return {"object": {"sha": "e" * 40}}
+                if path.startswith("/releases?"):
+                    return [{"tag_name": r["tag"], "draft": False, "assets": []} for r in [old, latest]]
+                raise AssertionError(path)
+            def asset(self, release, name): return b"bad"
+        with tempfile.TemporaryDirectory() as directory:
+            with patch("publish_release.store_public_source"):
+                with self.assertRaises(ValueError):
+                    publish_public_mirror(Mirror(), [old, latest], directory,
+                                          verify_archives=True, load_ipa=lambda record: b"ipa")
+
+    def test_delivery_preparation_reuses_metadata_without_fetching_old_source_ipas(self):
+        old, latest = self.record("0.4.2", "27"), self.record("0.5.0", "38")
+        class Source:
+            def asset(self, release, name):
+                if name != "build-info.json": raise AssertionError("Old IPA downloaded")
+                return json.dumps(old if release["tag_name"] == old["tag"] else latest).encode()
+        releases = [{"tag_name": r["tag"], "draft": False, "prerelease": False} for r in [old, latest]]
+        with tempfile.TemporaryDirectory() as directory:
+            with patch("publish_release.download_record", return_value=b"ipa") as download:
+                result = prepare_delivery(Source(), releases, directory)
+                self.assertEqual(len(result), 3)  # Includes immutable initial release metadata.
+                self.assertEqual(download.call_count, 1)
+                self.assertEqual(download.call_args.args[1]["tag"], latest["tag"])
 
 
 if __name__ == "__main__":

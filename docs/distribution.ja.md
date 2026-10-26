@@ -12,12 +12,12 @@
 ## 自動化する流れ
 
 1. mainへのアプリ・テスト・ビルド・配信コードのpushでCI開始。文書だけの変更や保管ブランチの更新では開始しない。
-2. Python検査とプロジェクト整合性を確認。
-3. macOSでCoreテスト、UIテスト、旧版と新版のデータ互換性を検査。
+2. Python検査内でプロジェクト整合性を一度だけ確認し、変更箇所から追加検査を選ぶ。
+3. macOSでCoreテスト。UIテストは変更した機能のみ、旧版との互換性検査は保存形式・読み書き・取り込み等を変更した場合のみ実行する。
 4. 実機用の未署名IPAをビルドし、固定Bundle ID、OS、形式、バージョンを検査。
 5. ソースリポジトリのGitHub ReleaseへIPA・build-info.json・SHA256SUMS.txtを保存。タグは`v0.2.0-build.7`等とし、元のソースSHAへ固定する。
 6. 生成した配信JSONと全版の検査記録を、ソース側のdistributionブランチに保存。
-7. 承認された公開配布先へ、検査済みIPAだけをReleaseとして複製。すべての参照IPAが取得可能になった後でsource.jsonを更新する。
+7. アプリ本体・リリース設定が変わった場合は、公開配布先へIPAを複製してsource.jsonを更新。通常は最新IPAを照合し、旧版はメタデータと配信資産の存在・サイズを確認して保持する。公開先に欠けた旧版は元IPAを照合して補完する。全旧IPAの再ダウンロード・ハッシュ検査は配信処理・保管情報等を変更した時のみ行う。
 8. SideStoreでソースを更新すると、新しいバージョンを確認できる。iPhone側の「更新」操作は残る。
 
 新しい版の判定にはユーザー向けバージョンとビルド番号の両方を使う。同じ0.2.0でも新しいビルドを区別できる。公開済みのタグ・IPAは差し替えない。失敗したビルドを配信JSONの先頭に載せない。
@@ -66,3 +66,5 @@ source.jsonには旧版も残す。SideStoreが提供する過去バージョン
 - https://faq.altstore.io/developers/make-a-source
 - https://faq.altstore.io/developers/updating-apps
 - https://docs.github.com/en/actions/security-for-github-actions/security-guides/automatic-token-authentication
+
+検証の詳細と実行条件は[検証方針](verification-policy.ja.md)を参照。今回の検証設定変更だけでは0.5.0 build38を再配信しない。

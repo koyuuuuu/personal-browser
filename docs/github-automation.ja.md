@@ -39,3 +39,7 @@ Actionsの`GITHUB_TOKEN`はジョブ用の認証であり、会話が終了し�
 - [OpenAI: Connecting GitHub to ChatGPT](https://help.openai.com/en/articles/11145903-connecting-github-to-chatgpt)
 - [GitHub: GITHUB_TOKEN](https://docs.github.com/en/actions/concepts/security/github_token)
 - [OpenAI: Codex Action](https://github.com/openai/codex-action)
+
+## 現在の検証方針
+
+2026-10-26の本人指示により、毎回実行するのは必須・高優先度の検査のみとする。UIと旧版互換性検査は変更箇所に応じた条件付きで、テスト操作の失敗に対する全件再実行は標準にしない。[実行条件と削減対象](verification-policy.ja.md)。現在のソースリポジトリは本人の指示で公開済み。上記の非公開に関する記述は初期運用の記録。

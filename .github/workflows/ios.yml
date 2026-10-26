@@ -16,7 +16,7 @@ on:
   workflow_dispatch:
     inputs:
       build_ipa:
-        description: 'Create and publish an unsigned device IPA after tests pass'
+        description: 'Build an IPA; publish only when app source changed'
         type: boolean
         default: true
 
@@ -31,14 +31,36 @@ jobs:
   check:
     runs-on: ubuntu-latest
     timeout-minutes: 5
+    outputs:
+      compatibility: ${{ steps.plan.outputs.compatibility }}
+      ui_tests: ${{ steps.plan.outputs.ui_tests }}
+      verify_archives: ${{ steps.plan.outputs.verify_archives }}
+      publish: ${{ steps.plan.outputs.publish }}
     steps:
       - uses: actions/checkout@v4
         with:
           persist-credentials: false
+          fetch-depth: 0
+      - name: Select checks for the changed behavior
+        id: plan
+        env:
+          PUSH_BASE: ${{ github.event.before }}
+          EVENT_NAME: ${{ github.event_name }}
+        run: |
+          base="$PUSH_BASE"
+          if [[ "$EVENT_NAME" == 'workflow_dispatch' ]]; then
+            latest_tag="$(git tag --list 'v*-build.*' --sort=-version:refname | head -n 1)"
+            base="${latest_tag:-HEAD^}"
+          fi
+          python3 scripts/verification_plan.py --base "$base" --github-output "$GITHUB_OUTPUT"
       - name: Validate build and release tooling
         run: |
           python3 -W error -m unittest discover -s scripts -p 'test_*.py' -v
-          python3 scripts/generate_project.py --check
+      - uses: actions/upload-artifact@v4
+        with:
+          name: verification-plan-${{ github.run_number }}
+          path: build/verification-plan.json
+          retention-days: 1
 
   ios:
     needs: check
@@ -48,13 +70,14 @@ jobs:
       BROWSER_BUNDLE_ID: local.personalbrowser.app
       BROWSER_XCODE_PATH: ${{ vars.BROWSER_XCODE_PATH }}
       BUILD_IPA: ${{ (github.event_name == 'push' || inputs.build_ipa) && '1' || '0' }}
-      CHECK_DATA_COMPATIBILITY: '1'
+      CHECK_DATA_COMPATIBILITY: ${{ needs.check.outputs.compatibility == 'true' && '1' || '0' }}
+      UI_TESTS: ${{ needs.check.outputs.ui_tests }}
     steps:
       - uses: actions/checkout@v4
         with:
           persist-credentials: false
           fetch-depth: 0
-      - name: Test, verify latest-data compatibility, and build
+      - name: Run core and selected checks, then build
         run: bash scripts/ios_ci.sh
       - name: Upload unsigned IPA and build information
         if: success() && (github.event_name == 'push' || inputs.build_ipa)
@@ -84,8 +107,8 @@ jobs:
           if-no-files-found: ignore
 
   publish:
-    needs: ios
-    if: github.ref == 'refs/heads/main' && (github.event_name == 'push' || inputs.build_ipa)
+    needs: [check, ios]
+    if: github.ref == 'refs/heads/main' && needs.check.outputs.publish == 'true' && (github.event_name == 'push' || inputs.build_ipa)
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
@@ -98,8 +121,33 @@ jobs:
         with:
           name: PersonalBrowser-${{ github.run_number }}
           path: dist
-      - name: Publish private Release and public binary-only SideStore source
+      - name: Publish Release and public binary-only SideStore source
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           DISTRIBUTION_TOKEN: ${{ secrets.BROWSER_DISTRIBUTION_TOKEN }}
         run: python3 scripts/publish_release.py
+
+  delivery-audit:
+    needs: [check, ios, publish]
+    if: >-
+      always() && needs.check.result == 'success' && needs.ios.result == 'success' &&
+      (needs.publish.result == 'success' || needs.publish.result == 'skipped') &&
+      (needs.check.outputs.verify_archives == 'true' || needs.publish.result == 'success')
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Check delivered files without rebuilding or UI automation
+        env:
+          VERIFY_ARCHIVES: ${{ needs.check.outputs.verify_archives }}
+          PUBLISHED: ${{ needs.publish.result == 'success' && 'true' || 'false' }}
+        run: |
+          args=()
+          if [[ "$VERIFY_ARCHIVES" == 'true' ]]; then args+=(--all-versions); fi
+          if [[ "$PUBLISHED" == 'true' ]]; then
+            version="$(python3 -c 'import json; print(json.load(open("distribution/release.json"))["version"])')"
+            args+=(--expected-version "$version" --expected-build "$GITHUB_RUN_NUMBER")
+          fi
+          python3 scripts/verify_delivery.py "${args[@]}"

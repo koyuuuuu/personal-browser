@@ -125,7 +125,16 @@ def all_releases(github):
     raise ValueError("Release pagination limit exceeded; review retention before continuing")
 
 
-def prepare_delivery(github, releases, destination):
+def download_record(github, record):
+    """Fetch a retained IPA only for new delivery, latest verification, or an archive audit."""
+    if record["tag"] == "v0.1.0":
+        blob = github.request(f"/git/blobs/{LEGACY_IPA_BLOB}")
+        return base64.b64decode(blob["content"])
+    release = github.request(f"/releases/tags/{record['tag']}")
+    return github.asset(release, "PersonalBrowser.ipa")
+
+
+def prepare_delivery(github, releases, destination, *, verify_archives=False):
     destination = Path(destination)
     ipa_dir = destination / "versions"
     ipa_dir.mkdir(parents=True, exist_ok=True)
@@ -138,23 +147,22 @@ def prepare_delivery(github, releases, destination):
             raise ValueError("A release changed the app identity or persistence format")
         if info.get("tag") != release["tag_name"] or release_tag(info) != info["tag"]:
             raise ValueError("A release asset does not match its version tag")
-        data = github.asset(release, "PersonalBrowser.ipa")
-        verify_bytes(data, info)
-        (ipa_dir / f"{info['tag']}.ipa").write_bytes(data)
         records.append(info)
     # Retain the already installed initial version as an explicit rollback entry.
     legacy = json.loads((ROOT / "docs/validation-2026-10-22.json").read_text())["artifact"]
-    blob = github.request(f"/git/blobs/{LEGACY_IPA_BLOB}")
-    data = base64.b64decode(blob["content"])
     legacy.update(tag="v0.1.0", data_schema=1, size=legacy["ipa_bytes"],
                   date="2026-10-22T01:17:49Z", source_commit=LEGACY_SOURCE,
                   description="初期版。最新のschema 1の履歴・ブックマークをそのまま使用します。",
                   appPermissions=records[0]["appPermissions"] if records else {"entitlements": [], "privacy": {}})
-    verify_bytes(data, legacy)
-    (ipa_dir / "v0.1.0.ipa").write_bytes(data)
     records.append(legacy)
     if len(records) > 100:
         raise ValueError("More than 100 retained releases: review free distribution limits")
+    latest = max(records, key=lambda r: (version_key(r["version"]), int(r["build"])))
+    for info in records:
+        if verify_archives or info["tag"] == latest["tag"]:
+            data = download_record(github, info)
+            verify_bytes(data, info)
+            (ipa_dir / f"{info['tag']}.ipa").write_bytes(data)
     write_assets(ROOT, records, destination)
     return records
 
@@ -170,6 +178,8 @@ def store_private_source(github, destination):
     commit = github.request("/git/commits", method="POST", body={
         "message": "Update private SideStore source from verified releases",
         "tree": tree["sha"], "parents": [previous["sha"]] if previous else [],
+        "author": {"name": "koyuuuuu", "email": "266257694+koyuuuuu@users.noreply.github.com"},
+        "committer": {"name": "koyuuuuu", "email": "266257694+koyuuuuu@users.noreply.github.com"},
     })
     if ref:
         github.request("/git/refs/heads/distribution", method="PATCH", body={"sha": commit["sha"], "force": False})
@@ -200,14 +210,16 @@ def store_public_source(github, destination, *, include_source=True):
     tree = github.request("/git/trees", method="POST", body=body)
     commit = github.request("/git/commits", method="POST", body={
         "message": "Update SideStore distribution metadata", "tree": tree["sha"],
-        "parents": [previous["sha"]] if previous else []})
+        "parents": [previous["sha"]] if previous else [],
+        "author": {"name": "koyuuuuu", "email": "266257694+koyuuuuu@users.noreply.github.com"},
+        "committer": {"name": "koyuuuuu", "email": "266257694+koyuuuuu@users.noreply.github.com"}})
     if ref:
         github.request("/git/refs/heads/main", method="PATCH", body={"sha": commit["sha"], "force": False})
     else:
         github.request("/git/refs", method="POST", body={"ref": "refs/heads/main", "sha": commit["sha"]})
 
 
-def publish_public_mirror(github, records, destination):
+def publish_public_mirror(github, records, destination, *, verify_archives=False, load_ipa=None):
     if github.repo == "koyuuuuu/personal-browser" or github.request("")["private"]:
         raise ValueError("Public binary mirror must be a separate public repository")
     ref = github.request("/git/ref/heads/main", allow_missing=True)
@@ -218,9 +230,17 @@ def publish_public_mirror(github, records, destination):
     ordered = sorted(records, key=lambda r: (version_key(r["version"]), int(r["build"])))
     latest = ordered[-1]["tag"]
     for info in ordered:
-        data = (Path(destination) / "versions" / f"{info['tag']}.ipa").read_bytes()
-        verify_bytes(data, info)
         existing = published.get(info["tag"])
+        if existing and not existing["draft"] and info["tag"] != latest and not verify_archives:
+            asset = next((a for a in existing["assets"] if a["name"] == "PersonalBrowser.ipa"), None)
+            if asset is None or asset["size"] != info["size"]:
+                raise ValueError("Retained public IPA is missing or has changed size; archive audit required")
+            continue
+        path = Path(destination) / "versions" / f"{info['tag']}.ipa"
+        data = path.read_bytes() if path.exists() else load_ipa(info) if load_ipa else None
+        if data is None:
+            raise ValueError("A missing public release requires its original IPA")
+        verify_bytes(data, info)
         if existing and not existing["draft"]:
             verify_bytes(github.asset(existing, "PersonalBrowser.ipa"), info)
             continue
@@ -252,13 +272,15 @@ def main():
     info = inspect_release(args.ipa, ROOT, os.environ["GITHUB_SHA"], os.environ["GITHUB_RUN_NUMBER"])
     info = publish(github, info, args.ipa)
     (ROOT / "dist/build-info.json").write_text(json.dumps(info, ensure_ascii=False, indent=2) + "\n")
-    records = prepare_delivery(github, all_releases(github), args.assets)
+    verify_archives = os.environ.get("VERIFY_ARCHIVES", "false") == "true"
+    records = prepare_delivery(github, all_releases(github), args.assets, verify_archives=verify_archives)
     store_private_source(github, args.assets)
-    print(f"Published private release {info['tag']}; generated source with {len(records)} versions.")
+    print(f"Published release {info['tag']}; generated source with {len(records)} versions.")
     distribution_token = os.environ.get("DISTRIBUTION_TOKEN")
     if distribution_token:
         public = GitHub(repo=release_config(ROOT)["public_repository"], token=distribution_token)
-        publish_public_mirror(public, records, args.assets)
+        publish_public_mirror(public, records, args.assets, verify_archives=verify_archives,
+                              load_ipa=lambda record: download_record(github, record))
         print(f"Public binary mirror and SideStore source updated: {public.repo}")
     else:
         print("::notice::Private Release/source are ready. Public distribution awaits one-time DISTRIBUTION_TOKEN setup.")
