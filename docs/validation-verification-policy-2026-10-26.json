@@ -1,0 +1,35 @@
+{
+  "date_utc": "2026-10-26",
+  "source_commit": "7f27ea8d028b1b3aa1234fe2a8236d01522159f1",
+  "ci_run": "https://github.com/koyuuuuu/personal-browser/actions/runs/40247759627",
+  "ci_number": 38,
+  "conclusion": "success",
+  "python_checks": 43,
+  "macos_core_tests": 53,
+  "device_build": "passed",
+  "unsigned_ipa_inspection": "passed",
+  "selected_ui_tests": [],
+  "simulator_started": false,
+  "compatibility_check": "not_applicable_no_storage_change",
+  "archive_audit": {
+    "condition": "Publisher/IPA delivery inspection changed",
+    "retained_versions_verified": 10,
+    "anonymous_download_hash_size_bundle_version": "passed"
+  },
+  "publish_job": "skipped_no_app_source_or_release_configuration_change",
+  "installed_release_unchanged": {
+    "version": "0.5.0",
+    "build": "38",
+    "source_commit": "ef8a61549807173f81a4710c2c6e81fe3a72cc5d"
+  },
+  "removed_from_routine": [
+    "unconditional_full_ui_suite",
+    "unconditional_old_new_data_roundtrips",
+    "synthetic_audio_test",
+    "duplicate_generated_project_checks",
+    "unconditional_historical_ipa_redownloads",
+    "unconditional_full_suite_retries"
+  ],
+  "normal_ci_counter_now": 38,
+  "next_app_release": "0.5.1 or later; next normal CI counter will be at least39"
+}
