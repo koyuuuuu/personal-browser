@@ -34,6 +34,7 @@ struct HomePageView: View {
                                             .frame(height: 30).frame(maxWidth: .infinity)
                                     }
                                     .padding(6).background(.regularMaterial, in: RoundedRectangle(cornerRadius: 14))
+                                    .contentShape(Rectangle())
                                 }
                                 .buttonStyle(.plain)
                                 .accessibilityIdentifier("favorite-" + item.id.uuidString)
@@ -82,7 +83,7 @@ struct SiteIcon: View {
             }
         }
         .frame(width: size, height: size).clipShape(RoundedRectangle(cornerRadius: size * 0.23))
-        .accessibilityHidden(true)
+        .accessibilityHidden(true).allowsHitTesting(false)
         .task(id: url.absoluteString + String(enabled)) {
             image = enabled ? await SiteIconLoader.shared.image(for: url, network: allowNetwork) : nil
         }

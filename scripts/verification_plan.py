@@ -162,6 +162,19 @@ def main():
         pending = git("diff", "--name-only", "--no-renames", delivered_tags[0], args.head).splitlines()
         result["publish"] = plan([], pending_app_paths=pending)["publish"]
         result["publication_base"] = delivered_tags[0]
+        if result["publish"]:
+            # Keep unresolved app-area checks in scope until the pending app is
+            # delivered. A test-only follow-up must not accidentally drop a
+            # previously failed feature check from the publication gate.
+            app_pending = [p for p in pending if p.startswith(("App/", "Sources/"))]
+            for path in ("App/BrowserStore.swift", "App/BrowserTab.swift"):
+                if path in app_pending:
+                    changes[path] = changed_methods(content(delivered_tags[0], path), content(args.head, path))
+            scoped = plan(set(paths) | set(app_pending), changes["App/BrowserStore.swift"],
+                          changes["UITests/BrowserUITests.swift"], changes["App/BrowserTab.swift"])
+            result["areas"] = scoped["areas"]
+            result["ui_tests"] = scoped["ui_tests"]
+            result["compatibility"] = scoped["compatibility"]
     if "distribution/release.json" in paths:
         old = json.loads(content(base, "distribution/release.json") or "{}")
         new = json.loads(content(args.head, "distribution/release.json"))
