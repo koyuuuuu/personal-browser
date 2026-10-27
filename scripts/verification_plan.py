@@ -98,7 +98,7 @@ def changed_methods(before, after):
     return {key for key in old.keys() | new.keys() if old.get(key) != new.get(key)}
 
 
-def plan(changed, store_changes=(), ui_changes=(), tab_changes=None):
+def plan(changed, store_changes=(), ui_changes=(), tab_changes=None, pending_app_paths=None):
     changed = set(changed)
     areas = set()
     for path in changed:
@@ -135,7 +135,7 @@ def plan(changed, store_changes=(), ui_changes=(), tab_changes=None):
         "compatibility": bool(changed & DATA_PATHS or store_changes & (STORE_DATA_METHODS | {"preamble"})),
         "verify_archives": bool(changed & ARCHIVE_PATHS),
         # CI-only changes still build/inspect an IPA, but do not publish an unchanged app.
-        "publish": any(p.startswith(("App/", "Sources/")) or p in {"Package.swift", "PersonalBrowser.xcodeproj/project.pbxproj", "distribution/release.json"} for p in changed),
+        "publish": any(p.startswith(("App/", "Sources/")) or p in {"Package.swift", "PersonalBrowser.xcodeproj/project.pbxproj", "distribution/release.json"} for p in (changed if pending_app_paths is None else pending_app_paths)),
         "changed_paths": sorted(changed),
     }
 
@@ -155,6 +155,13 @@ def main():
     for path in ("App/BrowserStore.swift", "UITests/BrowserUITests.swift", "App/BrowserTab.swift"):
         changes[path] = changed_methods(content(base, path), content(args.head, path)) if path in paths else set()
     result = plan(paths, changes["App/BrowserStore.swift"], changes["UITests/BrowserUITests.swift"], changes["App/BrowserTab.swift"])
+    delivered_tags = git("tag", "--list", "v*-build.*", "--sort=-version:refname").splitlines()
+    if delivered_tags:
+        # A test/build fix after a failed app run must still deliver the pending
+        # app change. Test SELECTION stays scoped to this push, independently.
+        pending = git("diff", "--name-only", "--no-renames", delivered_tags[0], args.head).splitlines()
+        result["publish"] = plan([], pending_app_paths=pending)["publish"]
+        result["publication_base"] = delivered_tags[0]
     if "distribution/release.json" in paths:
         old = json.loads(content(base, "distribution/release.json") or "{}")
         new = json.loads(content(args.head, "distribution/release.json"))

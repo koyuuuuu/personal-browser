@@ -236,7 +236,9 @@ final class BrowserUITests: XCTestCase {
         app.terminate(); app.launchArguments = ["--ui-testing", "--ui-adblock-fixture"]; app.launch()
         let page = app.webViews.firstMatch
         XCTAssertTrue(page.staticTexts["Blocking fixture ready"].waitForExistence(timeout: 90))
-        page.buttons["Check filtering"].tap()
+        let check = page.buttons["Check filtering"]
+        XCTAssertEqual(XCTWaiter.wait(for: [XCTNSPredicateExpectation(predicate: NSPredicate { _, _ in check.isEnabled }, object: nil)], timeout: 15), .completed, "An allowed control image must load before checking filtering")
+        check.tap()
         XCTAssertTrue(page.staticTexts["Blocked and hidden"].waitForExistence(timeout: 5), "The bundled filters must block a real request and hide its ad slot")
         tapMenuControl("menuButton"); app.buttons["設定"].tap()
         tapMenuControl("featureSettingsLink")

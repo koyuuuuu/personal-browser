@@ -11,6 +11,13 @@ class VerificationPolicyTests(unittest.TestCase):
         self.assertFalse(result["compatibility"])
         self.assertFalse(result["publish"])
 
+    def test_test_only_fix_still_publishes_a_previously_pending_app_change(self):
+        result = plan(["UITests/BrowserUITests.swift"], ui_changes=["testAdBlockingCanBeConfigured"],
+                      pending_app_paths=["App/ContentBlocking.swift", "distribution/release.json"])
+        self.assertTrue(result["publish"])
+        self.assertEqual(result["ui_tests"], ["testAdBlockingCanBeConfigured"])
+        self.assertFalse(plan(["scripts/ios_ci.sh"], pending_app_paths=["scripts/ios_ci.sh"])["publish"])
+
     def test_tab_layout_change_selects_tab_checks_without_storage_roundtrip(self):
         result = plan(["App/TabGridView.swift"])
         self.assertEqual(result["ui_tests"], sorted(AREAS["tabs"]))

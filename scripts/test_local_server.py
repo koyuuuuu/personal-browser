@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Loopback-only deterministic WebKit UI fixtures; never connects to user devices."""
 import argparse
+import base64
 import html
 import io
 import math
@@ -54,15 +55,16 @@ def main():
             elif self.path == '/scroll-fixture':
                 data = b'<!doctype html><meta name="viewport" content="width=device-width,initial-scale=1"><title>Scroll fixture</title><h1>Scroll fixture</h1><div style="height:1100px;background:linear-gradient(white,lightblue)">Scroll down</div><p>Bottom</p>'
                 mime = 'text/html; charset=utf-8'
-            elif self.path == '/ads/banners/ad.js':
-                data = b'window.testAdLoaded=true;'
-                mime = 'application/javascript'
+            elif self.path in ['/ads/banners/ad.png', '/allowed/visible.png']:
+                data = base64.b64decode('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=')
+                mime = 'image/png'
             elif self.path == '/blocking-fixture':
                 data = b'''<!doctype html><meta name="viewport" content="width=device-width,initial-scale=1">
                 <title>Blocking fixture</title><h1>Blocking fixture ready</h1>
                 <div class="adsbygoogle-noablate">Controlled advertisement</div>
-                <script src="http://localhost:18765/ads/banners/ad.js"></script>
-                <button onclick="document.getElementById('state').textContent=(!window.testAdLoaded && getComputedStyle(document.querySelector('.adsbygoogle-noablate')).display==='none')?'Blocked and hidden':'Not blocked';">Check filtering</button>
+                <button id="check" disabled onclick="document.getElementById('state').textContent=(window.testControlLoaded && !window.testAdLoaded && getComputedStyle(document.querySelector('.adsbygoogle-noablate')).display==='none')?'Blocked and hidden':'Not blocked';">Check filtering</button>
+                <img src="http://localhost:18765/allowed/visible.png" onload="window.testControlLoaded=true;document.getElementById('check').disabled=false;">
+                <img src="http://localhost:18765/ads/banners/ad.png" onload="window.testAdLoaded=true;">
                 <p id="state"></p>'''
                 mime = 'text/html; charset=utf-8'
             elif self.path == '/media':
