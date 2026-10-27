@@ -12,6 +12,16 @@
       "iconURL": "https://raw.githubusercontent.com/koyuuuuu/personal-browser-distribution/main/icon.png",
       "versions": [
         {
+          "version": "0.6.0",
+          "buildVersion": "42",
+          "date": "2026-10-27T04:38:24.029478+00:00",
+          "localizedDescription": "更新可能なEasyList・EasyPrivacy・日本語フィルターによる広告ブロックへ強化。標準／強力、広告枠の非表示、自動・手動更新、ライセンス表示を追加。お気に入りはサイト独自のアイコンを取得・保存し、取得不可時は頭文字を表示。既存データとbuild14の再生方針を維持。",
+          "downloadURL": "https://github.com/koyuuuuu/personal-browser-distribution/releases/download/v0.6.0-build.42/PersonalBrowser.ipa",
+          "size": 5263165,
+          "minOSVersion": "17.0",
+          "sha256": "81fe9e7f82e423dc3c8cca599dc88648a960d083c15b45b0b639272884af794b"
+        },
+        {
           "version": "0.5.0",
           "buildVersion": "38",
           "date": "2026-10-25T20:10:12.317833+00:00",
