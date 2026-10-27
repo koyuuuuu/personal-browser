@@ -19,3 +19,6 @@ auth.json
 docs/github-connection-status.json
 # Unpublished hosting experiment; retained locally, never part of the app/release.
 delivery/
+
+# Build-time Rust converter outputs (source and lockfile are tracked).
+tools/filter-converter/target/

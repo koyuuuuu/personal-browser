@@ -10,12 +10,13 @@ ROOT = Path(__file__).resolve().parents[1]
 
 # One representative scenario per behavior, rather than overlapping smoke tests.
 AREAS = {
+    "blocking": ["testAdBlockingCanBeConfigured"],
     "tabs": ["testSwipeClosingGridReflowsAndRemainsUsableAfterRepeatedDeletions", "testOverviewOpensAtLastActiveTab"],
     "chrome": ["testLandscapeSwipeKeepsControlsWorkingAndTilesStayInsideWindow", "testPortraitForwardScrollHidesBarsAndBottomBounceDoesNotReveal"],
     "home": ["testLandscapeHomeWithCroppedBackgroundKeepsEveryChromeControlTappable"],
     "favorites": ["testFavoriteDragReordersAndSettingsEditsLatestDataAfterRestart"],
     "library": ["testFavoriteHomeAndBookmarkFolders", "testHistoryFoldersSupportSingleAndHalfDayDeletionAndAddressSuggestions"],
-    "settings": ["testAddressSideActionsAndTabSizeCanBeConfigured", "testZoomToolbarButtonsChangeByFivePercentAndPersist", "testAdBlockingCanBeConfigured"],
+    "settings": ["testAddressSideActionsAndTabSizeCanBeConfigured", "testZoomToolbarButtonsChangeByFivePercentAndPersist"],
     "links": ["testOrdinaryLinkAndFormStayInBrowserWithoutFrameInterruption", "test00ExternalURLColdLaunchBackgroundAndInvalidInput"],
     "security": ["testRememberedCertificateIsReusedAfterRestart", "testUncheckedCertificateIsAskedAgainAfterRestart", "testPlainLocalHTTPServerIsOfferedAfterTLSFailure"],
     "previews": ["testNormalPreviewSurvivesProcessRestartWithoutLoadingThePage"],
@@ -29,10 +30,12 @@ PATH_AREAS = {
     "App/TabGridView.swift": ["tabs"], "App/TabOverview.swift": ["tabs"],
     "App/HomePageView.swift": ["home", "favorites"], "App/FavoritesSettingsView.swift": ["favorites"],
     "App/LibraryView.swift": ["library"], "App/SafariImport.swift": ["library"],
-    "App/SettingsView.swift": ["settings"], "App/FeatureSettingsView.swift": ["settings"],
-    "App/PresentationSettingsView.swift": ["settings"], "App/ContentBlocking.swift": ["settings"],
+    "App/SettingsView.swift": ["settings"], "App/FeatureSettingsView.swift": ["blocking"],
+    "App/PresentationSettingsView.swift": ["settings"], "App/ContentBlocking.swift": ["blocking"],
     "App/PersonalBrowserApp.swift": ["launch", "links"], "App/Info.plist": ["launch", "links"],
-    "App/BrowserTab.swift": ["links", "security", "previews"],
+    "App/SiteIconLoader.swift": ["favorites"],
+    "Sources/BrowserCore/BlockingRules.swift": ["blocking"],
+    "Sources/BrowserCore/SiteIconPolicy.swift": ["favorites"],
     "App/ConnectionPrompt.swift": ["security"], "App/SystemSharing.swift": ["sharing"],
     "App/UpdateChecker.swift": ["updates"], "App/UpdateSettingsView.swift": ["updates"],
     "App/HomeSearchSuggestions.swift": ["search"],
@@ -95,11 +98,21 @@ def changed_methods(before, after):
     return {key for key in old.keys() | new.keys() if old.get(key) != new.get(key)}
 
 
-def plan(changed, store_changes=(), ui_changes=()):
+def plan(changed, store_changes=(), ui_changes=(), tab_changes=None):
     changed = set(changed)
     areas = set()
     for path in changed:
         areas.update(PATH_AREAS.get(path, ()))
+    if "App/BrowserTab.swift" in changed:
+        names = set(tab_changes or ())
+        if tab_changes is None:
+            areas.update(["links", "security", "previews"])
+        else:
+            if names & {"preamble", "init", "createWebView", "releaseWebView", "loadTestFixture"}: areas.add("launch")
+            if "configureBlocking" in names: areas.add("blocking")
+            if names & {"webView", "load", "show", "loadInBrowser", "openRelatedApplication"}: areas.update(["links", "security"])
+            if "capturePreview" in names: areas.add("previews")
+            if any(name.startswith("scrollView") for name in names): areas.add("chrome")
     store_changes = set(store_changes)
     if "App/BrowserStore.swift" in changed:
         if store_changes & {"preamble", "init"}:
@@ -139,9 +152,9 @@ def main():
         base = git("rev-parse", f"{args.head}^").strip()
     paths = git("diff", "--name-only", "--no-renames", base, args.head).splitlines()
     changes = {}
-    for path in ("App/BrowserStore.swift", "UITests/BrowserUITests.swift"):
+    for path in ("App/BrowserStore.swift", "UITests/BrowserUITests.swift", "App/BrowserTab.swift"):
         changes[path] = changed_methods(content(base, path), content(args.head, path)) if path in paths else set()
-    result = plan(paths, changes["App/BrowserStore.swift"], changes["UITests/BrowserUITests.swift"])
+    result = plan(paths, changes["App/BrowserStore.swift"], changes["UITests/BrowserUITests.swift"], changes["App/BrowserTab.swift"])
     if "distribution/release.json" in paths:
         old = json.loads(content(base, "distribution/release.json") or "{}")
         new = json.loads(content(args.head, "distribution/release.json"))

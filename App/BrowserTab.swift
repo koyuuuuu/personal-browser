@@ -3,6 +3,7 @@ import WebKit
 import AVFoundation
 import Security
 import CryptoKit
+import Combine
 
 @MainActor
 final class JavaScriptDialog: Identifiable {
@@ -90,7 +91,10 @@ final class BrowserTab: NSObject, ObservableObject, Identifiable, WKNavigationDe
     private var observations: [NSKeyValueObservation] = []
     private var mediaFrames: [String: Bool] = [:]
     private var pipFrames: [String: Bool] = [:]
-    private var appliedRule: WKContentRuleList?
+    private var appliedRules: [WKContentRuleList] = []
+    private var appliedBlockingID: UUID?
+    private var blockingRequest = UUID()
+    private var blockingObserver: AnyCancellable?
     private var pendingRequest: URL?
     private var snapshotInProgress = false
     private var downloads: [ObjectIdentifier: (WKDownload, URL?)] = [:]
@@ -98,6 +102,12 @@ final class BrowserTab: NSObject, ObservableObject, Identifiable, WKNavigationDe
     init(id: UUID = UUID(), isPrivate: Bool, configuration: WKWebViewConfiguration? = nil) {
         self.id = id; self.isPrivate = isPrivate; self.suppliedConfiguration = configuration
         super.init()
+        blockingObserver = ContentBlocking.shared.$configurationID.dropFirst().sink { [weak self] _ in
+            Task { @MainActor [weak self] in
+                guard let self, let view = self.liveWebView else { return }
+                await self.configureBlocking(for: self.url, view: view)
+            }
+        }
     }
 
     private func createWebView() -> WKWebView {
@@ -173,15 +183,20 @@ final class BrowserTab: NSObject, ObservableObject, Identifiable, WKNavigationDe
     }
 
     private func configureBlocking(for url: URL?, view: WKWebView) async {
+        let request = UUID(); blockingRequest = request
         guard preferences.shouldBlock(url) else {
-            if let appliedRule { view.configuration.userContentController.remove(appliedRule); self.appliedRule = nil }
-            return
+            for list in appliedRules { view.configuration.userContentController.remove(list) }
+            appliedRules = []; appliedBlockingID = nil; return
         }
-        guard appliedRule == nil else { return }
-        let list = await ContentBlocking.shared.rules()
-        guard liveWebView === view, preferences.shouldBlock(url), appliedRule == nil else { return }
-        if let list { view.configuration.userContentController.add(list); appliedRule = list }
-        else { errorMessage = "広告ブロックの準備に失敗しました。設定から再度有効にしてください。" }
+        let blocker = ContentBlocking.shared, identity = blocker.configurationID
+        guard appliedBlockingID != identity else { return }
+        let lists = await blocker.rules()
+        guard blockingRequest == request, liveWebView === view, preferences.shouldBlock(url), blocker.configurationID == identity else { return }
+        guard !lists.isEmpty else { errorMessage = "広告フィルターを準備できませんでした。設定で状態を確認してください。"; return }
+        for list in appliedRules { view.configuration.userContentController.remove(list) }
+        for list in lists { view.configuration.userContentController.add(list) }
+        appliedRules = lists; appliedBlockingID = identity
+        if !isPrivate { Task { await blocker.checkForUpdates() } }
     }
 
     func load(_ url: URL) {
@@ -246,7 +261,7 @@ final class BrowserTab: NSObject, ObservableObject, Identifiable, WKNavigationDe
         liveWebView?.scrollView.delegate = nil
         liveWebView?.stopLoading(); liveWebView?.navigationDelegate = nil; liveWebView?.uiDelegate = nil
         liveWebView?.configuration.userContentController.removeScriptMessageHandler(forName: "personalBrowserMedia")
-        observations.removeAll(); appliedRule = nil; liveWebView = nil
+        observations.removeAll(); appliedRules = []; appliedBlockingID = nil; blockingRequest = UUID(); liveWebView = nil
         mediaFrames.removeAll(); pipFrames.removeAll(); hasActiveMedia = false; isPictureInPicture = false
     }
 
@@ -289,6 +304,9 @@ final class BrowserTab: NSObject, ObservableObject, Identifiable, WKNavigationDe
     """
 
     func loadTestFixture() {
+        if ProcessInfo.processInfo.arguments.contains("--ui-adblock-fixture") {
+            load(URL(string: "http://127.0.0.1:18765/blocking-fixture")!); return
+        }
         hasContent = true
         let view = webView
         url = URL(string: "https://fixture.invalid")

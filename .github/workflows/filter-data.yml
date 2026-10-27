@@ -1,0 +1,41 @@
+name: Update licensed ad-block filters
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '17 3 * * *'
+  push:
+    branches: [main]
+    paths:
+      - 'filters/**'
+      - 'tools/filter-converter/**'
+      - 'scripts/build_filters.py'
+      - 'scripts/publish_filters.py'
+      - '.github/workflows/filter-data.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: licensed-filter-data
+  cancel-in-progress: false
+
+jobs:
+  filters:
+    if: github.repository == 'koyuuuuu/personal-browser' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Build pinned conversion tool and current filter data
+        run: |
+          python3 -W error -m unittest discover -s scripts -p 'test_*.py'
+          rustup toolchain install 1.99.1 --profile minimal
+          cargo +1.99.1 build --release --locked --manifest-path tools/filter-converter/Cargo.toml
+          python3 scripts/build_filters.py
+      - name: Publish filter data without rebuilding or re-signing the app
+        env:
+          DISTRIBUTION_TOKEN: ${{ secrets.BROWSER_DISTRIBUTION_TOKEN }}
+        run: python3 scripts/publish_filters.py

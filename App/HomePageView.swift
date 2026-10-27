@@ -29,7 +29,7 @@ struct HomePageView: View {
                             ForEach(store.extras.favorites) { item in
                                 Button { store.open(item.url) } label: {
                                     VStack(spacing: 6) {
-                                        SiteIcon(url: item.url, size: iconSize)
+                                        SiteIcon(url: item.url, size: iconSize, allowNetwork: !isPrivate)
                                         Text(item.title).font(.caption2).lineLimit(2).multilineTextAlignment(.center)
                                             .frame(height: 30).frame(maxWidth: .infinity)
                                     }
@@ -59,6 +59,7 @@ struct HomePageView: View {
                 }.contentShape(Rectangle()).clipped()
             }.frame(width: geometry.size.width, height: geometry.size.height).contentShape(Rectangle()).clipped()
         }
+        .task { await ContentBlocking.shared.checkForUpdates() }
         .sheet(item: $editing) { item in BookmarkEditor(item: item, save: store.updateFavorite) }
     }
 }
@@ -66,13 +67,26 @@ struct HomePageView: View {
 struct SiteIcon: View {
     let url: URL
     var size: CGFloat = 42
+    var allowNetwork = true
+    @AppStorage("site-icons.enabled") private var enabled = true
+    @State private var image: UIImage?
     private var hue: Double { Double((url.host ?? "").utf8.reduce(0) { ($0 + Int($1)) % 360 }) / 360 }
     var body: some View {
-        Text(String((url.host?.replacingOccurrences(of: "www.", with: "") ?? "W").prefix(1)).uppercased())
-            .font(.system(size: size * 0.48, weight: .semibold, design: .rounded))
-            .foregroundStyle(.white).frame(width: size, height: size)
-            .background(Color(hue: hue, saturation: 0.55, brightness: 0.7), in: RoundedRectangle(cornerRadius: size * 0.23))
-            .accessibilityHidden(true)
+        ZStack {
+            if let image, enabled {
+                Image(uiImage: image).resizable().scaledToFit().padding(size * 0.08)
+                    .background(Color(uiColor: .secondarySystemBackground))
+            } else {
+                Color(hue: hue, saturation: 0.55, brightness: 0.7)
+                Text(String((url.host?.replacingOccurrences(of: "www.", with: "") ?? "W").prefix(1)).uppercased())
+                    .font(.system(size: size * 0.48, weight: .semibold, design: .rounded)).foregroundStyle(.white)
+            }
+        }
+        .frame(width: size, height: size).clipShape(RoundedRectangle(cornerRadius: size * 0.23))
+        .accessibilityHidden(true)
+        .task(id: url.absoluteString + String(enabled)) {
+            image = enabled ? await SiteIconLoader.shared.image(for: url, network: allowNetwork) : nil
+        }
     }
 }
 

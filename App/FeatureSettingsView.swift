@@ -8,11 +8,29 @@ struct FeatureSettingsView: View {
     @ObservedObject private var blocker = ContentBlocking.shared
     @State private var imageSelection: PhotosPickerItem?
     @State private var host = ""
+    @AppStorage("site-icons.enabled") private var siteIcons = true
     var body: some View {
         Form {
             Section {
                 Text(blocker.status).font(.caption).foregroundStyle(.secondary).accessibilityIdentifier("blockingRuleStatus")
                 Toggle("広告をブロック", isOn: feature(\.blockAdvertisements)).accessibilityIdentifier("adBlockingToggle")
+                Picker("ブロックの強さ", selection: blocking(\.strength)) {
+                    Text("標準").tag(BlockingStrength.standard)
+                    Text("強力").tag(BlockingStrength.strong)
+                }.accessibilityIdentifier("blockingStrengthPicker")
+                Toggle("広告枠も非表示にする", isOn: blocking(\.cosmetic)).accessibilityIdentifier("cosmeticBlockingToggle")
+                Toggle("フィルターを自動更新", isOn: blocking(\.automaticUpdates))
+                if blocker.ruleCount > 0 { Text("適用可能なルール：\(blocker.ruleCount.formatted())件").font(.caption) }
+                if !blocker.generatedAt.isEmpty { Text("フィルター生成日時：\(blocker.generatedAt)").font(.caption).textSelection(.enabled) }
+                Button(blocker.updating ? "更新中…" : "フィルターを今すぐ更新") { Task { await blocker.checkForUpdates(force: true) } }.disabled(blocker.updating)
+                NavigationLink("使用フィルター・ライセンス") {
+                    ScrollView {
+                        VStack(alignment: .leading, spacing: 16) {
+                            if let url = blocker.sourceArchiveURL { Link("現在のフィルター原本・変換コード", destination: url) }
+                            Text(blocker.notices).font(.caption).textSelection(.enabled)
+                        }.padding()
+                    }.navigationTitle("フィルターのライセンス")
+                }
                 ForEach(store.features.blockingExceptions, id: \.self) { domain in Text(domain) }
                     .onDelete { offsets in var value = store.features; value.blockingExceptions.remove(atOffsets: offsets); store.updateFeatures(value) }
                 HStack {
@@ -23,7 +41,7 @@ struct FeatureSettingsView: View {
                     Button("このサイトを除外（\(domain)）") { host = domain; addException() }
                 }
             } header: { Text("広告ブロック") }
-            footer: { Text("既知の広告配信ドメインからの第三者リクエストをWebKitで遮断します。サイト内配信の動画広告など、すべての広告を除去するものではありません。変更後はページを再読み込みしてください。除外はサブドメインにも適用します。") }
+            footer: { Text("EasyList・EasyPrivacy・日本語フィルターをWebKitで適用します。標準は第三者の広告通信、強力はサイト内の広告通信も対象にします。広告枠の非表示は別に切り替えられます。変更後はページを再読み込みしてください。強力ではサイトが正常に動かなくなる場合があります。除外はサブドメインにも適用します。自動更新は利用中に最大1日1回確認し、失敗時は現在のルールを維持します。すべての動画広告を除去する保証はありません。") }
             Section("タブと操作") {
                 Toggle("アドレスバーをスワイプしてタブを切り替え", isOn: feature(\.swipeAddressToSwitchTabs))
                 Toggle("タブ追加時のアニメーション", isOn: feature(\.animateNewTabs))
@@ -39,7 +57,8 @@ struct FeatureSettingsView: View {
                     NavigationLink("背景の位置・ズームを調整") { BackgroundAdjustmentView(store: store) }
                     Button("背景画像を削除", role: .destructive) { store.setHomeBackground(nil) }
                 }
-                Text("サイトのアイコンはドメインの頭文字で表示します。ホーム表示時に各サイトへの通信は行いません。")
+                Toggle("サイト独自のアイコンを取得", isOn: $siteIcons)
+                Text("各サイトのトップページと指定されたアイコンへ、Cookieやログイン情報を付けずにアクセスして保存します。外部のアイコン検索サービスは使いません。取得できない場合は頭文字を表示します。プライベート表示では保存済み画像だけを利用します。")
                     .font(.footnote).foregroundStyle(.secondary)
             }
             Section {
@@ -86,6 +105,9 @@ struct FeatureSettingsView: View {
     }
     private func feature<Value>(_ path: WritableKeyPath<FeaturePreferences, Value>) -> Binding<Value> {
         Binding(get: { store.features[keyPath: path] }, set: { newValue in var prefs = store.features; prefs[keyPath: path] = newValue; store.updateFeatures(prefs) })
+    }
+    private func blocking<Value>(_ path: WritableKeyPath<BlockingPreferences, Value>) -> Binding<Value> {
+        Binding(get: { blocker.preferences[keyPath: path] }, set: { blocker.set(path, $0) })
     }
     private func addException() {
         let value = host.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()

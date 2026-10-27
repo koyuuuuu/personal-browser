@@ -49,6 +49,7 @@ def generate():
             source_ids[kind].append(add("build:" + relative, "PBXBuildFile", fileRef=reference))
         if folder == "App":
             children.append(add("file:Info", "PBXFileReference", lastKnownFileType="text.plist.xml", path="Info.plist", sourceTree="<group>"))
+            children.append(add("file:FilterResources", "PBXFileReference", lastKnownFileType="folder", path="FilterResources", sourceTree="<group>"))
             children.append(add("file:Assets", "PBXFileReference", lastKnownFileType="folder.assetcatalog", path="Assets.xcassets", sourceTree="<group>"))
         groups[folder] = add("group:" + folder, "PBXGroup", children=children, path=folder, sourceTree="<group>")
 
@@ -97,6 +98,7 @@ def generate():
         resources = []
         if kind == "app":
             resources.append(add("build:Assets", "PBXBuildFile", fileRef=identifier("file:Assets")))
+            resources.append(add("build:FilterResources", "PBXBuildFile", fileRef=identifier("file:FilterResources")))
         resources_phase = add("resources:" + kind, "PBXResourcesBuildPhase", buildActionMask=2147483647, files=resources, runOnlyForDeploymentPostprocessing=0)
         return [sources, frameworks, resources_phase]
 

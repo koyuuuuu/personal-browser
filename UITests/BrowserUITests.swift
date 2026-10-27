@@ -233,13 +233,21 @@ final class BrowserUITests: XCTestCase {
     }
 
     func testAdBlockingCanBeConfigured() {
+        app.terminate(); app.launchArguments = ["--ui-testing", "--ui-adblock-fixture"]; app.launch()
+        let page = app.webViews.firstMatch
+        XCTAssertTrue(page.staticTexts["Blocking fixture ready"].waitForExistence(timeout: 90))
+        page.buttons["Check filtering"].tap()
+        XCTAssertTrue(page.staticTexts["Blocked and hidden"].waitForExistence(timeout: 5), "The bundled filters must block a real request and hide its ad slot")
         tapMenuControl("menuButton"); app.buttons["設定"].tap()
-        XCTAssertTrue(app.navigationBars["設定"].waitForExistence(timeout: 5))
         tapMenuControl("featureSettingsLink")
-        XCTAssertTrue(app.navigationBars["ブラウザ機能"].waitForExistence(timeout: 5))
-        XCTAssertTrue(app.staticTexts["内蔵ルールを準備しました"].waitForExistence(timeout: 10), "WebKit must compile the native filtering rules")
+        XCTAssertTrue(app.staticTexts["標準フィルターを適用できます"].waitForExistence(timeout: 15))
+        tapMenuControl("blockingStrengthPicker")
+        app.buttons["強力"].tap()
+        XCTAssertTrue(app.staticTexts["強力フィルターを適用できます"].waitForExistence(timeout: 90), "Both profiles must compile in actual WebKit")
+        let cosmetic = app.switches["cosmeticBlockingToggle"]
+        XCTAssertTrue(cosmetic.exists); XCTAssertEqual(cosmetic.value as? String, "1")
         let toggle = app.switches["adBlockingToggle"]
-        XCTAssertTrue(toggle.waitForExistence(timeout: 5)); XCTAssertEqual(toggle.value as? String, "1")
+        XCTAssertEqual(toggle.value as? String, "1")
         toggle.coordinate(withNormalizedOffset: CGVector(dx: 0.9, dy: 0.5)).tap()
         XCTAssertEqual(toggle.value as? String, "0")
     }

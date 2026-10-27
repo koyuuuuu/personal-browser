@@ -1,0 +1,34 @@
+{
+  "converter": {
+    "name": "Brave adblock-rust",
+    "version": "0.13.3",
+    "license": "MPL-2.0",
+    "source": "https://github.com/brave/adblock-rust"
+  },
+  "sources": [
+    {
+      "id": "easylist",
+      "name": "EasyList",
+      "url": "https://easylist-downloads.adblockplus.org/easylist.txt",
+      "license": "GPL-3.0-or-later (GPL-3.0 option selected)",
+      "attribution": "The EasyList authors (https://easylist.to/)",
+      "licenseURL": "https://easylist.to/pages/licence.html"
+    },
+    {
+      "id": "easyprivacy",
+      "name": "EasyPrivacy",
+      "url": "https://easylist-downloads.adblockplus.org/easyprivacy.txt",
+      "license": "GPL-3.0-or-later (GPL-3.0 option selected)",
+      "attribution": "The EasyList authors (https://easylist.to/)",
+      "licenseURL": "https://easylist.to/pages/licence.html"
+    },
+    {
+      "id": "japanese",
+      "name": "AdGuard Japanese filter",
+      "url": "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/filters/filter_7_Japanese/filter.txt",
+      "license": "GPL-3.0",
+      "attribution": "AdGuard Software Ltd. and filter contributors",
+      "licenseURL": "https://github.com/AdguardTeam/AdguardFilters/blob/master/LICENSE"
+    }
+  ]
+}

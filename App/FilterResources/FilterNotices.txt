@@ -1,0 +1,29 @@
+Personal Browser filter data
+
+Converted/modified into WebKit network and cosmetic rule lists.
+Conversion: Brave adblock-rust 0.13.3 (MPL-2.0). No Brave engine is linked into the app.
+Some advanced/scriptlet rules cannot be represented in WebKit and are omitted.
+EasyList/EasyPrivacy: GPL v3 option selected from their dual licence. Japanese filter: GPL v3.
+This combined, separately distributed filter-data collection is GPL v3.
+No warranty. See the bundled licence texts and original lists.
+
+EasyList
+The EasyList authors (https://easylist.to/)
+Source: https://easylist-downloads.adblockplus.org/easylist.txt
+Licence: GPL-3.0-or-later (GPL-3.0 option selected)
+https://easylist.to/pages/licence.html
+
+EasyPrivacy
+The EasyList authors (https://easylist.to/)
+Source: https://easylist-downloads.adblockplus.org/easyprivacy.txt
+Licence: GPL-3.0-or-later (GPL-3.0 option selected)
+https://easylist.to/pages/licence.html
+
+AdGuard Japanese filter
+AdGuard Software Ltd. and filter contributors
+Source: https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/filters/filter_7_Japanese/filter.txt
+Licence: GPL-3.0
+https://github.com/AdguardTeam/AdguardFilters/blob/master/LICENSE
+
+Corresponding original lists, conversion script and licences:
+https://github.com/koyuuuuu/personal-browser-distribution/releases/download/filter-data-v1/filter-sources-1142a284fda5905f58dca3db721f2904f60b6bd95623f333bc2f62d55370199a.zip
