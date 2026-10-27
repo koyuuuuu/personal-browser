@@ -40,3 +40,11 @@
 各生成物の`filter-sources-REVISION.zip`に原本、ライセンス、変換コード、依存の固定情報を同梱する。アプリにも内蔵ルールの原本ZIPと通知を含める。採用先は`filters/sources.json`、ライセンス本文は`filters/licenses`。
 
 Bundle ID、browser.jsonのschema1、ブックマーク・お気に入り・履歴、WebKitの保存領域、build14に戻した再生制御は維持する。フィルター設定・画像キャッシュは共通のライブラリデータとは分離している。
+
+## 配信と確認
+
+**0.6.0 build42を配信済み。** [公開IPA](https://github.com/koyuuuuu/personal-browser-distribution/releases/tag/v0.6.0-build.42)を、既存のSideStoreソースから削除せず更新する。初回のフィルター準備には待ち時間が発生する。コンパイル済みルールは次回以降に再利用する。
+
+Python48件、macOS Core58件、変更範囲のUI4件、実機用ビルドが成功。制御した画像の遮断・広告枠の非表示、標準／強力のコンパイル、お気に入りのドラッグ・編集・再起動保持、横画面ホーム、WebKitの表示を確認した。実サイトの全広告除去やiPhone上の全機能動作を保証する結果ではない。[配信・確認の記録](validation-0.6.0-2026-10-27.json)。
+
+公開IPAと配信JSONの版番号・Bundle ID・サイズ・ハッシュ、および同梱フィルターと原本ZIPを照合した。公開されている更新用フィルターも全7ファイルのハッシュと原本・ライセンスを確認済み。以前の0.5.0 build38と0.4.2 build27は保持している。

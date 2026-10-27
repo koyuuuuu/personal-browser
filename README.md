@@ -2,7 +2,7 @@
 
 iPhone 12 / iOS 18.4.1向けの個人用ブラウザ。SwiftUIとWKWebViewで新規実装し、Windowsで編集、クラウドmacOSでビルド、SideStoreで実機へ導入・再署名する。
 
-**最新配信版は0.5.0 build 38。本人がSideStoreから更新できたと報告。** [リリース](https://github.com/koyuuuuu/personal-browser-distribution/releases/tag/v0.5.0-build.38)、[配信記録](docs/validation-0.5.0-build38.json)。本体ソースは[koyuuuuu/personal-browser](https://github.com/koyuuuuu/personal-browser)で公開し、標準の公開リポジトリ用Actionsランナーを利用する。有料ランナーや課金設定は追加していない。
+**最新配信版は0.6.0 build 42。更新可能な広告フィルターとサイト独自のお気に入りアイコンに対応。** [リリース](https://github.com/koyuuuuu/personal-browser-distribution/releases/tag/v0.6.0-build.42)、[配信記録](docs/validation-0.6.0-2026-10-27.json)。本体ソースは[koyuuuuu/personal-browser](https://github.com/koyuuuuu/personal-browser)で公開し、標準の公開リポジトリ用Actionsランナーを利用する。有料ランナーや課金設定は追加していない。
 
 [v0.1.0の保存済みリリース](https://github.com/koyuuuuu/personal-browser/releases/tag/v0.1.0)から、初期版のビルド元とIPA保管先を参照できる。初期IPAは`ipa-archive`ブランチ、新版はGitHub Releasesに保存し、Actionsの1日保持期限が過ぎても取得できる。arm64実機用、最低iOS 17.0。SideStoreで個人用に署名して導入する。現在は本体リポジトリ全体が公開されている。
 
@@ -48,4 +48,4 @@ mainへのアプリ・テスト・ビルド・配信コードのpushで、Linux�
 
 2026-10-26: 利用者の指示で全ブランチ・タグの履歴を監査したうえ、本体ソースを公開する方針へ変更。以前の非公開方針の記述は当時の運用記録。[公開前の確認](docs/publication-audit-2026-10-26.ja.md)。標準の公開リポジトリ用Actionsランナーを使い、有料ランナーや課金設定は追加しない。
 
-0.6.0では更新可能な広告フィルターとサイト独自のお気に入りアイコンを追加。[構成・設定・ライセンス](docs/changes-0.6.0.ja.md)。
+0.6.0 build42を配信済み。Python48件・Core58件・変更範囲のUI4件と実機用ビルドに成功。更新可能な広告フィルターとサイト独自のお気に入りアイコンを追加。[構成・設定・ライセンス](docs/changes-0.6.0.ja.md)。

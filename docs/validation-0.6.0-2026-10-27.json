@@ -1,0 +1,78 @@
+{
+  "date_utc": "2026-10-27",
+  "version": "0.6.0",
+  "build": "42",
+  "source_commit": "669c98104b3445b378a593474b3615b82924f98f",
+  "tag": "v0.6.0-build.42",
+  "ci_run": "https://github.com/koyuuuuu/personal-browser/actions/runs/40449462182",
+  "filter_ci_run": "https://github.com/koyuuuuu/personal-browser/actions/runs/40447857604",
+  "delivery_status": "published",
+  "source_visibility": "public",
+  "public_release": "https://github.com/koyuuuuu/personal-browser-distribution/releases/tag/v0.6.0-build.42",
+  "source_url": "https://raw.githubusercontent.com/koyuuuuu/personal-browser-distribution/main/source.json",
+  "ipa": {
+    "sha256": "81fe9e7f82e423dc3c8cca599dc88648a960d083c15b45b0b639272884af794b",
+    "size": 5263165,
+    "bundle_id": "local.personalbrowser.app",
+    "version": "0.6.0",
+    "build": "42",
+    "minimum_ios": "17.0",
+    "architecture": "arm64",
+    "data_schema": 1
+  },
+  "checks": {
+    "python": 48,
+    "macos_core": 58,
+    "ui_passed": 4,
+    "ui_cases": [
+      "testAdBlockingCanBeConfigured",
+      "testFavoriteDragReordersAndSettingsEditsLatestDataAfterRestart",
+      "testLandscapeHomeWithCroppedBackgroundKeepsEveryChromeControlTappable",
+      "testWebKitRendersAndExecutesOfflinePage"
+    ],
+    "ui_duration_seconds": 206.588,
+    "standard_real_image_request_and_cosmetic_hiding": "passed with allowed control image",
+    "standard_and_strong_webkit_compilation": "passed",
+    "favorite_drag_edit_and_restart": "passed",
+    "landscape_home_controls": "passed",
+    "legacy_compatibility_roundtrip": "not applicable: no legacy model/store changes",
+    "full_ui_suite": "not run by current user policy",
+    "media_handler_script_exact_match_to_build14_policy": {
+      "passed": true,
+      "sha256": "8233d9cc7ff0b82e3aa24f9ad97543226dd5c9124dfd80ce1d73ab3de5b91edc"
+    },
+    "anonymous_latest_ipa_and_feed_hash_size_identity": "passed",
+    "source_release_ipa_hash_matches_public": true,
+    "bundled_filter_chunks_and_corresponding_source": "passed",
+    "mybrowser_scheme": "present",
+    "audio_background_mode": "present"
+  },
+  "filter_data": {
+    "manifest_url": "https://github.com/koyuuuuu/personal-browser-distribution/releases/download/filter-data-v1/manifest.json",
+    "bundled_revision": "1142a284fda5905f58dca3db721f2904f60b6bd95623f333bc2f62d55370199a",
+    "live_revision": "5f8881223da703f974a073cdb0d7ff400529a41dc8dfc5a5dc3ee1f82ef6c863",
+    "live_chunks_verified": 7,
+    "live_original_lists_and_licences": "verified in source ZIP",
+    "schedule": "Linux only, 03:17 UTC daily; foreground client at most daily",
+    "app_rebuild_required_for_filter_updates": false,
+    "rust_engine_linked_into_ipa": false,
+    "data_licence": "GPL-3.0",
+    "conversion_engine": "Brave adblock-rust 0.13.3 (MPL-2.0)"
+  },
+  "rollback": {
+    "v0.5.0-build.38": "695f90d84ec04ec5f793b2dd55387eceab6b72fd5e0aacfb592ced13691d2a5f",
+    "v0.4.2-build.27": "3d3477697c89d15cd3cc955c442b486bee65ccd62917195f2ef130cc5e75a4ad",
+    "retained_in_feed": true
+  },
+  "corrections_before_delivery": [
+    "run39: native build found unsupported inferred async lookup call; switched to supported completion APIs",
+    "run40: image-only ad rule was tested with a script; corrected fixture to image plus reachable allowed control",
+    "run40: favorite drag failed; made decorative site icon ignore hit testing and defined full label hit area; passed run42",
+    "run41: cancelled before publication because failed favorite coverage was unresolved; pending app-area checks retained in plan"
+  ],
+  "device_acceptance": {
+    "installation_on_user_iphone": "not yet reported for 0.6.0",
+    "real_site_icon_availability": "depends on site; network suppressed in UI fixtures",
+    "all_real_site_video_ads_or_pip": "not claimed"
+  }
+}
