@@ -2,6 +2,7 @@ import Foundation
 import Combine
 import CryptoKit
 import WebKit
+import UIKit
 
 /// Only WebKit rule data is downloaded; browsing URLs are never sent to a filtering service.
 @MainActor
@@ -21,6 +22,7 @@ final class ContentBlocking: ObservableObject {
     private var activeDirectory: URL
     private let testing = ProcessInfo.processInfo.arguments.contains("--ui-testing")
     private static let preferenceKey = "blocking-preferences-v1"
+    private var foregroundObserver: AnyCancellable?
 
     private init() {
         directory = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
@@ -33,6 +35,9 @@ final class ContentBlocking: ObservableObject {
             manifest = cached; activeDirectory = directory.appendingPathComponent(cached.revision, isDirectory: true)
         } else { manifest = Self.readManifest(bundleDirectory.appendingPathComponent("manifest.json")) }
         generatedAt = manifest?.generatedAt ?? ""
+        foregroundObserver = NotificationCenter.default.publisher(for: UIApplication.didBecomeActiveNotification).sink { [weak self] _ in
+            Task { @MainActor [weak self] in await self?.checkForUpdates() }
+        }
     }
 
     private static func readManifest(_ url: URL) -> BlockingManifest? {
@@ -72,7 +77,12 @@ final class ContentBlocking: ObservableObject {
             var output: [WKContentRuleList] = []
             for file in selected {
                 let identifier = "PB-filter-v1-" + file.sha256
-                if let cached = try? await WKContentRuleListStore.default().lookUpContentRuleList(forIdentifier: identifier) {
+                let cached: WKContentRuleList? = await withCheckedContinuation { continuation in
+                    WKContentRuleListStore.default().lookUpContentRuleList(forIdentifier: identifier) { list, _ in
+                        continuation.resume(returning: list)
+                    }
+                }
+                if let cached {
                     output.append(cached); continue
                 }
                 let json = try await Task.detached(priority: .utility) {
@@ -82,7 +92,13 @@ final class ContentBlocking: ObservableObject {
                     guard let json = String(data: data, encoding: .utf8) else { throw BlockingDataError.invalid }
                     return json
                 }.value
-                let list = try await WKContentRuleListStore.default().compileContentRuleList(forIdentifier: identifier, encodedContentRuleList: json)
+                let list: WKContentRuleList = try await withCheckedThrowingContinuation { continuation in
+                    WKContentRuleListStore.default().compileContentRuleList(forIdentifier: identifier, encodedContentRuleList: json) { list, error in
+                        if let error { continuation.resume(throwing: error) }
+                        else if let list { continuation.resume(returning: list) }
+                        else { continuation.resume(throwing: BlockingDataError.invalid) }
+                    }
+                }
                 output.append(list)
             }
             return output

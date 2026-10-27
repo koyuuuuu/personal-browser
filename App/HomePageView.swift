@@ -59,7 +59,6 @@ struct HomePageView: View {
                 }.contentShape(Rectangle()).clipped()
             }.frame(width: geometry.size.width, height: geometry.size.height).contentShape(Rectangle()).clipped()
         }
-        .task { await ContentBlocking.shared.checkForUpdates() }
         .sheet(item: $editing) { item in BookmarkEditor(item: item, save: store.updateFavorite) }
     }
 }

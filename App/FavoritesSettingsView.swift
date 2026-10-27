@@ -9,7 +9,7 @@ struct FavoritesSettingsView: View {
             ForEach(store.extras.favorites) { item in
                 Button { editing = item } label: {
                     HStack {
-                        SiteIcon(url: item.url, size: 32)
+                        SiteIcon(url: item.url, size: 32, allowNetwork: store.selectedTab?.isPrivate != true)
                         VStack(alignment: .leading, spacing: 3) {
                             Text(item.title).foregroundStyle(.primary).lineLimit(1)
                             Text(item.url.absoluteString).font(.caption).foregroundStyle(.secondary).lineLimit(1)
