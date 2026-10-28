@@ -254,6 +254,53 @@ final class BrowserUITests: XCTestCase {
         XCTAssertEqual(toggle.value as? String, "0")
     }
 
+    func testNewTabPlacementAndViewedTabBackForward() {
+        app.terminate(); app.launchArguments = ["--ui-testing", "--ui-tab-navigation-fixture"]; app.launch()
+        XCTAssertTrue(app.webViews.staticTexts["Tab A fixture"].waitForExistence(timeout: 15))
+        XCTAssertFalse(app.buttons["previousViewedTabButton"].isEnabled)
+        tapMenuControl("menuButton"); app.buttons["新しいタブ"].tap()
+        app.buttons["tabsButton"].tap()
+        let selectedBlank = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH 'tabPreview-' AND label == %@", "新しいタブ、選択中")).firstMatch
+        XCTAssertTrue(selectedBlank.waitForExistence(timeout: 5))
+        let tabA = app.buttons["Tab A"]
+        XCTAssertEqual(tabA.frame.minY, selectedBlank.frame.minY, accuracy: 2, "Menu-created tab must be next to A, not last after C")
+        tabA.tap()
+        app.webViews.links["Open child tab"].tap()
+        XCTAssertTrue(app.webViews.staticTexts["Tab child ready"].waitForExistence(timeout: 15))
+        app.buttons["tabsButton"].tap()
+        let child = app.buttons["Tab child、選択中"]
+        XCTAssertTrue(child.waitForExistence(timeout: 5))
+        XCTAssertEqual(app.buttons["Tab A"].frame.minY, child.frame.minY, accuracy: 2)
+        XCTAssertGreaterThan(app.buttons["Tab B"].frame.minY, child.frame.minY)
+        app.buttons["Tab B"].tap()
+        app.buttons["previousViewedTabButton"].tap()
+        XCTAssertTrue(app.webViews.staticTexts["Tab child ready"].waitForExistence(timeout: 5))
+        app.buttons["previousViewedTabButton"].tap()
+        XCTAssertTrue(app.webViews.staticTexts["Tab A fixture"].waitForExistence(timeout: 5))
+        app.buttons["nextViewedTabButton"].tap()
+        XCTAssertTrue(app.webViews.staticTexts["Tab child ready"].waitForExistence(timeout: 5))
+        app.buttons["nextViewedTabButton"].tap()
+        XCTAssertTrue(app.staticTexts["お気に入り"].waitForExistence(timeout: 5))
+        XCTAssertFalse(app.buttons["nextViewedTabButton"].isEnabled)
+        // B has C to its right; the toolbar + must append after C.
+        app.buttons["newTabButton"].tap(); app.buttons["tabsButton"].tap()
+        XCTAssertTrue(selectedBlank.waitForExistence(timeout: 5))
+        XCTAssertEqual(app.buttons["Tab C"].frame.minY, selectedBlank.frame.minY, accuracy: 2)
+        XCTAssertGreaterThan(selectedBlank.frame.minX, app.buttons["Tab C"].frame.minX)
+        app.buttons["Tab C"].tap(); app.buttons["tabsButton"].tap()
+        app.buttons["overviewNewTabButton"].tap(); app.buttons["tabsButton"].tap()
+        XCTAssertTrue(selectedBlank.waitForExistence(timeout: 5))
+        XCTAssertGreaterThan(selectedBlank.frame.minY, app.buttons["Tab C"].frame.minY, "Overview + must append even when C is not last")
+        app.buttons["完了"].tap()
+        XCTAssertTrue(app.buttons["addressLeft-previousViewedTab"].exists)
+        XCTAssertTrue(app.buttons["addressRight-nextViewedTab"].exists)
+        XCUIDevice.shared.press(.home)
+        relaunchPreservingData()
+        XCTAssertTrue(app.buttons["previousViewedTabButton"].waitForExistence(timeout: 10))
+        XCTAssertFalse(app.buttons["previousViewedTabButton"].isEnabled, "Visit order is memory-only, not a restored private browsing trace")
+        XCTAssertTrue(app.buttons["addressRight-nextViewedTab"].exists, "New toolbar choices must persist separately")
+    }
+
     func testAddressSwipeReturnsToPreviousTab() {
         tapMenuControl("menuButton"); app.buttons["新しいタブ"].tap()
         XCTAssertTrue(app.staticTexts["お気に入り"].waitForExistence(timeout: 5))

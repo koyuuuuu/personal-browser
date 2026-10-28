@@ -30,7 +30,7 @@ struct TabsView: View {
                     }.labelStyle(.iconOnly).accessibilityIdentifier("addTabMenu").frame(width: 60, height: 44)
                     Spacer()
                     Button {
-                        if store.newTab(isPrivate: store.selectedTab?.isPrivate ?? false) != nil { dismiss() }
+                        if store.newTab(isPrivate: store.selectedTab?.isPrivate ?? false, atEnd: true) != nil { dismiss() }
                     } label: { Image(systemName: "plus").font(.system(size: 23)).frame(width: 60, height: 44) }
                     .accessibilityLabel("新しいタブ").accessibilityIdentifier("overviewNewTabButton")
                     Spacer()

@@ -174,6 +174,7 @@ final class SwipeTabCell: UICollectionViewCell, UIGestureRecognizerDelegate {
         placeholder.isHidden = previewImage.image != nil
         placeholder.text = tab.url?.host ?? "新しいタブ"
         playing.isHidden = !tab.hasActiveMedia
+        previewButton.accessibilityIdentifier = "tabPreview-" + tab.id.uuidString
         previewButton.accessibilityLabel = tab.title + (selectedTab ? "、選択中" : "")
         previewButton.accessibilityValue = tab.previewData == nil ? "プレビューなし" : "プレビューあり"
         contentView.layer.borderWidth = selectedTab ? 3 : 0

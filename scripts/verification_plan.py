@@ -10,6 +10,7 @@ ROOT = Path(__file__).resolve().parents[1]
 
 # One representative scenario per behavior, rather than overlapping smoke tests.
 AREAS = {
+    "tab-navigation": ["testNewTabPlacementAndViewedTabBackForward"],
     "blocking": ["testAdBlockingCanBeConfigured"],
     "tabs": ["testSwipeClosingGridReflowsAndRemainsUsableAfterRepeatedDeletions", "testOverviewOpensAtLastActiveTab"],
     "chrome": ["testLandscapeSwipeKeepsControlsWorkingAndTilesStayInsideWindow", "testPortraitForwardScrollHidesBarsAndBottomBounceDoesNotReveal"],
@@ -26,7 +27,7 @@ AREAS = {
     "launch": ["testWebKitRendersAndExecutesOfflinePage"],
 }
 PATH_AREAS = {
-    "App/BrowserChrome.swift": ["chrome", "search"], "App/BrowserViews.swift": ["chrome", "home"],
+    "App/BrowserViews.swift": ["chrome", "home"],
     "App/TabGridView.swift": ["tabs"], "App/TabOverview.swift": ["tabs"],
     "App/HomePageView.swift": ["home", "favorites"], "App/FavoritesSettingsView.swift": ["favorites"],
     "App/LibraryView.swift": ["library"], "App/SafariImport.swift": ["library"],
@@ -43,7 +44,9 @@ PATH_AREAS = {
     "Sources/BrowserCore/LibraryTransfer.swift": ["library"],
     "Sources/BrowserCore/HistoryPresentation.swift": ["library"],
     "Sources/BrowserCore/PresentationPreferences.swift": ["chrome", "settings"],
-    "Sources/BrowserCore/AddressBarAction.swift": ["settings"],
+    "Sources/BrowserCore/AddressBarAction.swift": ["tab-navigation"],
+    "Sources/BrowserCore/TabSelectionHistory.swift": ["tabs", "tab-navigation"],
+    "Sources/BrowserCore/ToolbarCompatibility.swift": ["tab-navigation"],
     "Sources/BrowserCore/TabPreviewStore.swift": ["previews"],
     "Sources/BrowserCore/LinkRouting.swift": ["links"],
     "Sources/BrowserCore/ConnectionSecurity.swift": ["security"],
@@ -54,6 +57,7 @@ DATA_PATHS = {
     "Sources/BrowserCore/Models.swift", "Sources/BrowserCore/SnapshotStore.swift",
     "Sources/BrowserCore/LibraryExtras.swift", "Sources/BrowserCore/LibraryTransfer.swift",
     "Sources/BrowserCore/BrowserArchive.swift", "Sources/BrowserCore/PresentationPreferences.swift",
+    "Sources/BrowserCore/ToolbarCompatibility.swift", "scripts/toolbar_compatibility_runner.swift",
     "scripts/check_data_compatibility.sh", "scripts/compatibility_runner.swift",
     "scripts/favorites_compatibility_runner.swift",
 }
@@ -98,11 +102,17 @@ def changed_methods(before, after):
     return {key for key in old.keys() | new.keys() if old.get(key) != new.get(key)}
 
 
-def plan(changed, store_changes=(), ui_changes=(), tab_changes=None, pending_app_paths=None):
+def plan(changed, store_changes=(), ui_changes=(), tab_changes=None, pending_app_paths=None, chrome_changes=None):
     changed = set(changed)
     areas = set()
     for path in changed:
         areas.update(PATH_AREAS.get(path, ()))
+    if "App/BrowserChrome.swift" in changed:
+        action_methods = {"disabledAddress", "performAddress", "perform", "actionButton"}
+        if chrome_changes is not None and set(chrome_changes) <= action_methods:
+            areas.add("tab-navigation")
+        else:
+            areas.update(["chrome", "search"])
     if "App/BrowserTab.swift" in changed:
         names = set(tab_changes or ())
         if tab_changes is None:
@@ -116,9 +126,9 @@ def plan(changed, store_changes=(), ui_changes=(), tab_changes=None, pending_app
     store_changes = set(store_changes)
     if "App/BrowserStore.swift" in changed:
         if store_changes & {"preamble", "init"}:
-            areas.update(["launch", "tabs", "favorites"])
+            areas.update(["launch", "tabs"])
         for name in store_changes:
-            if re.search(r"Tab|^select$|^close$|^reopen", name): areas.add("tabs")
+            if re.search(r"Tab|^select$|^close$|^reopen", name): areas.update(["tabs", "tab-navigation"])
             if re.search(r"Favorite", name): areas.add("favorites")
             if re.search(r"Bookmark|Folder|History|importPages", name): areas.add("library")
             if re.search(r"Chrome|Landscape|Presentation", name): areas.add("chrome")
@@ -152,9 +162,9 @@ def main():
         base = git("rev-parse", f"{args.head}^").strip()
     paths = git("diff", "--name-only", "--no-renames", base, args.head).splitlines()
     changes = {}
-    for path in ("App/BrowserStore.swift", "UITests/BrowserUITests.swift", "App/BrowserTab.swift"):
+    for path in ("App/BrowserStore.swift", "UITests/BrowserUITests.swift", "App/BrowserTab.swift", "App/BrowserChrome.swift"):
         changes[path] = changed_methods(content(base, path), content(args.head, path)) if path in paths else set()
-    result = plan(paths, changes["App/BrowserStore.swift"], changes["UITests/BrowserUITests.swift"], changes["App/BrowserTab.swift"])
+    result = plan(paths, changes["App/BrowserStore.swift"], changes["UITests/BrowserUITests.swift"], changes["App/BrowserTab.swift"], chrome_changes=changes["App/BrowserChrome.swift"])
     delivered_tags = git("tag", "--list", "v*-build.*", "--sort=-version:refname").splitlines()
     if delivered_tags:
         # A test/build fix after a failed app run must still deliver the pending
@@ -167,11 +177,11 @@ def main():
             # delivered. A test-only follow-up must not accidentally drop a
             # previously failed feature check from the publication gate.
             app_pending = [p for p in pending if p.startswith(("App/", "Sources/"))]
-            for path in ("App/BrowserStore.swift", "App/BrowserTab.swift"):
+            for path in ("App/BrowserStore.swift", "App/BrowserTab.swift", "App/BrowserChrome.swift"):
                 if path in app_pending:
                     changes[path] = changed_methods(content(delivered_tags[0], path), content(args.head, path))
             scoped = plan(set(paths) | set(app_pending), changes["App/BrowserStore.swift"],
-                          changes["UITests/BrowserUITests.swift"], changes["App/BrowserTab.swift"])
+                          changes["UITests/BrowserUITests.swift"], changes["App/BrowserTab.swift"], chrome_changes=changes["App/BrowserChrome.swift"])
             result["areas"] = scoped["areas"]
             result["ui_tests"] = scoped["ui_tests"]
             result["compatibility"] = scoped["compatibility"]

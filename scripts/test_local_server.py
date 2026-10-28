@@ -67,6 +67,9 @@ def main():
                 <img src="http://localhost:18765/ads/banners/ad.png" onload="window.testAdLoaded=true;">
                 <p id="state"></p>'''
                 mime = 'text/html; charset=utf-8'
+            elif self.path == '/tab-child':
+                data = b'<meta name="viewport" content="width=device-width,initial-scale=1"><title>Tab child</title><h1>Tab child ready</h1>'
+                mime = 'text/html; charset=utf-8'
             elif self.path == '/media':
                 data = b'''<!doctype html><meta name="viewport" content="width=device-width,initial-scale=1"><title>Audio fixture</title>
                 <audio id="audio" src="/audio.wav" preload="auto"></audio>

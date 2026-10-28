@@ -30,3 +30,16 @@ extras="$directory/library-extras.json"
 "$directory/stable-app" write "$extras" 3
 "$directory/current-favorites" verify "$extras" 3
 echo '0.4.2 → current → 0.4.2 → current: latest favorites and order preserved.'
+
+# New actions must not make the shipped 0.6.0 reader reject toolbar.json.
+mkdir -p "$directory/recent"
+git archive v0.6.0-build.42 Sources/BrowserCore | tar -x -C "$directory/recent"
+swiftc -parse-as-library "$directory"/recent/Sources/BrowserCore/*.swift scripts/toolbar_compatibility_runner.swift -o "$directory/old-toolbar"
+swiftc -parse-as-library -D CURRENT_TOOLBAR Sources/BrowserCore/*.swift scripts/toolbar_compatibility_runner.swift -o "$directory/new-toolbar"
+"$directory/old-toolbar" "$directory" seed
+"$directory/new-toolbar" "$directory" enhance
+"$directory/old-toolbar" "$directory" verifyLegacy
+"$directory/new-toolbar" "$directory" verifyEnhanced
+"$directory/old-toolbar" "$directory" editLegacy
+"$directory/new-toolbar" "$directory" verifyEdited
+echo '0.6.0 → current → 0.6.0 → current: toolbar readable; latest rollback edits respected.'

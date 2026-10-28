@@ -1,10 +1,10 @@
 {
-  "version": "0.6.0",
+  "version": "0.7.0",
   "bundle_id": "local.personalbrowser.app",
   "data_schema": 1,
   "public_repository": "koyuuuuu/personal-browser-distribution",
   "name": "Personal Browser",
   "developer_name": "Personal Browser",
   "description": "自分専用のブラウザ。タブ、履歴、ブックマーク、プライベート閲覧、UIカスタマイズに対応。",
-  "release_notes": "更新可能なEasyList・EasyPrivacy・日本語フィルターによる広告ブロックへ強化。標準／強力、広告枠の非表示、自動・手動更新、ライセンス表示を追加。お気に入りはサイト独自のアイコンを取得・保存し、取得不可時は頭文字を表示。既存データとbuild14の再生方針を維持。"
+  "release_notes": "リンク・メニュー・ポップアップの新規タブを元のタブの隣へ配置。ツールバーとタブ一覧の＋は末尾追加を維持。タブを見ていた順に何段階も戻る・進むボタンを通常ツールバーとアドレスバー左右へ追加可能に。閉じたタブを飛ばし、プライベートの閲覧順は保存しません。旧版向けのボタン設定・既存データ形式を維持。"
 }

@@ -5,12 +5,16 @@ import Foundation
 public enum AddressBarAction: String, Codable, CaseIterable, Identifiable, Sendable {
     case back, forward, reload, newTab, tabs, bookmarks, share
     case home, history, find, downloads, watchHTML, favorite, addBookmark, settings, zoomIn, zoomOut
+    case previousViewedTab, nextViewedTab
+    public var isTabSelectionAction: Bool { self == .previousViewedTab || self == .nextViewedTab }
     public var id: String { rawValue }
     public init(legacy: BrowserAction) { self = Self(rawValue: legacy.rawValue)! }
     public var legacy: BrowserAction? { BrowserAction(rawValue: rawValue) }
     public var label: String {
         if let legacy { return legacy.label }
         switch self {
+        case .previousViewedTab: return "前に見ていたタブ"
+        case .nextViewedTab: return "後に見ていたタブ"
         case .zoomIn: return "ページを5％拡大"
         case .zoomOut: return "ページを5％縮小"
         case .home: return "ホーム"
@@ -27,6 +31,8 @@ public enum AddressBarAction: String, Codable, CaseIterable, Identifiable, Senda
     public var symbol: String {
         if let legacy { return legacy.symbol }
         switch self {
+        case .previousViewedTab: return "arrow.uturn.backward"
+        case .nextViewedTab: return "arrow.uturn.forward"
         case .zoomIn: return "plus.magnifyingglass"
         case .zoomOut: return "minus.magnifyingglass"
         case .home: return "house"

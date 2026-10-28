@@ -63,6 +63,9 @@ final class BrowserStore: ObservableObject {
     private var saveTask: Task<Void, Never>?
     static let maximumTabs = 500
     private var activationOrder: [UUID] = []
+    @Published private var tabSelections = TabSelectionHistory()
+    var canGoToPreviousViewedTab: Bool { tabSelections.canGoBack }
+    var canGoToNextViewedTab: Bool { tabSelections.canGoForward }
     private var memoryObserver: NSObjectProtocol?
     private var restoring = true
     var directory: URL { storage.fileURL.deletingLastPathComponent() }
@@ -106,6 +109,7 @@ final class BrowserStore: ObservableObject {
             selectedID = snapshot.session.selectedID ?? tabs.first?.id
         }
         restoring = false
+        if let selectedID { tabSelections.visit(selectedID) }
         if testing && !ProcessInfo.processInfo.arguments.contains("--ui-no-fixture") { selectedTab?.loadTestFixture() }
         #if DEBUG
         if testing, ProcessInfo.processInfo.arguments.contains("--ui-library-fixture") {
@@ -123,6 +127,18 @@ final class BrowserStore: ObservableObject {
             features.showHomeBackground = true
             extras.favorites = (0..<36).map { Bookmark(title: "Favorite \($0)", url: URL(string: "https://example.com/\($0)")!) }
         }
+        if testing, ProcessInfo.processInfo.arguments.contains("--ui-tab-navigation-fixture"), !ProcessInfo.processInfo.arguments.contains("--ui-keep-data") {
+            features.blockAdvertisements = false
+            toolbar.main = [.previousViewedTab, .nextViewedTab, .newTab, .tabs]
+            toolbar.left = [.previousViewedTab]; toolbar.right = [.nextViewedTab]
+            if let first = selectedTab {
+                first.applyPreferences(features, swipe: snapshot.settings.swipeNavigation)
+                first.hasContent = true; first.url = URL(string: "http://127.0.0.1:18765/tab-a")
+                first.webView.stopLoading()
+                first.webView.loadHTMLString("<meta name=\"viewport\" content=\"width=device-width,initial-scale=1\"><title>Tab A</title><h1>Tab A fixture</h1><a href='http://127.0.0.1:18765/tab-child' target='_blank'>Open child tab</a>", baseURL: first.url)
+                for title in ["Tab B", "Tab C"] { makeTab(isPrivate: false, select: false)?.title = title }
+            }
+        }
         if testing, ProcessInfo.processInfo.arguments.contains("--ui-many-tabs") {
             for _ in 0..<18 { _ = newTab() }
             flush()
@@ -134,14 +150,14 @@ final class BrowserStore: ObservableObject {
     }
 
     @discardableResult
-    func newTab(isPrivate: Bool = false, url: URL? = nil) -> BrowserTab? {
+    func newTab(isPrivate: Bool = false, url: URL? = nil, after openerID: UUID? = nil, atEnd: Bool = false) -> BrowserTab? {
         guard !isClearingData else { return nil }
         if let url { preferBrowser(for: url) }
-        return makeTab(url: url, isPrivate: isPrivate)
+        return makeTab(url: url, isPrivate: isPrivate, after: atEnd ? nil : (openerID ?? selectedID))
     }
 
     private func makeTab(id: UUID = UUID(), url: URL? = nil, isPrivate: Bool,
-                         select: Bool = true, configuration: WKWebViewConfiguration? = nil) -> BrowserTab? {
+                         select: Bool = true, configuration: WKWebViewConfiguration? = nil, after openerID: UUID? = nil) -> BrowserTab? {
         guard tabs.count < Self.maximumTabs else {
             notice = "タブは最大\(Self.maximumTabs)個です。使わないタブを閉じてください。"
             return nil
@@ -190,7 +206,7 @@ final class BrowserStore: ObservableObject {
         tab.onPreferBrowser = { [weak self] url in self?.preferBrowser(for: url) }
         tab.onPreferApplication = { [weak self] url in self?.preferApplication(for: url) }
         tab.onExternalURL = { [weak self] url in self?.externalURL = url }
-        tab.onOpenLink = { [weak self] url, isPrivate in _ = self?.newTab(isPrivate: isPrivate, url: url) }
+        tab.onOpenLink = { [weak self, weak tab] url, isPrivate in _ = self?.newTab(isPrivate: isPrivate, url: url, after: tab?.id) }
         tab.onShareLink = { [weak self] url in self?.shareRequest = ShareRequest(url: url) }
         tab.onAnalyzeLink = { [weak self] url in self?.openWatchHTML(url) }
         tab.onMessageLink = { [weak self] url in self?.messageRequest = ShareRequest(url: url) }
@@ -201,18 +217,19 @@ final class BrowserStore: ObservableObject {
         tab.onClose = { [weak self, weak tab] in
             if let tab { self?.close(tab) }
         }
-        tab.onPopup = { [weak self] configuration, isPrivate in
+        tab.onPopup = { [weak self, weak tab] configuration, isPrivate in
             guard let self else { return nil }
-            let popup = self.makeTab(isPrivate: isPrivate, configuration: configuration)
+            let popup = self.makeTab(isPrivate: isPrivate, configuration: configuration, after: tab?.id)
             popup?.hasContent = true
             return popup?.webView
         }
         if let record = previewRecords[id], record.url == url { tab.title = record.title }
-        tabs.append(tab)
+        tabs.insert(tab, at: TabInsertion.index(after: openerID, in: tabs.map(\.id)))
         if select {
             if !restoring { beginTabTransition(direction: 1) }
             selectedTab?.capturePreview()
             selectedID = tab.id
+            tabSelections.visit(tab.id)
             activationOrder.removeAll { $0 == tab.id }; activationOrder.append(tab.id)
         }
         if let url { tab.load(ConnectionSecurity.preferredURL(url, preferences: connectionPreferences)) }
@@ -221,7 +238,7 @@ final class BrowserStore: ObservableObject {
         return tab
     }
 
-    func select(_ tab: BrowserTab) {
+    func select(_ tab: BrowserTab, recordingVisit: Bool = true) {
         // A drag can finish a tile's button action after that tile was removed.
         guard tabs.contains(where: { $0.id == tab.id }) else { return }
         if selectedID != tab.id {
@@ -231,9 +248,15 @@ final class BrowserStore: ObservableObject {
         }
         selectedTab?.capturePreview()
         selectedID = tab.id
+        if recordingVisit { tabSelections.visit(tab.id) }
         activationOrder.removeAll { $0 == tab.id }; activationOrder.append(tab.id)
         trimLiveTabs()
         scheduleSave()
+    }
+
+    func goToViewedTab(forward: Bool) {
+        guard let id = tabSelections.step(forward: forward), let tab = tabs.first(where: { $0.id == id }) else { return }
+        select(tab, recordingVisit: false)
     }
 
     func close(_ tab: BrowserTab) {
@@ -248,6 +271,8 @@ final class BrowserStore: ObservableObject {
         if selectedID == tab.id {
             selectedID = tabs.isEmpty ? nil : tabs[min(index, tabs.count - 1)].id
         }
+        tabSelections.retain(openIDs: Set(tabs.map(\.id)))
+        if let selectedID { tabSelections.visit(selectedID) }
         if tabs.isEmpty { _ = newTab() }
         scheduleSave()
     }
@@ -351,6 +376,7 @@ final class BrowserStore: ObservableObject {
         for tab in tabs { tab.dispose() }
         tabs = []
         selectedID = nil
+        tabSelections = TabSelectionHistory()
         Task { @MainActor in
             for dataStore in dataStores {
                 await dataStore.removeData(ofTypes: WKWebsiteDataStore.allWebsiteDataTypes(), modifiedSince: .distantPast)
@@ -379,7 +405,7 @@ final class BrowserStore: ObservableObject {
         guard let current = tabs.firstIndex(where: { $0.id == selectedID }) else { return }
         switch TabNavigation.destination(current: current, count: tabs.count, towardNext: towardNext, maximum: Self.maximumTabs) {
         case .existing(let index): select(tabs[index])
-        case .create: _ = newTab(isPrivate: selectedTab?.isPrivate ?? false)
+        case .create: _ = newTab(isPrivate: selectedTab?.isPrivate ?? false, atEnd: true)
         case .none: break
         }
     }
@@ -601,6 +627,10 @@ final class BrowserStore: ObservableObject {
             if FileManager.default.fileExists(atPath: presentationFile.path) { presentation = try JSONDecoder().decode(PresentationPreferences.self, from: Data(contentsOf: presentationFile)) }
             let toolbarFile = directory.appendingPathComponent("toolbar.json")
             if FileManager.default.fileExists(atPath: toolbarFile.path) { toolbar = try JSONDecoder().decode(ToolbarPreferences.self, from: Data(contentsOf: toolbarFile)) }
+            let extendedFile = directory.appendingPathComponent("toolbar-extensions.json")
+            if let data = try? Data(contentsOf: extendedFile), let extended = try? JSONDecoder().decode(ExtendedToolbarPreferences.self, from: data) {
+                toolbar = extended.resolve(against: toolbar)
+            }
             homeBackground = UIImage(contentsOfFile: directory.appendingPathComponent("home-background.jpg").path)
         } catch { extraStorageBlocked = true; notice = "追加データを読み込めませんでした。元のファイルを保持し、上書きを停止しています。" }
     }
@@ -611,7 +641,9 @@ final class BrowserStore: ObservableObject {
             let encoder = JSONEncoder(); encoder.outputFormatting = [.sortedKeys]
             try encoder.encode(extras).write(to: directory.appendingPathComponent("library-extras.json"), options: [.atomic, .completeFileProtectionUntilFirstUserAuthentication])
             try encoder.encode(features).write(to: directory.appendingPathComponent("features.json"), options: [.atomic, .completeFileProtectionUntilFirstUserAuthentication])
-            try encoder.encode(toolbar).write(to: directory.appendingPathComponent("toolbar.json"), options: [.atomic, .completeFileProtectionUntilFirstUserAuthentication])
+            let extended = ExtendedToolbarPreferences(toolbar)
+            try encoder.encode(extended.legacy).write(to: directory.appendingPathComponent("toolbar.json"), options: [.atomic, .completeFileProtectionUntilFirstUserAuthentication])
+            try encoder.encode(extended).write(to: directory.appendingPathComponent("toolbar-extensions.json"), options: [.atomic, .completeFileProtectionUntilFirstUserAuthentication])
             try encoder.encode(presentation).write(to: directory.appendingPathComponent("presentation.json"), options: [.atomic, .completeFileProtectionUntilFirstUserAuthentication])
         } catch { extraStorageBlocked = true; notice = "追加データを保存できませんでした。空き容量を確認してください。" }
     }

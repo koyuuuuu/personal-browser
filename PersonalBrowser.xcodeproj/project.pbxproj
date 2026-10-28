@@ -414,6 +414,26 @@
 			"isa" = "PBXBuildFile";
 			"fileRef" = "78C9EB6E90645B6BBB80CCE9";
 		};
+		"9EA2C00BEC33F773FD852A87" = {
+			"isa" = "PBXFileReference";
+			"lastKnownFileType" = "sourcecode.swift";
+			"path" = "TabSelectionHistory.swift";
+			"sourceTree" = "<group>";
+		};
+		"C093CE7A3E0030DC96399516" = {
+			"isa" = "PBXBuildFile";
+			"fileRef" = "9EA2C00BEC33F773FD852A87";
+		};
+		"AA7E92810B33F09EC5B2B8F5" = {
+			"isa" = "PBXFileReference";
+			"lastKnownFileType" = "sourcecode.swift";
+			"path" = "ToolbarCompatibility.swift";
+			"sourceTree" = "<group>";
+		};
+		"1558999B1A94E1286C4C0D4E" = {
+			"isa" = "PBXBuildFile";
+			"fileRef" = "AA7E92810B33F09EC5B2B8F5";
+		};
 		"8B4758279FF832AA45C1A5B4" = {
 			"isa" = "PBXFileReference";
 			"lastKnownFileType" = "sourcecode.swift";
@@ -452,6 +472,8 @@
 				"5107DB4C887A7FAEBDA1E8E4",
 				"3FB677C06874B7AF4A9D1DEF",
 				"78C9EB6E90645B6BBB80CCE9",
+				"9EA2C00BEC33F773FD852A87",
+				"AA7E92810B33F09EC5B2B8F5",
 				"8B4758279FF832AA45C1A5B4",
 				"FDEF37365C2667C79C6FAA8D",
 			);
@@ -562,7 +584,7 @@
 				"INFOPLIST_FILE" = "App/Info.plist";
 				"GENERATE_INFOPLIST_FILE" = "NO";
 				"CURRENT_PROJECT_VERSION" = "1";
-				"MARKETING_VERSION" = "0.6.0";
+				"MARKETING_VERSION" = "0.7.0";
 				"CODE_SIGN_STYLE" = "Automatic";
 				"TARGETED_DEVICE_FAMILY" = "1";
 				"SUPPORTED_PLATFORMS" = "iphoneos iphonesimulator";
@@ -587,7 +609,7 @@
 				"INFOPLIST_FILE" = "App/Info.plist";
 				"GENERATE_INFOPLIST_FILE" = "NO";
 				"CURRENT_PROJECT_VERSION" = "1";
-				"MARKETING_VERSION" = "0.6.0";
+				"MARKETING_VERSION" = "0.7.0";
 				"CODE_SIGN_STYLE" = "Automatic";
 				"TARGETED_DEVICE_FAMILY" = "1";
 				"SUPPORTED_PLATFORMS" = "iphoneos iphonesimulator";
@@ -700,6 +722,8 @@
 				"FB2A7AB93D59B211329BB367",
 				"89486FF53386963565AE6659",
 				"473CECE2B44791EB74BA7976",
+				"C093CE7A3E0030DC96399516",
+				"1558999B1A94E1286C4C0D4E",
 				"000BB7D1ED578BD248A461DD",
 				"CC4096ACD932591608FF4B0E",
 			);

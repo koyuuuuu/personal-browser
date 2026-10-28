@@ -341,6 +341,8 @@ struct BrowserChrome: View {
     }
     private func disabledAddress(_ action: AddressBarAction) -> Bool {
         if let legacy = action.legacy { return disabled(legacy) }
+        if action == .previousViewedTab { return !store.canGoToPreviousViewedTab }
+        if action == .nextViewedTab { return !store.canGoToNextViewedTab }
         if action == .zoomIn { return store.presentation.pageZoom >= 2 }
         if action == .zoomOut { return store.presentation.pageZoom <= 0.75 }
         if action == .find { return !tab.hasContent }
@@ -351,6 +353,8 @@ struct BrowserChrome: View {
         addressFocused.wrappedValue = false
         if let legacy = action.legacy { perform(legacy); return }
         switch action {
+        case .previousViewedTab: store.goToViewedTab(forward: false)
+        case .nextViewedTab: store.goToViewedTab(forward: true)
         case .zoomIn: store.changeZoom(increase: true)
         case .zoomOut: store.changeZoom(increase: false)
         case .home: store.showHome()
@@ -382,7 +386,7 @@ struct BrowserChrome: View {
             if tab.isLoading { tab.webView.stopLoading() }
             else if tab.webView.url != nil { tab.webView.reload() }
             else if let url = tab.url { tab.load(url) }
-        case .newTab: _ = store.newTab(isPrivate: tab.isPrivate)
+        case .newTab: _ = store.newTab(isPrivate: tab.isPrivate, atEnd: true)
         case .tabs: showSheet(.tabs)
         case .bookmarks: showSheet(.bookmarks)
         case .share: share()
