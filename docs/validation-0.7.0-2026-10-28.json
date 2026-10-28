@@ -1,0 +1,69 @@
+{
+  "date_utc": "2026-10-28",
+  "version": "0.7.0",
+  "build": "45",
+  "source_commit": "75a0bc5334bac2616ba686e0ce8cb4b9d668f326",
+  "tag": "v0.7.0-build.45",
+  "ci_run": "https://github.com/koyuuuuu/personal-browser/actions/runs/40695025779",
+  "delivery_status": "published",
+  "source_visibility": "public",
+  "public_release": "https://github.com/koyuuuuu/personal-browser-distribution/releases/tag/v0.7.0-build.45",
+  "source_url": "https://raw.githubusercontent.com/koyuuuuu/personal-browser-distribution/main/source.json",
+  "ipa": {
+    "sha256": "bf172c54772a798c4e640bcdd3d5f7368ba785a8179ad125ee646c7b1b3164d7",
+    "size": 5274341,
+    "bundle_id": "local.personalbrowser.app",
+    "version": "0.7.0",
+    "build": "45",
+    "minimum_ios": "17.0",
+    "architecture": "arm64",
+    "data_schema": 1
+  },
+  "checks": {
+    "python": 49,
+    "macos_core": 63,
+    "ui_passed": 4,
+    "ui_cases": [
+      "testNewTabPlacementAndViewedTabBackForward",
+      "testOverviewOpensAtLastActiveTab",
+      "testSwipeClosingGridReflowsAndRemainsUsableAfterRepeatedDeletions",
+      "testWebKitRendersAndExecutesOfflinePage"
+    ],
+    "link_and_menu_next_to_opener": "passed",
+    "both_toolbar_plus_buttons_append": "passed",
+    "multiple_previous_and_next_viewed_tabs": "passed",
+    "toolbar_settings_survive_relaunch": "passed",
+    "selection_chronology_not_restored": "passed; runtime UUIDs only, maximum 4096 visits",
+    "compatibility_roundtrips": [
+      "v0.1.0 library old/new/old/new",
+      "v0.4.2 favorites old/new/old/new",
+      "v0.6.0 toolbar old/new/old-edited/new"
+    ],
+    "anonymous_latest_ipa_and_feed_hash_size_identity": "passed",
+    "source_release_ipa_hash_matches_public": true,
+    "mybrowser_scheme": "present",
+    "audio_background_mode": "present",
+    "filter_snapshot": "unchanged",
+    "full_ui_suite": "not run under current scoped policy",
+    "historical_ipa_downloads": "not repeated; retained metadata and asset checks in delivery audit",
+    "media_code": "App/BrowserTab.swift unchanged from delivered 0.6.0; build14 handling preserved"
+  },
+  "toolbar_rollback": {
+    "legacy_file": "toolbar.json contains only previously supported enum values",
+    "full_layout": "toolbar-extensions.json; used only while its legacy reference matches the current toolbar.json",
+    "old_version_edits": "remain authoritative after returning to 0.7.0",
+    "browser_schema": 1
+  },
+  "rollback": {
+    "v0.6.0-build.42": "81fe9e7f82e423dc3c8cca599dc88648a960d083c15b45b0b639272884af794b",
+    "v0.5.0-build.38": "695f90d84ec04ec5f793b2dd55387eceab6b72fd5e0aacfb592ced13691d2a5f",
+    "v0.4.2-build.27": "3d3477697c89d15cd3cc955c442b486bee65ccd62917195f2ef130cc5e75a4ad",
+    "historical_tags_and_ipas": "retained unchanged"
+  },
+  "corrections_before_delivery": [
+    "run43: UI test matched both the toolbar plus and menu item named 新しいタブ; scoped selector to menu item",
+    "run44: all insertion/history/plus assertions passed; fixture had not enabled customAddressButtons; enabled only in DEBUG test fixture",
+    "run45: complete related scenario including relaunch/settings persistence passed"
+  ],
+  "device_acceptance": "0.7.0 installation/operation on the user iPhone not yet reported; update existing app in SideStore without deleting it"
+}

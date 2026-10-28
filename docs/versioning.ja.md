@@ -1,6 +1,6 @@
 # バージョン管理と旧版へ戻す手順
 
-現在は本人の指示で公開した`koyuuuuu/personal-browser`で管理する。最新配信は0.6.0 build42。[配信記録](validation-0.6.0-2026-10-27.json)。
+現在は本人の指示で公開した`koyuuuuu/personal-browser`で管理する。最新配信は0.7.0 build45。[配信記録](validation-0.7.0-2026-10-28.json)。
 
 ## 保存するもの
 
