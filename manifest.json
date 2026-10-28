@@ -2,6 +2,34 @@
   "releases": [
     {
       "file": "PersonalBrowser.ipa",
+      "sha256": "bf172c54772a798c4e640bcdd3d5f7368ba785a8179ad125ee646c7b1b3164d7",
+      "bundle_id": "local.personalbrowser.app",
+      "version": "0.7.0",
+      "build": "45",
+      "minimum_ios": "17.0",
+      "target_ios": "18.4.1",
+      "architecture": "arm64",
+      "platform": "iOS device",
+      "embedded_profile": false,
+      "signature_resources": false,
+      "installation_verified": false,
+      "source_commit": "75a0bc5334bac2616ba686e0ce8cb4b9d668f326",
+      "data_schema": 1,
+      "size": 5274341,
+      "date": "2026-10-28T13:31:51.614384+00:00",
+      "description": "リンク・メニュー・ポップアップの新規タブを元のタブの隣へ配置。ツールバーとタブ一覧の＋は末尾追加を維持。タブを見ていた順に何段階も戻る・進むボタンを通常ツールバーとアドレスバー左右へ追加可能に。閉じたタブを飛ばし、プライベートの閲覧順は保存しません。旧版向けのボタン設定・既存データ形式を維持。",
+      "appPermissions": {
+        "entitlements": [],
+        "privacy": {
+          "NSCameraUsageDescription": "閲覧中のWebサイトでカメラを使用するために必要です。",
+          "NSLocalNetworkUsageDescription": "自宅のネットワークにある自作アプリや動画サーバーへ接続するために使用します。",
+          "NSMicrophoneUsageDescription": "閲覧中のWebサイトでマイクを使用するために必要です。"
+        }
+      },
+      "tag": "v0.7.0-build.45"
+    },
+    {
+      "file": "PersonalBrowser.ipa",
       "sha256": "81fe9e7f82e423dc3c8cca599dc88648a960d083c15b45b0b639272884af794b",
       "bundle_id": "local.personalbrowser.app",
       "version": "0.6.0",

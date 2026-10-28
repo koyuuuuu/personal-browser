@@ -12,6 +12,16 @@
       "iconURL": "https://raw.githubusercontent.com/koyuuuuu/personal-browser-distribution/main/icon.png",
       "versions": [
         {
+          "version": "0.7.0",
+          "buildVersion": "45",
+          "date": "2026-10-28T13:31:51.614384+00:00",
+          "localizedDescription": "リンク・メニュー・ポップアップの新規タブを元のタブの隣へ配置。ツールバーとタブ一覧の＋は末尾追加を維持。タブを見ていた順に何段階も戻る・進むボタンを通常ツールバーとアドレスバー左右へ追加可能に。閉じたタブを飛ばし、プライベートの閲覧順は保存しません。旧版向けのボタン設定・既存データ形式を維持。",
+          "downloadURL": "https://github.com/koyuuuuu/personal-browser-distribution/releases/download/v0.7.0-build.45/PersonalBrowser.ipa",
+          "size": 5274341,
+          "minOSVersion": "17.0",
+          "sha256": "bf172c54772a798c4e640bcdd3d5f7368ba785a8179ad125ee646c7b1b3164d7"
+        },
+        {
           "version": "0.6.0",
           "buildVersion": "42",
           "date": "2026-10-27T04:38:24.029478+00:00",
