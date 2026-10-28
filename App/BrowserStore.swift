@@ -129,6 +129,7 @@ final class BrowserStore: ObservableObject {
         }
         if testing, ProcessInfo.processInfo.arguments.contains("--ui-tab-navigation-fixture"), !ProcessInfo.processInfo.arguments.contains("--ui-keep-data") {
             features.blockAdvertisements = false
+            presentation.customAddressButtons = true
             toolbar.main = [.previousViewedTab, .nextViewedTab, .newTab, .tabs]
             toolbar.left = [.previousViewedTab]; toolbar.right = [.nextViewedTab]
             if let first = selectedTab {

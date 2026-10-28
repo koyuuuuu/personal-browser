@@ -257,6 +257,8 @@ final class BrowserUITests: XCTestCase {
     func testNewTabPlacementAndViewedTabBackForward() {
         app.terminate(); app.launchArguments = ["--ui-testing", "--ui-tab-navigation-fixture"]; app.launch()
         XCTAssertTrue(app.webViews.staticTexts["Tab A fixture"].waitForExistence(timeout: 15))
+        XCTAssertTrue(app.buttons["addressLeft-previousViewedTab"].exists)
+        XCTAssertTrue(app.buttons["addressRight-nextViewedTab"].exists)
         XCTAssertFalse(app.buttons["previousViewedTabButton"].isEnabled)
         tapMenuControl("menuButton")
         let menuNewTab = app.buttons.matching(NSPredicate(format: "label == %@ AND identifier != 'newTabButton'", "新しいタブ")).firstMatch
