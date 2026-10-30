@@ -12,6 +12,16 @@
       "iconURL": "https://raw.githubusercontent.com/koyuuuuu/personal-browser-distribution/main/icon.png",
       "versions": [
         {
+          "version": "0.8.0",
+          "buildVersion": "46",
+          "date": "2026-10-30T03:32:58.793517+00:00",
+          "localizedDescription": "選択テキストを自作ブラウザの新規タブでWeb検索。標準選択メニューの追加項目と、WebKitで表示できない場合の画面内検索ボタンに対応。mybrowser://search?text= でショートカットから共有テキストを検索。既存のURL受信・保存データ・検索エンジン設定を維持し、新規利用時の初期検索エンジンはGoogle。",
+          "downloadURL": "https://github.com/koyuuuuu/personal-browser-distribution/releases/download/v0.8.0-build.46/PersonalBrowser.ipa",
+          "size": 5285612,
+          "minOSVersion": "17.0",
+          "sha256": "54e290c069d29ae06eeafee4c33adaa964f99aae55c38b959a83a3b2f5b9c8bf"
+        },
+        {
           "version": "0.7.0",
           "buildVersion": "45",
           "date": "2026-10-28T13:31:51.614384+00:00",

@@ -2,6 +2,34 @@
   "releases": [
     {
       "file": "PersonalBrowser.ipa",
+      "sha256": "54e290c069d29ae06eeafee4c33adaa964f99aae55c38b959a83a3b2f5b9c8bf",
+      "bundle_id": "local.personalbrowser.app",
+      "version": "0.8.0",
+      "build": "46",
+      "minimum_ios": "17.0",
+      "target_ios": "18.4.1",
+      "architecture": "arm64",
+      "platform": "iOS device",
+      "embedded_profile": false,
+      "signature_resources": false,
+      "installation_verified": false,
+      "source_commit": "cbe10d814137dd3b29fc9f67690addc8f0b64f03",
+      "data_schema": 1,
+      "size": 5285612,
+      "date": "2026-10-30T03:32:58.793517+00:00",
+      "description": "選択テキストを自作ブラウザの新規タブでWeb検索。標準選択メニューの追加項目と、WebKitで表示できない場合の画面内検索ボタンに対応。mybrowser://search?text= でショートカットから共有テキストを検索。既存のURL受信・保存データ・検索エンジン設定を維持し、新規利用時の初期検索エンジンはGoogle。",
+      "appPermissions": {
+        "entitlements": [],
+        "privacy": {
+          "NSCameraUsageDescription": "閲覧中のWebサイトでカメラを使用するために必要です。",
+          "NSLocalNetworkUsageDescription": "自宅のネットワークにある自作アプリや動画サーバーへ接続するために使用します。",
+          "NSMicrophoneUsageDescription": "閲覧中のWebサイトでマイクを使用するために必要です。"
+        }
+      },
+      "tag": "v0.8.0-build.46"
+    },
+    {
+      "file": "PersonalBrowser.ipa",
       "sha256": "bf172c54772a798c4e640bcdd3d5f7368ba785a8179ad125ee646c7b1b3164d7",
       "bundle_id": "local.personalbrowser.app",
       "version": "0.7.0",
