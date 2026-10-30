@@ -1,0 +1,69 @@
+{
+  "date_utc": "2026-10-30",
+  "version": "0.8.0",
+  "build": "46",
+  "source_commit": "cbe10d814137dd3b29fc9f67690addc8f0b64f03",
+  "tag": "v0.8.0-build.46",
+  "ci_run": "https://github.com/koyuuuuu/personal-browser/actions/runs/40997220643",
+  "delivery_status": "published",
+  "source_visibility": "public",
+  "public_release": "https://github.com/koyuuuuu/personal-browser-distribution/releases/tag/v0.8.0-build.46",
+  "source_url": "https://raw.githubusercontent.com/koyuuuuu/personal-browser-distribution/main/source.json",
+  "ipa": {
+    "sha256": "54e290c069d29ae06eeafee4c33adaa964f99aae55c38b959a83a3b2f5b9c8bf",
+    "size": 5285612,
+    "bundle_id": "local.personalbrowser.app",
+    "version": "0.8.0",
+    "build": "46",
+    "minimum_ios": "17.0",
+    "architecture": "arm64",
+    "data_schema": 1
+  },
+  "checks": {
+    "python": 50,
+    "macos_core": 66,
+    "ui_passed": 2,
+    "ui_cases": [
+      "test00ExternalURLColdLaunchBackgroundAndInvalidInput",
+      "testSelectedTextSearchOpensAnAdjacentNewTab"
+    ],
+    "real_dom_selection_to_new_tab_and_original_retained": "passed using public overlay fallback",
+    "external_url_os_dispatch_cold_warm_invalid": "passed",
+    "text_route_engines_japanese_special_characters_long_limits": "passed Core",
+    "initial_google_and_existing_engine_retention": "passed Core",
+    "compatibility_roundtrips": [
+      "v0.1.0 library",
+      "v0.4.2 favorites",
+      "v0.6.0 toolbar"
+    ],
+    "anonymous_latest_ipa_feed_hash_size_identity": "passed",
+    "source_and_public_ipa_sha_match": true,
+    "media_handler_and_script": {
+      "unchanged_from_0_7_0": true,
+      "sha256": "8233d9cc7ff0b82e3aa24f9ad97543226dd5c9124dfd80ce1d73ab3de5b91edc"
+    },
+    "mybrowser_scheme": "present",
+    "audio_background_mode": "present",
+    "full_ui_suite": "not run; minimal scoped checks per user request",
+    "full_old_ipa_download_audit": "not repeated; retained assets checked by metadata"
+  },
+  "selection_ui": {
+    "standard_menu": "public WKWebView.buildMenu appends to super menu; WebKit presentation context dependent",
+    "fallback": "page top-right 自作ブラウザで検索 shown while DOM text selection exists",
+    "standard_copy_share_lookup": "not removed or replaced; system presentation not asserted by fallback test",
+    "storage": "transient isolated-world selection, cleared on URL change/release, passwords excluded",
+    "selected_query_limit_utf8_bytes": 16384
+  },
+  "data_preservation": {
+    "bundle_id": "local.personalbrowser.app",
+    "schema": 1,
+    "stored_engine": "preserved; only new-install default changed",
+    "cookie_store": "same default/nonpersistent WebKit stores",
+    "extra_entitlements": false
+  },
+  "rollback": {
+    "v0.7.0-build.45": "bf172c54772a798c4e640bcdd3d5f7368ba785a8179ad125ee646c7b1b3164d7",
+    "old_tags_and_ipas": "retained unchanged"
+  },
+  "device_acceptance": "0.8.0 user iPhone operation not yet reported; native menu/PDF contexts and real provider URL limits require device/provider observation"
+}

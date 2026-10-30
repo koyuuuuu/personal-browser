@@ -2,7 +2,7 @@
 
 iPhone 12 / iOS 18.4.1向けの個人用ブラウザ。SwiftUIとWKWebViewで新規実装し、Windowsで編集、クラウドmacOSでビルド、SideStoreで実機へ導入・再署名する。
 
-**最新配信版は0.7.0 build 45。新規タブの隣接配置と、タブの閲覧順を戻る／進むボタンに対応。** [リリース](https://github.com/koyuuuuu/personal-browser-distribution/releases/tag/v0.7.0-build.45)、[配信記録](docs/validation-0.7.0-2026-10-28.json)。本体ソースは[koyuuuuu/personal-browser](https://github.com/koyuuuuu/personal-browser)で公開し、標準の公開リポジトリ用Actionsランナーを利用する。有料ランナーや課金設定は追加していない。
+**最新配信版は0.8.0 build 46。選択テキストの新規タブ検索と、共有テキスト用ショートカットに対応。** [リリース](https://github.com/koyuuuuu/personal-browser-distribution/releases/tag/v0.8.0-build.46)、[配信記録](docs/validation-0.8.0-2026-10-30.json)。本体ソースは[koyuuuuu/personal-browser](https://github.com/koyuuuuu/personal-browser)で公開し、標準の公開リポジトリ用Actionsランナーを利用する。有料ランナーや課金設定は追加していない。
 
 [v0.1.0の保存済みリリース](https://github.com/koyuuuuu/personal-browser/releases/tag/v0.1.0)から、初期版のビルド元とIPA保管先を参照できる。初期IPAは`ipa-archive`ブランチ、新版はGitHub Releasesに保存し、Actionsの1日保持期限が過ぎても取得できる。arm64実機用、最低iOS 17.0。SideStoreで個人用に署名して導入する。現在は本体リポジトリ全体が公開されている。
 
@@ -51,3 +51,5 @@ mainへのアプリ・テスト・ビルド・配信コードのpushで、Linux�
 0.6.0 build42を配信済み。Python48件・Core58件・変更範囲のUI4件と実機用ビルドに成功。更新可能な広告フィルターとサイト独自のお気に入りアイコンを追加。[構成・設定・ライセンス](docs/changes-0.6.0.ja.md)。
 
 0.7.0 build45を配信済み。Python49件・Core63件・変更範囲のUI4件と旧版とのデータ互換性検査に成功。リンク・メニューで開くタブを元タブの隣へ配置し、タブを見ていた順に戻る／進むボタンを追加。ツールバーとタブ一覧の＋は末尾追加を維持。[仕様と設定](docs/changes-0.7.0.ja.md)。
+
+0.8.0 build46を配信済み。選択メニューへの検索項目とWebKit制約時の画面内ボタン、mybrowser://search?text=、Googleの初期値を追加。既存の検索エンジン設定を維持。[使い方](docs/changes-0.8.0.ja.md)、[共有ショートカット手順](docs/shortcuts.ja.md)。
