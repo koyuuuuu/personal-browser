@@ -25,6 +25,22 @@ final class BrowserUITests: XCTestCase {
         }
     }
 
+    func testSelectedTextSearchOpensAnAdjacentNewTab() {
+        navigate("http://127.0.0.1:18765/selection-fixture")
+        let select = app.webViews.buttons["Select sample text"]
+        XCTAssertTrue(select.waitForExistence(timeout: 10)); select.tap()
+        let search = app.buttons["selectedTextSearchButton"]
+        XCTAssertTrue(search.waitForExistence(timeout: 5), "Selection must reach the public fallback UI")
+        search.tap()
+        let field = app.textFields["addressField"]
+        let expected = "日本語 C++ & # %2B"
+        XCTAssertEqual(XCTWaiter.wait(for: [XCTNSPredicateExpectation(predicate: NSPredicate { _, _ in field.value as? String == expected }, object: nil)], timeout: 5), .completed)
+        app.buttons["tabsButton"].tap()
+        XCTAssertTrue(app.navigationBars["タブ 2"].waitForExistence(timeout: 5))
+        let original = app.buttons["Selection fixture"]
+        XCTAssertTrue(original.exists, "Searching must retain the original tab")
+    }
+
     func testOrdinaryLinkAndFormStayInBrowserWithoutFrameInterruption() {
         navigate("http://127.0.0.1:18765/navigation-fixture")
         let page = app.webViews.firstMatch

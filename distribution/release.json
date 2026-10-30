@@ -1,10 +1,10 @@
 {
-  "version": "0.7.0",
+  "version": "0.8.0",
   "bundle_id": "local.personalbrowser.app",
   "data_schema": 1,
   "public_repository": "koyuuuuu/personal-browser-distribution",
   "name": "Personal Browser",
   "developer_name": "Personal Browser",
   "description": "自分専用のブラウザ。タブ、履歴、ブックマーク、プライベート閲覧、UIカスタマイズに対応。",
-  "release_notes": "リンク・メニュー・ポップアップの新規タブを元のタブの隣へ配置。ツールバーとタブ一覧の＋は末尾追加を維持。タブを見ていた順に何段階も戻る・進むボタンを通常ツールバーとアドレスバー左右へ追加可能に。閉じたタブを飛ばし、プライベートの閲覧順は保存しません。旧版向けのボタン設定・既存データ形式を維持。"
+  "release_notes": "選択テキストを自作ブラウザの新規タブでWeb検索。標準選択メニューの追加項目と、WebKitで表示できない場合の画面内検索ボタンに対応。mybrowser://search?text= でショートカットから共有テキストを検索。既存のURL受信・保存データ・検索エンジン設定を維持し、新規利用時の初期検索エンジンはGoogle。"
 }

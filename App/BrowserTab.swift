@@ -63,6 +63,8 @@ final class BrowserTab: NSObject, ObservableObject, Identifiable, WKNavigationDe
     @Published var hasContent = false
     @Published var errorMessage: String?
     @Published var dialog: JavaScriptDialog?
+    @Published private(set) var selectedText = ""
+    var onSearchText: ((String) -> Void)?
     @Published private(set) var hasActiveMedia = false
     @Published private(set) var isPictureInPicture = false
     @Published var previewData: Data? { didSet { previewGeneration = UUID() } }
@@ -127,7 +129,9 @@ final class BrowserTab: NSObject, ObservableObject, Identifiable, WKNavigationDe
         let handler = MediaMessageHandler(tab: self)
         configuration.userContentController.add(handler, name: "personalBrowserMedia")
         configuration.userContentController.addUserScript(WKUserScript(source: Self.mediaScript, injectionTime: .atDocumentStart, forMainFrameOnly: false))
-        let view = WKWebView(frame: .zero, configuration: configuration)
+        let view = SelectedTextWebView(frame: .zero, configuration: configuration)
+        view.onSelection = { [weak self] in self?.selectedText = $0 }
+        view.onSearch = { [weak self] in self?.onSearchText?($0) }
         liveWebView = view
         view.navigationDelegate = self; view.uiDelegate = self
         view.allowsBackForwardNavigationGestures = swipeNavigation
@@ -150,6 +154,7 @@ final class BrowserTab: NSObject, ObservableObject, Identifiable, WKNavigationDe
             view.observe(\.url, options: [.new]) { [weak self] view, _ in
                 Task { @MainActor in
                     guard let self, let url = view.url else { return }
+                    (view as? SelectedTextWebView)?.clearSelection()
                     self.url = url; self.onStateChange?()
                 }
             },
@@ -257,6 +262,7 @@ final class BrowserTab: NSObject, ObservableObject, Identifiable, WKNavigationDe
     }
 
     private func releaseWebView() {
+        selectedText = ""
         dialog?.resolve(nil); dialog = nil
         liveWebView?.scrollView.delegate = nil
         liveWebView?.stopLoading(); liveWebView?.navigationDelegate = nil; liveWebView?.uiDelegate = nil
@@ -331,6 +337,7 @@ final class BrowserTab: NSObject, ObservableObject, Identifiable, WKNavigationDe
         onConnectionRequest = nil; trustsCertificate = nil; rememberCertificate = nil; rememberHTTP = nil
         onPreview = nil; onVerticalScroll = nil; onRevealChrome = nil; onVisit = nil; onStateChange = nil; onPopup = nil; onClose = nil; onExternalURL = nil
         onAnalyzeLink = nil; onMessageLink = nil; onSaveLink = nil; onOpenLink = nil; onShareLink = nil; onOpenInSafari = nil; onOpenInBrowser = nil; onDownload = nil
+        onSearchText = nil
     }
 
     func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {

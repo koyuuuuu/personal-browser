@@ -1,14 +1,19 @@
 import Foundation
 
 public enum IncomingBrowserLink {
-    public static func destination(_ incoming: URL) throws -> URL {
-        guard incoming.absoluteString.utf8.count <= 65_536,
+    public static func destination(_ incoming: URL, engine: SearchEngine = .google) throws -> URL {
+        guard incoming.absoluteString.utf8.count <= 262_144,
               let parts = URLComponents(url: incoming, resolvingAgainstBaseURL: false),
-              parts.scheme?.lowercased() == "mybrowser", parts.host?.lowercased() == "open",
+              parts.scheme?.lowercased() == "mybrowser", ["open", "search"].contains(parts.host?.lowercased() ?? ""),
               parts.user == nil, parts.password == nil, parts.port == nil,
               parts.path.isEmpty || parts.path == "/", parts.fragment == nil,
-              let items = parts.queryItems, items.count == 1, items[0].name == "url",
-              let value = items[0].value, !value.isEmpty,
+              let items = parts.queryItems, items.count == 1,
+              let value = items[0].value, !value.isEmpty else { throw AddressError.invalidURL }
+        if parts.host?.lowercased() == "search" {
+            guard items[0].name == "text" else { throw AddressError.invalidURL }
+            return try TextSearch.url(value, engine: engine)
+        }
+        guard items[0].name == "url",
               !value.unicodeScalars.contains(where: { CharacterSet.controlCharacters.contains($0) }),
               let target = URLComponents(string: value),
               let url = target.url, WebURLPolicy.allows(url),

@@ -5,6 +5,14 @@ from verification_plan import AREAS, ROOT, changed_methods, plan
 
 
 class VerificationPolicyTests(unittest.TestCase):
+    def test_selected_text_change_runs_only_selection_and_external_entry_checks(self):
+        result = plan(["App/SelectedTextWebView.swift", "App/SelectedTextSearch.swift", "App/BrowserChrome.swift", "App/BrowserTab.swift", "App/BrowserStore.swift", "Sources/BrowserCore/LinkRouting.swift", "Sources/BrowserCore/Models.swift"],
+                      store_changes={"makeTab", "receiveExternalURL"}, chrome_changes={"viewport"},
+                      tab_changes={"preamble", "createWebView", "releaseWebView", "dispose"})
+        self.assertEqual(result["ui_tests"], sorted(AREAS["selection-search"] + AREAS["external-links"]))
+        self.assertTrue(result["compatibility"])
+        self.assertFalse(result["verify_archives"])
+
     def test_ci_only_changes_never_boot_simulator_or_republish_app(self):
         result = plan(["scripts/verification_plan.py", ".github/workflows/ios.yml", "README.md"])
         self.assertEqual(result["ui_tests"], [])

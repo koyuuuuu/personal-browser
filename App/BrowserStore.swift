@@ -208,6 +208,10 @@ final class BrowserStore: ObservableObject {
         tab.onPreferApplication = { [weak self] url in self?.preferApplication(for: url) }
         tab.onExternalURL = { [weak self] url in self?.externalURL = url }
         tab.onOpenLink = { [weak self, weak tab] url, isPrivate in _ = self?.newTab(isPrivate: isPrivate, url: url, after: tab?.id) }
+        tab.onSearchText = { [weak self, weak tab] text in
+            guard let self, let tab else { return }
+            self.searchSelection(text, from: tab)
+        }
         tab.onShareLink = { [weak self] url in self?.shareRequest = ShareRequest(url: url) }
         tab.onAnalyzeLink = { [weak self] url in self?.openWatchHTML(url) }
         tab.onMessageLink = { [weak self] url in self?.messageRequest = ShareRequest(url: url) }
@@ -285,7 +289,7 @@ final class BrowserStore: ObservableObject {
 
     func receiveExternalURL(_ incoming: URL) {
         do {
-            let url = try IncomingBrowserLink.destination(incoming)
+            let url = try IncomingBrowserLink.destination(incoming, engine: snapshot.settings.searchEngine)
             if isClearingData {
                 if pendingIncomingLinks.count < 20 { pendingIncomingLinks.append(url) }
                 else { notice = "受信したリンクが多すぎます。処理完了後にもう一度共有してください。" }
@@ -293,7 +297,7 @@ final class BrowserStore: ObservableObject {
             }
             preferBrowser(for: url)
             if newTab(url: url) != nil { NotificationCenter.default.post(name: .closeBrowserLibrary, object: nil) }
-        } catch { notice = "共有されたURLを開けません。HTTP・HTTPSのリンクをURLエンコードして渡してください。" }
+        } catch { notice = "共有されたURL・テキストを開けません。\(error.localizedDescription)" }
     }
     func preferBrowser(for url: URL) {
         guard links.opensApplication(url) else { return }

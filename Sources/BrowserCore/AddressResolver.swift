@@ -49,7 +49,7 @@ public enum WebURLPolicy {
 }
 
 public enum AddressResolver {
-    public static func resolve(_ text: String, engine: SearchEngine = .duckDuckGo) throws -> URL {
+    public static func resolve(_ text: String, engine: SearchEngine = .google) throws -> URL {
         let input = text.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !input.isEmpty else { throw AddressError.empty }
         if input.lowercased().hasPrefix("https:") || input.lowercased().hasPrefix("http:") {

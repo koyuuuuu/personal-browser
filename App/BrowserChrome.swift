@@ -72,6 +72,14 @@ struct TabBrowserView: View {
                 AddressSwipeOverlay(controller: swipe, store: store, width: width, height: geometry.size.height)
                     .allowsHitTesting(false).accessibilityHidden(true)
             }
+            .overlay(alignment: .topTrailing) {
+                if tab.hasContent, !tab.selectedText.isEmpty {
+                    let text = tab.selectedText
+                    Button("自作ブラウザで検索", systemImage: "magnifyingglass") { store.searchSelection(text, from: tab) }
+                        .font(.caption).buttonStyle(.borderedProminent).padding(8)
+                        .accessibilityIdentifier("selectedTextSearchButton")
+                }
+            }
             .frame(width: width, height: geometry.size.height)
             .clipped().contentShape(Rectangle())
         }

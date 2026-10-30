@@ -10,6 +10,8 @@ ROOT = Path(__file__).resolve().parents[1]
 
 # One representative scenario per behavior, rather than overlapping smoke tests.
 AREAS = {
+    "selection-search": ["testSelectedTextSearchOpensAnAdjacentNewTab"],
+    "external-links": ["test00ExternalURLColdLaunchBackgroundAndInvalidInput"],
     "tab-navigation": ["testNewTabPlacementAndViewedTabBackForward"],
     "blocking": ["testAdBlockingCanBeConfigured"],
     "tabs": ["testSwipeClosingGridReflowsAndRemainsUsableAfterRepeatedDeletions", "testOverviewOpensAtLastActiveTab"],
@@ -35,6 +37,9 @@ PATH_AREAS = {
     "App/PresentationSettingsView.swift": ["settings"], "App/ContentBlocking.swift": ["blocking"],
     "App/PersonalBrowserApp.swift": ["launch", "links"], "App/Info.plist": ["launch", "links"],
     "App/SiteIconLoader.swift": ["favorites"],
+    "App/SelectedTextWebView.swift": ["selection-search"],
+    "App/SelectedTextSearch.swift": ["selection-search"],
+    "Sources/BrowserCore/TextSearch.swift": ["selection-search"],
     "Sources/BrowserCore/BlockingRules.swift": ["blocking"],
     "Sources/BrowserCore/SiteIconPolicy.swift": ["favorites"],
     "App/ConnectionPrompt.swift": ["security"], "App/SystemSharing.swift": ["sharing"],
@@ -48,7 +53,7 @@ PATH_AREAS = {
     "Sources/BrowserCore/TabSelectionHistory.swift": ["tabs", "tab-navigation"],
     "Sources/BrowserCore/ToolbarCompatibility.swift": ["tab-navigation"],
     "Sources/BrowserCore/TabPreviewStore.swift": ["previews"],
-    "Sources/BrowserCore/LinkRouting.swift": ["links"],
+    "Sources/BrowserCore/LinkRouting.swift": ["external-links"],
     "Sources/BrowserCore/ConnectionSecurity.swift": ["security"],
     "Sources/BrowserCore/SearchSuggestions.swift": ["search"],
     "Sources/BrowserCore/UpdateFeed.swift": ["updates"],
@@ -107,9 +112,12 @@ def plan(changed, store_changes=(), ui_changes=(), tab_changes=None, pending_app
     areas = set()
     for path in changed:
         areas.update(PATH_AREAS.get(path, ()))
+    selection_context = bool(changed & {"App/SelectedTextWebView.swift", "App/SelectedTextSearch.swift"})
     if "App/BrowserChrome.swift" in changed:
         action_methods = {"disabledAddress", "performAddress", "perform", "actionButton"}
-        if chrome_changes is not None and set(chrome_changes) <= action_methods:
+        if selection_context and chrome_changes is not None and set(chrome_changes) <= {"viewport"}:
+            areas.add("selection-search")
+        elif chrome_changes is not None and set(chrome_changes) <= action_methods:
             areas.add("tab-navigation")
         else:
             areas.update(["chrome", "search"])
@@ -128,14 +136,20 @@ def plan(changed, store_changes=(), ui_changes=(), tab_changes=None, pending_app
         if store_changes & {"preamble", "init"}:
             areas.update(["launch", "tabs"])
         for name in store_changes:
-            if re.search(r"Tab|^select$|^close$|^reopen", name): areas.update(["tabs", "tab-navigation"])
+            if name == "makeTab" and selection_context and store_changes <= {"makeTab", "receiveExternalURL"}:
+                areas.add("selection-search")
+            elif re.search(r"Tab|^select$|^close$|^reopen", name): areas.update(["tabs", "tab-navigation"])
             if re.search(r"Favorite", name): areas.add("favorites")
             if re.search(r"Bookmark|Folder|History|importPages", name): areas.add("library")
             if re.search(r"Chrome|Landscape|Presentation", name): areas.add("chrome")
             if re.search(r"Preview", name): areas.add("previews")
-            if re.search(r"ExternalURL|^navigate$|^open$|LinkPreference", name): areas.add("links")
+            if re.search(r"ExternalURL", name): areas.add("external-links")
+            if re.search(r"^navigate$|^open$|LinkPreference", name): areas.add("links")
             if re.search(r"Search|^search$", name): areas.add("search")
     tests = {test for area in areas for test in AREAS[area]}
+    # Selection search already launches and renders a real WKWebView fixture.
+    if "selection-search" in areas:
+        tests.difference_update(AREAS["launch"])
     allowed = {test for group in AREAS.values() for test in group}
     tests.update(set(ui_changes) & allowed)
     if "UITests/BrowserUITests.swift" in changed and any(not x.startswith("test") for x in ui_changes):

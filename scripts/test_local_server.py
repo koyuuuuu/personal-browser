@@ -49,6 +49,11 @@ def main():
                 self.send_header('Content-Length', '0'); self.end_headers(); return
             if self.path == '/audio.wav':
                 data, mime = audio, 'audio/wav'
+            elif self.path == '/selection-fixture':
+                data = '''<!doctype html><meta name="viewport" content="width=device-width,initial-scale=1">
+                <title>Selection fixture</title><p id="sample">日本語 C++ &amp; # %2B</p>
+                <button onclick="const r=document.createRange();r.selectNodeContents(document.getElementById('sample'));const s=window.getSelection();s.removeAllRanges();s.addRange(r);">Select sample text</button>'''.encode('utf-8')
+                mime = 'text/html; charset=utf-8'
             elif self.path == '/navigation-fixture':
                 data = b'<!doctype html><meta name="viewport" content="width=device-width,initial-scale=1"><a href="/linked">Browser link</a><form method="post" action="/submitted"><input type="hidden" name="value" value="one"><button>Submit POST</button></form>'
                 mime = 'text/html; charset=utf-8'

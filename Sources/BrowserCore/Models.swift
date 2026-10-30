@@ -34,7 +34,7 @@ public enum BrowserAction: String, Codable, CaseIterable, Identifiable, Sendable
 
 public struct BrowserSettings: Codable, Equatable, Sendable {
     public var toolbarPosition: ToolbarPosition = .bottom
-    public var searchEngine: SearchEngine = .duckDuckGo
+    public var searchEngine: SearchEngine = .google
     public var swipeNavigation: Bool = true
     public var actions: [BrowserAction] = [.back, .forward, .reload, .tabs, .bookmarks]
     public init() {}
