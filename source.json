@@ -12,6 +12,16 @@
       "iconURL": "https://raw.githubusercontent.com/koyuuuuu/personal-browser-distribution/main/icon.png",
       "versions": [
         {
+          "version": "0.9.0",
+          "buildVersion": "52",
+          "date": "2026-10-31T10:10:26.200032+00:00",
+          "localizedDescription": "設定に音声の同時再生モードを追加。再生前のmixWithOthers準備と対応Web音声の非排他セッション要求を個別に切替可能。再生中タブの保持を補強し、既存の再生方式とデータを維持。YouTube・DRM・全画面・他アプリ等の排他制御による制限は残り、全組合せの同時再生は保証しません。",
+          "downloadURL": "https://github.com/koyuuuuu/personal-browser-distribution/releases/download/v0.9.0-build.52/PersonalBrowser.ipa",
+          "size": 5305902,
+          "minOSVersion": "17.0",
+          "sha256": "1608c4338c8c1e7ad13c1cc4f2ea2edbcfaed82ec49ae749828f37b06d2ff11c"
+        },
+        {
           "version": "0.8.0",
           "buildVersion": "46",
           "date": "2026-10-30T03:32:58.793517+00:00",
