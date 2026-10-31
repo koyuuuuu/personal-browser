@@ -10,6 +10,7 @@ ROOT = Path(__file__).resolve().parents[1]
 
 # One representative scenario per behavior, rather than overlapping smoke tests.
 AREAS = {
+    "audio-mixing": ["testConcurrentAudioPreferenceAndRealPlayersAcrossTabs"],
     "selection-search": ["testSelectedTextSearchOpensAnAdjacentNewTab"],
     "external-links": ["test00ExternalURLColdLaunchBackgroundAndInvalidInput"],
     "tab-navigation": ["testNewTabPlacementAndViewedTabBackForward"],
@@ -37,6 +38,8 @@ PATH_AREAS = {
     "App/PresentationSettingsView.swift": ["settings"], "App/ContentBlocking.swift": ["blocking"],
     "App/PersonalBrowserApp.swift": ["launch", "links"], "App/Info.plist": ["launch", "links"],
     "App/SiteIconLoader.swift": ["favorites"],
+    "App/AudioMixingController.swift": ["audio-mixing"],
+    "App/AudioMixingSettingsView.swift": ["audio-mixing"],
     "App/SelectedTextWebView.swift": ["selection-search"],
     "App/SelectedTextSearch.swift": ["selection-search"],
     "Sources/BrowserCore/TextSearch.swift": ["selection-search"],
@@ -111,7 +114,10 @@ def plan(changed, store_changes=(), ui_changes=(), tab_changes=None, pending_app
     changed = set(changed)
     areas = set()
     for path in changed:
-        areas.update(PATH_AREAS.get(path, ()))
+        if path == "App/SettingsView.swift" and "App/AudioMixingSettingsView.swift" in changed:
+            areas.add("audio-mixing")
+        else:
+            areas.update(PATH_AREAS.get(path, ()))
     selection_context = bool(changed & {"App/SelectedTextWebView.swift", "App/SelectedTextSearch.swift"})
     if "App/BrowserChrome.swift" in changed:
         action_methods = {"disabledAddress", "performAddress", "perform", "actionButton"}
@@ -148,7 +154,7 @@ def plan(changed, store_changes=(), ui_changes=(), tab_changes=None, pending_app
             if re.search(r"Search|^search$", name): areas.add("search")
     tests = {test for area in areas for test in AREAS[area]}
     # Selection search already launches and renders a real WKWebView fixture.
-    if "selection-search" in areas:
+    if areas & {"selection-search", "audio-mixing"}:
         tests.difference_update(AREAS["launch"])
     allowed = {test for group in AREAS.values() for test in group}
     tests.update(set(ui_changes) & allowed)

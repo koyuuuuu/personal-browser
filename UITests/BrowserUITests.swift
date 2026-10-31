@@ -25,6 +25,56 @@ final class BrowserUITests: XCTestCase {
         }
     }
 
+    func testConcurrentAudioPreferenceAndRealPlayersAcrossTabs() {
+        var page = app.webViews.containing(.staticText, identifier: "Concurrent A").firstMatch
+        func settings() {
+            tapMenuControl("menuButton"); app.buttons["設定"].tap()
+            tapMenuControl("audioMixingSettingsLink")
+        }
+        func progress() -> (Double, Double, Bool, Bool) {
+            let value = page.staticTexts.matching(NSPredicate(format: "label MATCHES %@", "[0-9.]+,[0-9.]+,(true|false),(true|false)")).firstMatch.label
+            let p = value.split(separator: ",").map(String.init)
+            guard p.count == 4 else { return (0,0,false,false) }
+            return (Double(p[0]) ?? 0,Double(p[1]) ?? 0,p[2] == "true",p[3] == "true")
+        }
+        func advance(first: Bool, second: Bool) {
+            let start = progress()
+            let condition = NSPredicate { _, _ in
+                let p = progress()
+                return p.2 == first && p.3 == second && (!first || p.0 > start.0 + 0.3) && (!second || p.1 > start.1 + 0.3)
+            }
+            XCTAssertEqual(XCTWaiter.wait(for: [XCTNSPredicateExpectation(predicate: condition, object: nil)], timeout: 8), .completed)
+        }
+        settings()
+        let toggle = app.switches["concurrentAudioToggle"]
+        XCTAssertTrue(toggle.waitForExistence(timeout: 5))
+        if toggle.value as? String != "1" { toggle.tap() }
+        XCTAssertEqual(toggle.value as? String, "1")
+        app.navigationBars["音声の同時再生"].buttons["設定"].tap()
+        tapMenuControl("閉じる")
+        navigate("http://127.0.0.1:18765/concurrent-audio-a")
+        let first = page.buttons["Play first"]
+        XCTAssertTrue(first.waitForExistence(timeout: 10)); first.tap()
+        advance(first: true, second: false)
+        page.buttons["Play second"].tap(); advance(first: true, second: true)
+        tapMenuControl("menuButton"); app.buttons["新しいタブ"].tap()
+        navigate("http://127.0.0.1:18765/concurrent-audio-b")
+        page = app.webViews.containing(.staticText, identifier: "Concurrent B").firstMatch
+        XCTAssertTrue(page.buttons["Play first"].waitForExistence(timeout: 10)); page.buttons["Play first"].tap(); advance(first: true, second: false)
+        app.buttons["tabsButton"].tap(); app.buttons["Concurrent A"].tap()
+        page = app.webViews.containing(.staticText, identifier: "Concurrent A").firstMatch
+        advance(first: true, second: true)
+        page.buttons["Pause first"].tap(); advance(first: false, second: true)
+        page.buttons["Pause both"].tap()
+        app.buttons["tabsButton"].tap(); app.buttons["Concurrent B"].tap()
+        page = app.webViews.containing(.staticText, identifier: "Concurrent B").firstMatch
+        advance(first: true, second: false)
+        page.buttons["Pause both"].tap()
+        XCUIDevice.shared.press(.home); relaunchPreservingData()
+        settings(); XCTAssertEqual(toggle.value as? String, "1")
+        toggle.tap(); XCTAssertEqual(toggle.value as? String, "0")
+    }
+
     func testSelectedTextSearchOpensAnAdjacentNewTab() {
         navigate("http://127.0.0.1:18765/selection-fixture")
         let select = app.webViews.buttons["Select sample text"]

@@ -5,6 +5,13 @@ from verification_plan import AREAS, ROOT, changed_methods, plan
 
 
 class VerificationPolicyTests(unittest.TestCase):
+    def test_audio_mixing_selects_only_real_audio_scenario_without_storage_roundtrip(self):
+        result = plan(["App/AudioMixingController.swift", "App/AudioMixingSettingsView.swift", "App/SettingsView.swift", "App/BrowserTab.swift"],
+                      tab_changes={"resolve", "createWebView", "releaseWebView"})
+        self.assertEqual(result["ui_tests"], AREAS["audio-mixing"])
+        self.assertFalse(result["compatibility"])
+        self.assertFalse(result["verify_archives"])
+
     def test_selected_text_change_runs_only_selection_and_external_entry_checks(self):
         result = plan(["App/SelectedTextWebView.swift", "App/SelectedTextSearch.swift", "App/BrowserChrome.swift", "App/BrowserTab.swift", "App/BrowserStore.swift", "Sources/BrowserCore/LinkRouting.swift", "Sources/BrowserCore/Models.swift"],
                       store_changes={"makeTab", "receiveExternalURL"}, chrome_changes={"viewport"},

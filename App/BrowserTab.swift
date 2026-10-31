@@ -41,7 +41,8 @@ final class BrowserTab: NSObject, ObservableObject, Identifiable, WKNavigationDe
     var existingWebView: WKWebView? { liveWebView }
     var isLive: Bool { liveWebView != nil }
     var isCapturingPreview: Bool { snapshotInProgress }
-    var isProtectedForMedia: Bool { hasActiveMedia || isPictureInPicture }
+    var isProtectedForMedia: Bool { hasActiveMedia || isPictureInPicture || hasMixingPlayback }
+    @Published private(set) var hasMixingPlayback = false
     private var previousScrollY: CGFloat?
     var onConnectionRequest: ((ConnectionRequest) -> Void)?
     var trustsCertificate: ((String, String) -> Bool)?
@@ -133,6 +134,9 @@ final class BrowserTab: NSObject, ObservableObject, Identifiable, WKNavigationDe
         view.onSelection = { [weak self] in self?.selectedText = $0 }
         view.onSearch = { [weak self] in self?.onSearchText?($0) }
         liveWebView = view
+        AudioMixingController.shared.attach(view) { [weak self] value in
+            if self?.hasMixingPlayback != value { self?.hasMixingPlayback = value }
+        }
         view.navigationDelegate = self; view.uiDelegate = self
         view.allowsBackForwardNavigationGestures = swipeNavigation
         view.isFindInteractionEnabled = true
@@ -262,6 +266,8 @@ final class BrowserTab: NSObject, ObservableObject, Identifiable, WKNavigationDe
     }
 
     private func releaseWebView() {
+        if let view = liveWebView { AudioMixingController.shared.detach(view) }
+        hasMixingPlayback = false
         selectedText = ""
         dialog?.resolve(nil); dialog = nil
         liveWebView?.scrollView.delegate = nil

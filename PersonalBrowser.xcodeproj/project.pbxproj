@@ -5,6 +5,26 @@
 	};
 	"objectVersion" = 56;
 	"objects" = {
+		"F157FF45225FAB6A0C23FFB2" = {
+			"isa" = "PBXFileReference";
+			"lastKnownFileType" = "sourcecode.swift";
+			"path" = "AudioMixingController.swift";
+			"sourceTree" = "<group>";
+		};
+		"D7E598445737DD44E09FF002" = {
+			"isa" = "PBXBuildFile";
+			"fileRef" = "F157FF45225FAB6A0C23FFB2";
+		};
+		"AF4B2F391E8945DF171E8D0F" = {
+			"isa" = "PBXFileReference";
+			"lastKnownFileType" = "sourcecode.swift";
+			"path" = "AudioMixingSettingsView.swift";
+			"sourceTree" = "<group>";
+		};
+		"FE3000A0FF59936B42A8E29C" = {
+			"isa" = "PBXBuildFile";
+			"fileRef" = "AF4B2F391E8945DF171E8D0F";
+		};
 		"1F4A93E3356F2FB817A0CC43" = {
 			"isa" = "PBXFileReference";
 			"lastKnownFileType" = "sourcecode.swift";
@@ -256,6 +276,8 @@
 		"1C48CE29E4E135EE62951B22" = {
 			"isa" = "PBXGroup";
 			"children" = (
+				"F157FF45225FAB6A0C23FFB2",
+				"AF4B2F391E8945DF171E8D0F",
 				"1F4A93E3356F2FB817A0CC43",
 				"CCE61BA7C015A9311FAA2AA1",
 				"D8BC5E1C0733829E9AE90818",
@@ -617,7 +639,7 @@
 				"INFOPLIST_FILE" = "App/Info.plist";
 				"GENERATE_INFOPLIST_FILE" = "NO";
 				"CURRENT_PROJECT_VERSION" = "1";
-				"MARKETING_VERSION" = "0.8.0";
+				"MARKETING_VERSION" = "0.9.0";
 				"CODE_SIGN_STYLE" = "Automatic";
 				"TARGETED_DEVICE_FAMILY" = "1";
 				"SUPPORTED_PLATFORMS" = "iphoneos iphonesimulator";
@@ -642,7 +664,7 @@
 				"INFOPLIST_FILE" = "App/Info.plist";
 				"GENERATE_INFOPLIST_FILE" = "NO";
 				"CURRENT_PROJECT_VERSION" = "1";
-				"MARKETING_VERSION" = "0.8.0";
+				"MARKETING_VERSION" = "0.9.0";
 				"CODE_SIGN_STYLE" = "Automatic";
 				"TARGETED_DEVICE_FAMILY" = "1";
 				"SUPPORTED_PLATFORMS" = "iphoneos iphonesimulator";
@@ -719,6 +741,8 @@
 			"isa" = "PBXSourcesBuildPhase";
 			"buildActionMask" = 2147483647;
 			"files" = (
+				"D7E598445737DD44E09FF002",
+				"FE3000A0FF59936B42A8E29C",
 				"376E1B20ACB2E21918F997FB",
 				"FA681C460B87F6F2D1B13460",
 				"C14B9745C3326C0F7C9BC809",
