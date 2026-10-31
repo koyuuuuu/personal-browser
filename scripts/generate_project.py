@@ -42,11 +42,13 @@ def generate():
     source_ids = {"app": [], "ui": []}
     for folder, kind in [("App", "app"), ("Sources/BrowserCore", "app"), ("UITests", "ui")]:
         children = []
-        for path in sorted((ROOT / folder).glob("*.swift")):
+        for path in sorted(p for p in (ROOT / folder).iterdir() if p.suffix in {".swift", ".h", ".m"}):
             relative = path.relative_to(ROOT).as_posix()
-            reference = add("file:" + relative, "PBXFileReference", lastKnownFileType="sourcecode.swift", path=path.name, sourceTree="<group>")
+            file_type = {".swift": "sourcecode.swift", ".h": "sourcecode.c.h", ".m": "sourcecode.c.objc"}[path.suffix]
+            reference = add("file:" + relative, "PBXFileReference", lastKnownFileType=file_type, path=path.name, sourceTree="<group>")
             children.append(reference)
-            source_ids[kind].append(add("build:" + relative, "PBXBuildFile", fileRef=reference))
+            if path.suffix != ".h":
+                source_ids[kind].append(add("build:" + relative, "PBXBuildFile", fileRef=reference))
         if folder == "App":
             children.append(add("file:Info", "PBXFileReference", lastKnownFileType="text.plist.xml", path="Info.plist", sourceTree="<group>"))
             children.append(add("file:FilterResources", "PBXFileReference", lastKnownFileType="folder", path="FilterResources", sourceTree="<group>"))
@@ -84,6 +86,7 @@ def generate():
         "SUPPORTS_MACCATALYST": "NO", "SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD": "NO",
         "ASSETCATALOG_COMPILER_APPICON_NAME": "AppIcon",
         "ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES": "YES",
+        "SWIFT_OBJC_BRIDGING_HEADER": "App/BrowserWebKitBridge.h",
         "LD_RUNPATH_SEARCH_PATHS": ["$(inherited)", "/usr/lib/swift", "@executable_path/Frameworks"]
     })
     ui_configs = configurations("ui", {

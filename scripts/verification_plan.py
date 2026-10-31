@@ -40,6 +40,8 @@ PATH_AREAS = {
     "App/SiteIconLoader.swift": ["favorites"],
     "App/AudioMixingController.swift": ["audio-mixing"],
     "App/AudioMixingSettingsView.swift": ["audio-mixing"],
+    "App/BrowserWebKitBridge.h": ["audio-mixing"],
+    "App/BrowserWebKitBridge.m": ["audio-mixing"],
     "App/SelectedTextWebView.swift": ["selection-search"],
     "App/SelectedTextSearch.swift": ["selection-search"],
     "Sources/BrowserCore/TextSearch.swift": ["selection-search"],

@@ -64,8 +64,7 @@ final class AudioMixingController: ObservableObject {
     }
     fileprivate func applyWebPolicy(_ view: WKWebView) {
         guard entries[ObjectIdentifier(view)] != nil else { return }
-        let flag = usesWebMixing ? "true" : "false"
-        view.evaluateJavaScript("globalThis.__personalBrowserSetAudioMixing?.(\(flag))", in: nil, in: .defaultClient) { _ in }
+        applyAudioMixingPolicy(view, enabled: usesWebMixing)
     }
     fileprivate func mediaEvent(_ view: WKWebView, audible: Bool) {
         guard enabled, entries[ObjectIdentifier(view)] != nil else { return }

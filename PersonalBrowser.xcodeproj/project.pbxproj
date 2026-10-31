@@ -65,6 +65,22 @@
 			"isa" = "PBXBuildFile";
 			"fileRef" = "E7A2536D3C797A21F68AD776";
 		};
+		"9A8C1008C72D87ADFD089820" = {
+			"isa" = "PBXFileReference";
+			"lastKnownFileType" = "sourcecode.c.h";
+			"path" = "BrowserWebKitBridge.h";
+			"sourceTree" = "<group>";
+		};
+		"54C800F57869AEF5FC3CAB28" = {
+			"isa" = "PBXFileReference";
+			"lastKnownFileType" = "sourcecode.c.objc";
+			"path" = "BrowserWebKitBridge.m";
+			"sourceTree" = "<group>";
+		};
+		"F5ABAACB98CE198A32459B60" = {
+			"isa" = "PBXBuildFile";
+			"fileRef" = "54C800F57869AEF5FC3CAB28";
+		};
 		"FDFF98B80400028AC5F76A26" = {
 			"isa" = "PBXFileReference";
 			"lastKnownFileType" = "sourcecode.swift";
@@ -282,6 +298,8 @@
 				"CCE61BA7C015A9311FAA2AA1",
 				"D8BC5E1C0733829E9AE90818",
 				"E7A2536D3C797A21F68AD776",
+				"9A8C1008C72D87ADFD089820",
+				"54C800F57869AEF5FC3CAB28",
 				"FDFF98B80400028AC5F76A26",
 				"9AB7B064CE0B98587CD37030",
 				"A9CCEDB582C1DDC4DEA293C4",
@@ -647,6 +665,7 @@
 				"SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD" = "NO";
 				"ASSETCATALOG_COMPILER_APPICON_NAME" = "AppIcon";
 				"ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES" = "YES";
+				"SWIFT_OBJC_BRIDGING_HEADER" = "App/BrowserWebKitBridge.h";
 				"LD_RUNPATH_SEARCH_PATHS" = (
 					"$(inherited)",
 					"/usr/lib/swift",
@@ -674,6 +693,7 @@
 				"SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD" = "NO";
 				"ASSETCATALOG_COMPILER_APPICON_NAME" = "AppIcon";
 				"ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES" = "YES";
+				"SWIFT_OBJC_BRIDGING_HEADER" = "App/BrowserWebKitBridge.h";
 				"LD_RUNPATH_SEARCH_PATHS" = (
 					"$(inherited)",
 					"/usr/lib/swift",
@@ -753,6 +773,7 @@
 				"FA681C460B87F6F2D1B13460",
 				"C14B9745C3326C0F7C9BC809",
 				"C6150AF80F394D78175E2EEB",
+				"F5ABAACB98CE198A32459B60",
 				"2B9766949F79DD811AFDAC89",
 				"6A29F5F7C6BA8B045ADE92C3",
 				"C276B1C88341F830C225ACB9",
