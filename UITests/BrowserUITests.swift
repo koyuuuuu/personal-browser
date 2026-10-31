@@ -28,7 +28,7 @@ final class BrowserUITests: XCTestCase {
     func testConcurrentAudioPreferenceAndRealPlayersAcrossTabs() {
         var page = app.webViews.containing(.staticText, identifier: "Concurrent A").firstMatch
         func settings() {
-            tapMenuControl("menuButton"); app.buttons["設定"].tap()
+            tapMenuControl("menuButton"); tapMenuControl("設定")
             tapMenuControl("audioMixingSettingsLink")
         }
         func progress() -> (Double, Double, Bool, Bool) {
@@ -48,7 +48,7 @@ final class BrowserUITests: XCTestCase {
         settings()
         let toggle = app.switches["concurrentAudioToggle"]
         XCTAssertTrue(toggle.waitForExistence(timeout: 5))
-        if toggle.value as? String != "1" { toggle.tap() }
+        if toggle.value as? String != "1" { toggle.coordinate(withNormalizedOffset: CGVector(dx: 0.9, dy: 0.5)).tap() }
         XCTAssertEqual(toggle.value as? String, "1")
         app.navigationBars["音声の同時再生"].buttons["設定"].tap()
         tapMenuControl("閉じる")
@@ -57,7 +57,7 @@ final class BrowserUITests: XCTestCase {
         XCTAssertTrue(first.waitForExistence(timeout: 10)); first.tap()
         advance(first: true, second: false)
         page.buttons["Play second"].tap(); advance(first: true, second: true)
-        tapMenuControl("menuButton"); app.buttons["新しいタブ"].tap()
+        tapMenuControl("menuButton"); tapMenuControl("新しいタブ")
         navigate("http://127.0.0.1:18765/concurrent-audio-b")
         page = app.webViews.containing(.staticText, identifier: "Concurrent B").firstMatch
         XCTAssertTrue(page.buttons["Play first"].waitForExistence(timeout: 10)); page.buttons["Play first"].tap(); advance(first: true, second: false)
@@ -72,7 +72,7 @@ final class BrowserUITests: XCTestCase {
         page.buttons["Pause both"].tap()
         XCUIDevice.shared.press(.home); relaunchPreservingData()
         settings(); XCTAssertEqual(toggle.value as? String, "1")
-        toggle.tap(); XCTAssertEqual(toggle.value as? String, "0")
+        toggle.coordinate(withNormalizedOffset: CGVector(dx: 0.9, dy: 0.5)).tap(); XCTAssertEqual(toggle.value as? String, "0")
     }
 
     func testSelectedTextSearchOpensAnAdjacentNewTab() {
