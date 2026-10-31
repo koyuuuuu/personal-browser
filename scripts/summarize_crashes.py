@@ -17,6 +17,18 @@ def summarize(report):
     }
     if type(termination.get('code')) is int:
         result['termination_code'] = termination['code']
+    # Module identities are static build inputs. Export only known system Swift
+    # library basenames, never their path or the surrounding loader message.
+    libraries = set()
+    for value in termination.values():
+        for line in value if isinstance(value, list) else [value]:
+            if not isinstance(line, str) or not line.startswith('Library not loaded: '):
+                continue
+            name = line.split('\n', 1)[0].rsplit('/', 1)[-1].strip()
+            if re.fullmatch(r'libswift[A-Za-z0-9_]+\.dylib|PersonalBrowser\.debug\.dylib', name):
+                libraries.add(name)
+    if libraries:
+        result['missing_system_modules'] = sorted(libraries)
     # No filenames, paths, URLs, registers, messages, reasons, environment,
     # application-specific info or other runtime strings may leave this script.
     threads = report.get('threads', [])

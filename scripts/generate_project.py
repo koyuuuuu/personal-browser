@@ -83,13 +83,14 @@ def generate():
         "TARGETED_DEVICE_FAMILY": "1", "SUPPORTED_PLATFORMS": "iphoneos iphonesimulator",
         "SUPPORTS_MACCATALYST": "NO", "SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD": "NO",
         "ASSETCATALOG_COMPILER_APPICON_NAME": "AppIcon",
-        "LD_RUNPATH_SEARCH_PATHS": ["$(inherited)", "@executable_path/Frameworks"]
+        "ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES": "YES",
+        "LD_RUNPATH_SEARCH_PATHS": ["$(inherited)", "/usr/lib/swift", "@executable_path/Frameworks"]
     })
     ui_configs = configurations("ui", {
         "PRODUCT_BUNDLE_IDENTIFIER": "$(BROWSER_BUNDLE_ID).uitests", "PRODUCT_NAME": "$(TARGET_NAME)",
         "GENERATE_INFOPLIST_FILE": "YES", "TEST_TARGET_NAME": "PersonalBrowser",
         "CODE_SIGN_STYLE": "Automatic", "TARGETED_DEVICE_FAMILY": "1", "SUPPORTED_PLATFORMS": "iphonesimulator",
-        "LD_RUNPATH_SEARCH_PATHS": ["$(inherited)", "@executable_path/Frameworks", "@loader_path/Frameworks"]
+        "LD_RUNPATH_SEARCH_PATHS": ["$(inherited)", "/usr/lib/swift", "@executable_path/Frameworks", "@loader_path/Frameworks"]
     })
 
     def phases(kind):
