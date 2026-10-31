@@ -95,6 +95,11 @@ jobs:
               xcrun xcresulttool export attachments --path "$result" --output-path build/test-attachments || true
             fi
           done
+      - name: Summarize app crash symbols without exporting raw reports
+        if: failure()
+        run: |
+          mkdir -p build/test-diagnostics
+          python3 scripts/summarize_crashes.py > build/test-diagnostics/summary.json
       - name: Upload failure logs
         if: failure()
         uses: actions/upload-artifact@v4
@@ -103,6 +108,7 @@ jobs:
           path: |
             build/*.log
             build/test-attachments/**
+            build/test-diagnostics/summary.json
           retention-days: 1
           if-no-files-found: ignore
 
