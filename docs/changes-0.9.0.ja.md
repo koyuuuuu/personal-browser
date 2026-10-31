@@ -35,3 +35,7 @@ AudioMixingControllerが公開AVAudioSession、WKUserScriptの隔離されたdef
 - https://www.w3.org/TR/audio-session/
 - https://github.com/WebKit/WebKit/blob/main/Source/WebCore/Modules/audiosession/DOMAudioSession.cpp
 - https://github.com/WebKit/WebKit/blob/main/Source/WebCore/platform/audio/ios/MediaSessionManagerIOS.mm
+
+## 配信結果
+
+0.9.0 build52をSideStoreへ配信済み。Python52件・Core66件・関連UI1件と実機用ビルド、最新IPAの公開配信照合に成功。保存形式変更がないため旧版データ往復は再実行していない。音声要素の進行・タブ切替・停止操作・設定保持はSimulatorで確認し、Apple Music／YouTube／他アプリ／実機スピーカーの混音や全画面等は未確認。[配信記録](validation-0.9.0-2026-10-31.json)。

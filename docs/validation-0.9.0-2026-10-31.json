@@ -1,0 +1,84 @@
+{
+  "date_utc": "2026-10-31",
+  "version": "0.9.0",
+  "build": "52",
+  "source_commit": "49ea4075b3ec3ab47dac0160a0bc4a421be7c43a",
+  "tag": "v0.9.0-build.52",
+  "ci_run": "https://github.com/koyuuuuu/personal-browser/actions/runs/41190882631",
+  "delivery_status": "published",
+  "source_visibility": "public",
+  "public_release": "https://github.com/koyuuuuu/personal-browser-distribution/releases/tag/v0.9.0-build.52",
+  "source_url": "https://raw.githubusercontent.com/koyuuuuu/personal-browser-distribution/main/source.json",
+  "ipa": {
+    "sha256": "1608c4338c8c1e7ad13c1cc4f2ea2edbcfaed82ec49ae749828f37b06d2ff11c",
+    "size": 5305902,
+    "bundle_id": "local.personalbrowser.app",
+    "version": "0.9.0",
+    "build": "52",
+    "minimum_ios": "17.0",
+    "architecture": "arm64",
+    "data_schema": 1
+  },
+  "checks": {
+    "python": 52,
+    "macos_core": 66,
+    "ui_passed": 1,
+    "ui_cases": [
+      "testConcurrentAudioPreferenceAndRealPlayersAcrossTabs"
+    ],
+    "real_pcm_audio_elements_same_page": "both playback positions advance",
+    "cross_tab_media": "A two players still progress after starting B; B still progresses after returning from A",
+    "explicit_pause": "paused first player remains paused while second progresses; no autoreplay",
+    "preference_restart": "enabled persists across launch; test returns it to disabled",
+    "legacy_media_handler_and_script": {
+      "unchanged": true,
+      "sha256": "8233d9cc7ff0b82e3aa24f9ad97543226dd5c9124dfd80ce1d73ab3de5b91edc"
+    },
+    "compatibility_roundtrip": "not applicable; separate UserDefaults keys, legacy data/store formats unchanged",
+    "anonymous_latest_ipa_feed_hash_size_identity": "passed",
+    "source_release_public_ipa_sha_match": true,
+    "swift_webkit_overlay_strong_dependency": false,
+    "swift_system_runtime_path": "present",
+    "full_ui_suite": "not run under scoped policy",
+    "full_old_ipa_download_audit": "not repeated; retained metadata/assets checked",
+    "speaker_waveform_or_third_party_app_mixing": "not established by Simulator test",
+    "ui_duration_seconds": 248.8,
+    "fixture_duration_seconds": 600
+  },
+  "pre_delivery_corrections": [
+    "run47/run48 terminated before app startup; sanitized summary identified DYLD library-missing termination code1",
+    "run49 safe summary named missing libswiftWebKit.dylib; standard rpath/embedding alone insufficient",
+    "public Objective-C bridge replaced the isolated-world Swift evaluateJavaScript convenience, avoiding optional Swift overlay dependency",
+    "raw diagnostic export rejected and not performed; safe codes/symbol/module-basename summary used",
+    "run50 startup succeeded; UI harness tapped switch label instead of physical switch; corrected coordinates only",
+    "run51 reached concurrent players; first clip stalled near its 45s EOF; extended fixture to600s to isolate concurrent playback from loop seeks"
+  ],
+  "audio_preferences": {
+    "enabled_default": false,
+    "non_exclusive_web_default": true,
+    "keys": [
+      "browser.audioMixing.enabled.v1",
+      "browser.audioMixing.nonExclusiveWeb.v1"
+    ],
+    "storage": "independent UserDefaults"
+  },
+  "implementation": {
+    "native": "public AVAudioSession playback/moviePlayback/mixWithOthers; preconfigure before media; activate on audible event; leave recording categories intact",
+    "web": "isolated script requests navigator.audioSession.type ambient in top document where supported; restores own previous type; fetch current prefs each document/BFCache ready",
+    "retention": "public requestMediaPlaybackState samples existing live views; playing views protected from eviction; no mass tab instantiation",
+    "resumption": "no play/pause replacement, audio-session deactivation on toggle or automatic replay",
+    "extra_entitlements": false,
+    "javascript_bridge": "Documented Objective-C evaluateJavaScript:inFrame:inContentWorld:completionHandler: via BrowserWebKitBridge; avoids unavailable Swift convenience overlay"
+  },
+  "limitations": [
+    "YouTube/site pauses, WebKit concurrent audio-video restrictions, DRM and native fullscreen may prevent mixing",
+    "iOS and other-app interruption/exclusive policies cannot be overridden",
+    "Web ambient policy can change silent-switch/lock/background behavior; independent Web toggle offered",
+    "multiple PiP/fullscreen or all third-party combinations not guaranteed"
+  ],
+  "rollback": {
+    "v0.8.0-build.46": "54e290c069d29ae06eeafee4c33adaa964f99aae55c38b959a83a3b2f5b9c8bf",
+    "historical_tags_and_ipas": "retained unchanged"
+  },
+  "device_acceptance": "0.9.0 on user iPhone, Apple Music, YouTube/native fullscreen/PiP and other-app combinations not yet reported; no universal success claim"
+}
