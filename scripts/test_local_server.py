@@ -25,7 +25,10 @@ def main():
         stream.setnchannels(1); stream.setsampwidth(2); stream.setframerate(8000)
         # Audible PCM makes the fixture exercise a real playback audio session.
         second = b''.join(struct.pack('<h', round(2000 * math.sin(2 * math.pi * 440 * i / 8000))) for i in range(8000))
-        stream.writeframes(second * 45)
+        # Multi-tab UI navigation can exceed a short clip's duration. Keep the
+        # fixture well beyond the scenario so end-of-file/loop seeks do not
+        # masquerade as concurrent-playback interruption.
+        stream.writeframes(second * 600)
     audio = audio.getvalue()
 
     class Handler(BaseHTTPRequestHandler):
