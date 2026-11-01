@@ -12,6 +12,16 @@
       "iconURL": "https://raw.githubusercontent.com/koyuuuuu/personal-browser-distribution/main/icon.png",
       "versions": [
         {
+          "version": "0.10.0",
+          "buildVersion": "58",
+          "date": "2026-11-01T20:19:19.383568+00:00",
+          "localizedDescription": "メニューに音声ミキサーを追加。検出できたページ内音声・動画を個別ミュートし、対応する直接ファイルは明示的なCORS再読込後に音源ごとの音量を調整できます。Blob・MSE・DRM・ネイティブ画面や他アプリの音量は対象外です。既存の再生方式、タブや保存済みデータを維持します。",
+          "downloadURL": "https://github.com/koyuuuuu/personal-browser-distribution/releases/download/v0.10.0-build.58/PersonalBrowser.ipa",
+          "size": 5355711,
+          "minOSVersion": "17.0",
+          "sha256": "d49710e3b6a303b41c90462f43aa74ecca4e28189b6aeddf29085081c1f331bc"
+        },
+        {
           "version": "0.9.0",
           "buildVersion": "52",
           "date": "2026-10-31T10:10:26.200032+00:00",

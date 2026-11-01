@@ -2,6 +2,34 @@
   "releases": [
     {
       "file": "PersonalBrowser.ipa",
+      "sha256": "d49710e3b6a303b41c90462f43aa74ecca4e28189b6aeddf29085081c1f331bc",
+      "bundle_id": "local.personalbrowser.app",
+      "version": "0.10.0",
+      "build": "58",
+      "minimum_ios": "17.0",
+      "target_ios": "18.4.1",
+      "architecture": "arm64",
+      "platform": "iOS device",
+      "embedded_profile": false,
+      "signature_resources": false,
+      "installation_verified": false,
+      "source_commit": "e40d2d035d020636730ff2f713de8aa5c3b97cda",
+      "data_schema": 1,
+      "size": 5355711,
+      "date": "2026-11-01T20:19:19.383568+00:00",
+      "description": "メニューに音声ミキサーを追加。検出できたページ内音声・動画を個別ミュートし、対応する直接ファイルは明示的なCORS再読込後に音源ごとの音量を調整できます。Blob・MSE・DRM・ネイティブ画面や他アプリの音量は対象外です。既存の再生方式、タブや保存済みデータを維持します。",
+      "appPermissions": {
+        "entitlements": [],
+        "privacy": {
+          "NSCameraUsageDescription": "閲覧中のWebサイトでカメラを使用するために必要です。",
+          "NSLocalNetworkUsageDescription": "自宅のネットワークにある自作アプリや動画サーバーへ接続するために使用します。",
+          "NSMicrophoneUsageDescription": "閲覧中のWebサイトでマイクを使用するために必要です。"
+        }
+      },
+      "tag": "v0.10.0-build.58"
+    },
+    {
+      "file": "PersonalBrowser.ipa",
       "sha256": "1608c4338c8c1e7ad13c1cc4f2ea2edbcfaed82ec49ae749828f37b06d2ff11c",
       "bundle_id": "local.personalbrowser.app",
       "version": "0.9.0",
