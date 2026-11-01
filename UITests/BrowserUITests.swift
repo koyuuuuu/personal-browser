@@ -29,10 +29,9 @@ final class BrowserUITests: XCTestCase {
     }
 
     func testPerSourceVolumeAndMuteUseIndependentRealPlayers() {
-        let page = app.webViews.containing(.staticText, identifier: "Volume fixture").firstMatch
         let openMixer = app.buttons["audioMixerFixtureButton"]
-        XCTAssertTrue(page.buttons["Play first"].waitForExistence(timeout: 20))
-        page.buttons["Play first"].tap(); page.buttons["Play second"].tap()
+        XCTAssertTrue(app.buttons["Play first"].waitForExistence(timeout: 20))
+        app.buttons["Play first"].tap(); app.buttons["Play second"].tap()
         openMixer.tap()
         let firstMute = app.switches["audioMute-1"], secondMute = app.switches["audioMute-2"]
         XCTAssertTrue(firstMute.waitForExistence(timeout: 8)); XCTAssertTrue(secondMute.exists)
@@ -45,7 +44,7 @@ final class BrowserUITests: XCTestCase {
             let enable = app.buttons["enableAudioGain-" + id]
             if !enable.isHittable { app.swipeUp() }
             enable.tap()
-            let confirm = page.buttons["読み直して再生して有効化"]
+            let confirm = app.buttons["読み直して再生して有効化"]
             XCTAssertTrue(confirm.waitForExistence(timeout: 5)); confirm.tap()
             openMixer.tap()
             let slider = app.sliders["audioGain-" + id]
@@ -65,12 +64,12 @@ final class BrowserUITests: XCTestCase {
         let firstGain = app.sliders["audioGain-1"]
         XCTAssertEqual(firstGain.value as? String, firstAppliedValue, "Changing the second source must preserve the first gain")
         app.navigationBars["音声ミキサー"].buttons["閉じる"].tap()
-        page.buttons["Play third"].tap()
+        app.buttons["Play third"].tap()
         openMixer.tap()
         app.swipeUp()
         XCTAssertTrue(app.buttons["enableAudioGain-3"].waitForExistence(timeout: 10), "Explicitly load the third player's metadata before enabling its CORS check")
         app.buttons["enableAudioGain-3"].tap()
-        let confirm = page.buttons["読み直して再生して有効化"]
+        let confirm = app.buttons["読み直して再生して有効化"]
         XCTAssertTrue(confirm.waitForExistence(timeout: 5)); confirm.tap()
         openMixer.tap()
         app.swipeUp()
@@ -81,7 +80,7 @@ final class BrowserUITests: XCTestCase {
         app.buttons["再読込して制御を解除"].tap()
         XCTAssertEqual(XCTWaiter.wait(for: [XCTNSPredicateExpectation(predicate: NSPredicate { _, _ in !self.app.sliders["audioGain-1"].exists && !self.app.sliders["audioGain-2"].exists }, object: nil)], timeout: 10), .completed)
         app.navigationBars["音声ミキサー"].buttons["閉じる"].tap()
-        XCTAssertTrue(page.buttons["Play first"].waitForExistence(timeout: 8))
+        XCTAssertTrue(app.buttons["Play first"].waitForExistence(timeout: 8))
     }
 
     func testConcurrentAudioPreferenceAndRealPlayersAcrossTabs() {
