@@ -333,6 +333,7 @@ struct BrowserChrome: View {
             Button("履歴", systemImage: "clock") { showSheet(.history) }
             Button("共有", systemImage: "square.and.arrow.up", action: share).disabled(disabled(.share))
             Button("ページ内を検索", systemImage: "magnifyingglass") { tab.webView.findInteraction?.presentFindNavigator(showingReplace: false) }.disabled(!tab.hasContent)
+            Button("音声ミキサー", systemImage: "slider.vertical.3") { showSheet(.audioMixer) }
             Button("コピーしたリンクをWatch HTMLで解析", systemImage: "play.rectangle.on.rectangle") { store.analyzeCopiedLink() }
             if tab.url.map({ ["/watch", "/watch.html"].contains($0.path.lowercased()) }) == true {
                 Button("このページをWatch HTMLの接続先にする", systemImage: "link.badge.plus") { store.useCurrentWatchHTML() }

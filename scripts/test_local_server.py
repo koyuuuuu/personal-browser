@@ -52,8 +52,9 @@ def main():
                 self.send_header('Content-Length', '0'); self.end_headers(); return
             if self.path == '/audio.wav':
                 data, mime = audio, 'audio/wav'
-            elif self.path in ['/concurrent-audio-a', '/concurrent-audio-b']:
-                title = 'Concurrent A' if self.path.endswith('-a') else 'Concurrent B'
+            elif self.path in ['/concurrent-audio-a', '/concurrent-audio-b', '/volume-fixture']:
+                title = 'Volume fixture' if self.path == '/volume-fixture' else 'Concurrent A' if self.path.endswith('-a') else 'Concurrent B'
+                extra_player = '<audio aria-label="No CORS" src="http://localhost:18765/audio.wav" preload="auto"></audio>' if self.path == '/volume-fixture' else ''
                 data = ('''<!doctype html><meta name="viewport" content="width=device-width,initial-scale=1">
                 <title>''' + title + '''</title><h1>''' + title + '''</h1>
                 <audio id="first" src="/audio.wav" loop preload="auto"></audio>
@@ -70,7 +71,7 @@ def main():
                   previous[i]=p.currentTime;
                 });document.getElementById('progress').textContent=total.map(t=>t.toFixed(3)).join(',')+','+players.map(p=>!p.paused&&!p.ended).join(',');}
                 setInterval(sample,250);
-                </script>''').encode('utf-8')
+                </script>''' + extra_player).encode('utf-8')
                 mime = 'text/html; charset=utf-8'
             elif self.path == '/selection-fixture':
                 data = '''<!doctype html><meta name="viewport" content="width=device-width,initial-scale=1">

@@ -25,6 +25,63 @@ final class BrowserUITests: XCTestCase {
         }
     }
 
+    func testPerSourceVolumeAndMuteUseIndependentRealPlayers() {
+        tapMenuControl("menuButton"); tapMenuControl("設定")
+        tapMenuControl("audioMixingSettingsLink")
+        let mixing = app.switches["concurrentAudioToggle"]
+        XCTAssertTrue(mixing.waitForExistence(timeout: 5))
+        if mixing.value as? String != "1" { mixing.coordinate(withNormalizedOffset: CGVector(dx: 0.9, dy: 0.5)).tap() }
+        XCTAssertEqual(mixing.value as? String, "1")
+        app.navigationBars["音声の同時再生"].buttons["設定"].tap(); tapMenuControl("閉じる")
+        navigate("http://127.0.0.1:18765/volume-fixture")
+        let page = app.webViews.containing(.staticText, identifier: "Volume fixture").firstMatch
+        XCTAssertTrue(page.buttons["Play first"].waitForExistence(timeout: 10))
+        page.buttons["Play first"].tap(); page.buttons["Play second"].tap()
+        tapMenuControl("menuButton"); tapMenuControl("音声ミキサー")
+        let firstMute = app.switches["audioMute-1"], secondMute = app.switches["audioMute-2"]
+        XCTAssertTrue(firstMute.waitForExistence(timeout: 8)); XCTAssertTrue(secondMute.exists)
+        firstMute.coordinate(withNormalizedOffset: CGVector(dx: 0.9, dy: 0.5)).tap()
+        XCTAssertEqual(XCTWaiter.wait(for: [XCTNSPredicateExpectation(predicate: NSPredicate { _, _ in firstMute.value as? String == "1" }, object: nil)], timeout: 5), .completed)
+        XCTAssertEqual(secondMute.value as? String, "0", "Muting one DOM player must not mute its sibling")
+        firstMute.coordinate(withNormalizedOffset: CGVector(dx: 0.9, dy: 0.5)).tap()
+        for id in ["1", "2"] {
+            let enable = app.buttons["enableAudioGain-" + id]
+            if !enable.isHittable { app.swipeUp() }
+            tapMenuControl("enableAudioGain-" + id)
+            let confirm = page.buttons["読み直して再生して有効化"]
+            XCTAssertTrue(confirm.waitForExistence(timeout: 5)); confirm.tap()
+            tapMenuControl("menuButton"); tapMenuControl("音声ミキサー")
+            let slider = app.sliders["audioGain-" + id]
+            XCTAssertTrue(slider.waitForExistence(timeout: 18), "Only successful CORS reloads may expose a gain slider")
+            if !slider.isHittable { app.swipeUp() }
+            slider.adjust(toNormalizedSliderPosition: id == "1" ? 0.25 : 0.75)
+            let expected = id == "1" ? 25 : 75
+            let applied = NSPredicate { _, _ in
+                let text = slider.value as? String ?? ""
+                let value = Int(text.replacingOccurrences(of: "%", with: "")) ?? -100
+                return abs(value - expected) <= 3
+            }
+            XCTAssertEqual(XCTWaiter.wait(for: [XCTNSPredicateExpectation(predicate: applied, object: nil)], timeout: 6), .completed,
+                           "Read back the actual GainNode parameter, not just the slider's requested value")
+        }
+        let firstGain = app.sliders["audioGain-1"]
+        XCTAssertEqual(firstGain.value as? String, "25%", "Changing the second source must preserve the first gain")
+        app.swipeUp()
+        tapMenuControl("enableAudioGain-3")
+        let confirm = page.buttons["読み直して再生して有効化"]
+        XCTAssertTrue(confirm.waitForExistence(timeout: 5)); confirm.tap()
+        tapMenuControl("menuButton"); tapMenuControl("音声ミキサー")
+        app.swipeUp()
+        let failure = app.staticTexts.matching(NSPredicate(format: "label BEGINSWITH %@", "CORS・サイト側の制御などで有効化できませんでした。")).firstMatch
+        XCTAssertTrue(failure.waitForExistence(timeout: 18), "An actual CORS-denied media load must restore the old loader without routing to Web Audio")
+        XCTAssertFalse(app.sliders["audioGain-3"].exists)
+        tapMenuControl("resetAudioRouteButton")
+        tapMenuControl("再読込して制御を解除")
+        XCTAssertEqual(XCTWaiter.wait(for: [XCTNSPredicateExpectation(predicate: NSPredicate { _, _ in !app.sliders["audioGain-1"].exists && !app.sliders["audioGain-2"].exists }, object: nil)], timeout: 10), .completed)
+        tapMenuControl("閉じる")
+        XCTAssertTrue(page.buttons["Play first"].waitForExistence(timeout: 8))
+    }
+
     func testConcurrentAudioPreferenceAndRealPlayersAcrossTabs() {
         var page = app.webViews.containing(.staticText, identifier: "Concurrent A").firstMatch
         func settings() {

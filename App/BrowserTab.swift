@@ -137,6 +137,7 @@ final class BrowserTab: NSObject, ObservableObject, Identifiable, WKNavigationDe
         AudioMixingController.shared.attach(view) { [weak self] value in
             if self?.hasMixingPlayback != value { self?.hasMixingPlayback = value }
         }
+        AudioSourcesController.shared.attach(view, tabID: id)
         view.navigationDelegate = self; view.uiDelegate = self
         view.allowsBackForwardNavigationGestures = swipeNavigation
         view.isFindInteractionEnabled = true
@@ -266,7 +267,10 @@ final class BrowserTab: NSObject, ObservableObject, Identifiable, WKNavigationDe
     }
 
     private func releaseWebView() {
-        if let view = liveWebView { AudioMixingController.shared.detach(view) }
+        if let view = liveWebView {
+            AudioSourcesController.shared.detach(view)
+            AudioMixingController.shared.detach(view)
+        }
         hasMixingPlayback = false
         selectedText = ""
         dialog?.resolve(nil); dialog = nil

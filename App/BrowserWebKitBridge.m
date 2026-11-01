@@ -9,3 +9,12 @@ void PBApplyAudioMixingPolicy(WKWebView *view, BOOL enabled)
              inContentWorld:WKContentWorld.defaultClientWorld
           completionHandler:nil];
 }
+
+void PBRunAudioMixerCommand(WKWebView *view, WKFrameInfo *frame, NSString *json)
+{
+    NSString *script = [NSString stringWithFormat:@"void globalThis.__personalBrowserMixer?.command(%@)", json];
+    [view evaluateJavaScript:script
+                    inFrame:frame
+             inContentWorld:WKContentWorld.defaultClientWorld
+          completionHandler:nil];
+}

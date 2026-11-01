@@ -10,6 +10,7 @@ ROOT = Path(__file__).resolve().parents[1]
 
 # One representative scenario per behavior, rather than overlapping smoke tests.
 AREAS = {
+    "audio-volume": ["testPerSourceVolumeAndMuteUseIndependentRealPlayers"],
     "audio-mixing": ["testConcurrentAudioPreferenceAndRealPlayersAcrossTabs"],
     "selection-search": ["testSelectedTextSearchOpensAnAdjacentNewTab"],
     "external-links": ["test00ExternalURLColdLaunchBackgroundAndInvalidInput"],
@@ -39,6 +40,9 @@ PATH_AREAS = {
     "App/PersonalBrowserApp.swift": ["launch", "links"], "App/Info.plist": ["launch", "links"],
     "App/SiteIconLoader.swift": ["favorites"],
     "App/AudioMixingController.swift": ["audio-mixing"],
+    "App/AudioSourcesController.swift": ["audio-volume"],
+    "App/MediaVolumeScript.swift": ["audio-volume"],
+    "App/AudioSourcesView.swift": ["audio-volume"],
     "App/AudioMixingSettingsView.swift": ["audio-mixing"],
     "App/BrowserWebKitBridge.h": ["audio-mixing"],
     "App/BrowserWebKitBridge.m": ["audio-mixing"],
@@ -115,15 +119,20 @@ def changed_methods(before, after):
 def plan(changed, store_changes=(), ui_changes=(), tab_changes=None, pending_app_paths=None, chrome_changes=None):
     changed = set(changed)
     areas = set()
+    volume_context = bool(changed & {"App/AudioSourcesController.swift", "App/MediaVolumeScript.swift", "App/AudioSourcesView.swift"})
     for path in changed:
-        if path == "App/SettingsView.swift" and "App/AudioMixingSettingsView.swift" in changed:
+        if volume_context and path in {"App/BrowserViews.swift", "App/BrowserWebKitBridge.h", "App/BrowserWebKitBridge.m"}:
+            areas.add("audio-volume")
+        elif path == "App/SettingsView.swift" and "App/AudioMixingSettingsView.swift" in changed:
             areas.add("audio-mixing")
         else:
             areas.update(PATH_AREAS.get(path, ()))
     selection_context = bool(changed & {"App/SelectedTextWebView.swift", "App/SelectedTextSearch.swift"})
     if "App/BrowserChrome.swift" in changed:
         action_methods = {"disabledAddress", "performAddress", "perform", "actionButton"}
-        if selection_context and chrome_changes is not None and set(chrome_changes) <= {"viewport"}:
+        if volume_context and chrome_changes is not None and set(chrome_changes) <= {"actionButton"}:
+            areas.add("audio-volume")
+        elif selection_context and chrome_changes is not None and set(chrome_changes) <= {"viewport"}:
             areas.add("selection-search")
         elif chrome_changes is not None and set(chrome_changes) <= action_methods:
             areas.add("tab-navigation")
@@ -156,7 +165,7 @@ def plan(changed, store_changes=(), ui_changes=(), tab_changes=None, pending_app
             if re.search(r"Search|^search$", name): areas.add("search")
     tests = {test for area in areas for test in AREAS[area]}
     # Selection search already launches and renders a real WKWebView fixture.
-    if areas & {"selection-search", "audio-mixing"}:
+    if areas & {"selection-search", "audio-mixing", "audio-volume"}:
         tests.difference_update(AREAS["launch"])
     allowed = {test for group in AREAS.values() for test in group}
     tests.update(set(ui_changes) & allowed)

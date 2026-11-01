@@ -8,7 +8,7 @@ struct ShareRequest: Identifiable {
 }
 
 enum BrowserSheet: Identifiable {
-    case tabs, bookmarks, history, settings, downloads
+    case tabs, bookmarks, history, settings, downloads, audioMixer
     case connection(ConnectionRequest)
     case share(ShareRequest), message(ShareRequest), safari(ShareRequest)
     var id: String {
@@ -16,6 +16,7 @@ enum BrowserSheet: Identifiable {
         case .connection(let request): "connection-" + request.id.uuidString
         case .tabs: "tabs"; case .bookmarks: "bookmarks"; case .history: "history"
         case .settings: "settings"; case .downloads: "downloads"; case .share(let payload): "share-" + payload.id.uuidString
+        case .audioMixer: "audioMixer"
         case .message(let payload): "message-" + payload.id.uuidString
         case .safari(let payload): "safari-" + payload.id.uuidString
         }
@@ -108,6 +109,7 @@ struct BrowserRootView: View {
         case .history: LibraryView(store: store, showHistory: true)
         case .settings: SettingsView(store: store)
         case .downloads: DownloadsView(store: store)
+        case .audioMixer: NavigationStack { AudioSourcesView(store: store) }
         case .share(let payload): ActivityView(items: [payload.url])
         case .message(let payload): MessageComposer(url: payload.url)
         case .safari(let payload): SafariScreen(url: payload.url)
