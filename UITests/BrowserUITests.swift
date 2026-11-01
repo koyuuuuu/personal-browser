@@ -308,6 +308,13 @@ final class BrowserUITests: XCTestCase {
         // confirm the control is visible. Send a physical touch at its centre
         // and verify the resulting menu/action in the calling test.
         XCTAssertTrue(control.isEnabled)
+        let window = app.windows.firstMatch
+        let visible = NSPredicate { _, _ in
+            let frame = control.frame
+            return frame.width > 0 && frame.height > 0 && window.frame.contains(frame)
+        }
+        XCTAssertEqual(XCTWaiter.wait(for: [XCTNSPredicateExpectation(predicate: visible, object: nil)], timeout: 8), .completed,
+                       "Wait for the menu's layout animation to finish before reading its hit coordinates")
         let frame = control.frame
         XCTAssertGreaterThan(frame.width, 0)
         XCTAssertGreaterThan(frame.height, 0)

@@ -164,13 +164,14 @@ def plan(changed, store_changes=(), ui_changes=(), tab_changes=None, pending_app
             if re.search(r"^navigate$|^open$|LinkPreference", name): areas.add("links")
             if re.search(r"Search|^search$", name): areas.add("search")
     tests = {test for area in areas for test in AREAS[area]}
-    # Selection search already launches and renders a real WKWebView fixture.
-    if areas & {"selection-search", "audio-mixing", "audio-volume"}:
-        tests.difference_update(AREAS["launch"])
     allowed = {test for group in AREAS.values() for test in group}
     tests.update(set(ui_changes) & allowed)
     if "UITests/BrowserUITests.swift" in changed and any(not x.startswith("test") for x in ui_changes):
         tests.update(AREAS["launch"])
+    # These cases already launch and render a real WKWebView fixture, including
+    # when a shared UI helper changes along with the feature under test.
+    if areas & {"selection-search", "audio-mixing", "audio-volume"}:
+        tests.difference_update(AREAS["launch"])
     return {
         "areas": sorted(areas), "ui_tests": sorted(tests),
         "compatibility": bool(changed & DATA_PATHS or store_changes & (STORE_DATA_METHODS | {"preamble"})),
