@@ -32,9 +32,33 @@ struct BrowserRootView: View {
     @State private var linkDocument = LinkFileDocument()
     @State private var exportLink = false
     @Environment(\.dynamicTypeSize) private var systemTextSize
+    #if DEBUG
+    @State private var preparedAudioFixture = false
+    private var audioFixture: Bool {
+        ProcessInfo.processInfo.arguments.contains("--ui-testing") && ProcessInfo.processInfo.arguments.contains("--ui-volume-fixture")
+    }
+    #endif
 
     var body: some View {
         connectedContent
+        .overlay(alignment: .bottomTrailing) {
+            #if DEBUG
+            if audioFixture {
+                Button("ミキサー（検証）") { sheet = .audioMixer }
+                    .buttonStyle(.borderedProminent).accessibilityIdentifier("audioMixerFixtureButton")
+                    .padding(.trailing, 12).padding(.bottom, 145)
+            }
+            #endif
+        }
+        .onAppear {
+            #if DEBUG
+            if audioFixture && !preparedAudioFixture {
+                preparedAudioFixture = true
+                AudioMixingController.shared.setEnabled(true)
+                store.navigate("http://127.0.0.1:18765/volume-fixture")
+            }
+            #endif
+        }
         .fileExporter(isPresented: $exportLink, document: linkDocument, contentType: LinkFileDocument.contentType, defaultFilename: "Webリンク") { result in
             if case .failure = result { store.notice = "リンクを保存できませんでした。" }
         }

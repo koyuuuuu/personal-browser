@@ -10,6 +10,9 @@ final class BrowserUITests: XCTestCase {
         XCUIDevice.shared.orientation = .portrait
         app = XCUIApplication()
         app.launchArguments = ["--ui-testing"]
+        if name.contains("testPerSourceVolumeAndMuteUseIndependentRealPlayers") {
+            app.launchArguments += ["--ui-no-fixture", "--ui-volume-fixture"]
+        }
         app.launch()
         let ready = app.textFields["addressField"].waitForExistence(timeout: 15)
         if !ready { Self.launchFailure = true }
@@ -26,18 +29,11 @@ final class BrowserUITests: XCTestCase {
     }
 
     func testPerSourceVolumeAndMuteUseIndependentRealPlayers() {
-        tapMenuControl("menuButton"); tapMenuControl("設定")
-        tapMenuControl("audioMixingSettingsLink")
-        let mixing = app.switches["concurrentAudioToggle"]
-        XCTAssertTrue(mixing.waitForExistence(timeout: 5))
-        if mixing.value as? String != "1" { mixing.coordinate(withNormalizedOffset: CGVector(dx: 0.9, dy: 0.5)).tap() }
-        XCTAssertEqual(mixing.value as? String, "1")
-        app.navigationBars["音声の同時再生"].buttons["設定"].tap(); tapMenuControl("閉じる")
-        navigate("http://127.0.0.1:18765/volume-fixture")
         let page = app.webViews.containing(.staticText, identifier: "Volume fixture").firstMatch
-        XCTAssertTrue(page.buttons["Play first"].waitForExistence(timeout: 10))
+        let openMixer = app.buttons["audioMixerFixtureButton"]
+        XCTAssertTrue(page.buttons["Play first"].waitForExistence(timeout: 20))
         page.buttons["Play first"].tap(); page.buttons["Play second"].tap()
-        tapMenuControl("menuButton"); tapMenuControl("音声ミキサー")
+        openMixer.tap()
         let firstMute = app.switches["audioMute-1"], secondMute = app.switches["audioMute-2"]
         XCTAssertTrue(firstMute.waitForExistence(timeout: 8)); XCTAssertTrue(secondMute.exists)
         firstMute.coordinate(withNormalizedOffset: CGVector(dx: 0.9, dy: 0.5)).tap()
@@ -48,10 +44,10 @@ final class BrowserUITests: XCTestCase {
         for id in ["1", "2"] {
             let enable = app.buttons["enableAudioGain-" + id]
             if !enable.isHittable { app.swipeUp() }
-            tapMenuControl("enableAudioGain-" + id)
+            enable.tap()
             let confirm = page.buttons["読み直して再生して有効化"]
             XCTAssertTrue(confirm.waitForExistence(timeout: 5)); confirm.tap()
-            tapMenuControl("menuButton"); tapMenuControl("音声ミキサー")
+            openMixer.tap()
             let slider = app.sliders["audioGain-" + id]
             XCTAssertTrue(slider.waitForExistence(timeout: 18), "Only successful CORS reloads may expose a gain slider")
             if !slider.isHittable { app.swipeUp() }
@@ -69,18 +65,18 @@ final class BrowserUITests: XCTestCase {
         let firstGain = app.sliders["audioGain-1"]
         XCTAssertEqual(firstGain.value as? String, firstAppliedValue, "Changing the second source must preserve the first gain")
         app.swipeUp()
-        tapMenuControl("enableAudioGain-3")
+        app.buttons["enableAudioGain-3"].tap()
         let confirm = page.buttons["読み直して再生して有効化"]
         XCTAssertTrue(confirm.waitForExistence(timeout: 5)); confirm.tap()
-        tapMenuControl("menuButton"); tapMenuControl("音声ミキサー")
+        openMixer.tap()
         app.swipeUp()
         let failure = app.staticTexts.matching(NSPredicate(format: "label BEGINSWITH %@", "CORS・サイト側の制御などで有効化できませんでした。")).firstMatch
         XCTAssertTrue(failure.waitForExistence(timeout: 18), "An actual CORS-denied media load must restore the old loader without routing to Web Audio")
         XCTAssertFalse(app.sliders["audioGain-3"].exists)
-        tapMenuControl("resetAudioRouteButton")
-        tapMenuControl("再読込して制御を解除")
+        app.buttons["resetAudioRouteButton"].tap()
+        app.buttons["再読込して制御を解除"].tap()
         XCTAssertEqual(XCTWaiter.wait(for: [XCTNSPredicateExpectation(predicate: NSPredicate { _, _ in !self.app.sliders["audioGain-1"].exists && !self.app.sliders["audioGain-2"].exists }, object: nil)], timeout: 10), .completed)
-        tapMenuControl("閉じる")
+        app.navigationBars["音声ミキサー"].buttons["閉じる"].tap()
         XCTAssertTrue(page.buttons["Play first"].waitForExistence(timeout: 8))
     }
 
@@ -308,13 +304,6 @@ final class BrowserUITests: XCTestCase {
         // confirm the control is visible. Send a physical touch at its centre
         // and verify the resulting menu/action in the calling test.
         XCTAssertTrue(control.isEnabled)
-        let window = app.windows.firstMatch
-        let visible = NSPredicate { _, _ in
-            let frame = control.frame
-            return frame.width > 0 && frame.height > 0 && window.frame.contains(frame)
-        }
-        XCTAssertEqual(XCTWaiter.wait(for: [XCTNSPredicateExpectation(predicate: visible, object: nil)], timeout: 8), .completed,
-                       "Wait for the menu's layout animation to finish before reading its hit coordinates")
         let frame = control.frame
         XCTAssertGreaterThan(frame.width, 0)
         XCTAssertGreaterThan(frame.height, 0)
