@@ -2,7 +2,7 @@
 
 iPhone 12 / iOS 18.4.1向けの個人用ブラウザ。SwiftUIとWKWebViewで新規実装し、Windowsで編集、クラウドmacOSでビルド、SideStoreで実機へ導入・再署名する。
 
-**最新配信版は0.9.0 build 52。音声の同時再生を優先する任意設定を追加。** [リリース](https://github.com/koyuuuuu/personal-browser-distribution/releases/tag/v0.9.0-build.52)、[配信記録](docs/validation-0.9.0-2026-10-31.json)。本体ソースは[koyuuuuu/personal-browser](https://github.com/koyuuuuu/personal-browser)で公開し、標準の公開リポジトリ用Actionsランナーを利用する。有料ランナーや課金設定は追加していない。
+**最新配信版は0.10.0 build 58。音源ごとのミュートと、対応ファイルの任意の音量調整を追加。** [リリース](https://github.com/koyuuuuu/personal-browser-distribution/releases/tag/v0.10.0-build.58)、[配信記録](docs/validation-0.10.0-2026-11-01.json)。本体ソースは[koyuuuuu/personal-browser](https://github.com/koyuuuuu/personal-browser)で公開し、標準の公開リポジトリ用Actionsランナーを利用する。有料ランナーや課金設定は追加していない。
 
 [v0.1.0の保存済みリリース](https://github.com/koyuuuuu/personal-browser/releases/tag/v0.1.0)から、初期版のビルド元とIPA保管先を参照できる。初期IPAは`ipa-archive`ブランチ、新版はGitHub Releasesに保存し、Actionsの1日保持期限が過ぎても取得できる。arm64実機用、最低iOS 17.0。SideStoreで個人用に署名して導入する。現在は本体リポジトリ全体が公開されている。
 
@@ -55,3 +55,5 @@ mainへのアプリ・テスト・ビルド・配信コードのpushで、Linux�
 0.8.0 build46を配信済み。選択メニューへの検索項目とWebKit制約時の画面内ボタン、mybrowser://search?text=、Googleの初期値を追加。既存の検索エンジン設定を維持。[使い方](docs/changes-0.8.0.ja.md)、[共有ショートカット手順](docs/shortcuts.ja.md)。
 
 0.9.0 build52を配信済み。「設定 → 音声の同時再生」で音声ミックス準備とWeb非排他モードを切替可能。初期オフで従来方式を維持。実際のaudio要素・別タブ・停止操作・設定保持の代表UI1件を確認。YouTube・Apple Music・全画面・PiP等の全組合せは保証しない。[使い方・制約](docs/changes-0.9.0.ja.md)。
+
+0.10.0 build58を配信済み。「メニュー → 音声ミキサー」で検出した音源を個別ミュートし、対応する直接ファイルはCORS付き再読込とページ上の明示確認後に0〜100%の相対音量を調整する。Blob/MSE・DRM・ライブ・他アプリ等の音量は対象外。Python53/Core66/関連UI1件・実機用ビルドと配信照合に成功。[使い方・制約](docs/changes-0.10.0.ja.md)。

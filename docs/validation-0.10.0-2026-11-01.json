@@ -1,0 +1,99 @@
+{
+  "date_utc": "2026-11-01",
+  "version": "0.10.0",
+  "build": "58",
+  "source_commit": "e40d2d035d020636730ff2f713de8aa5c3b97cda",
+  "tag": "v0.10.0-build.58",
+  "ci_run": "https://github.com/koyuuuuu/personal-browser/actions/runs/41345832268",
+  "delivery_status": "published",
+  "source_visibility": "public",
+  "public_release": "https://github.com/koyuuuuu/personal-browser-distribution/releases/tag/v0.10.0-build.58",
+  "source_url": "https://raw.githubusercontent.com/koyuuuuu/personal-browser-distribution/main/source.json",
+  "ipa": {
+    "sha256": "d49710e3b6a303b41c90462f43aa74ecca4e28189b6aeddf29085081c1f331bc",
+    "size": 5355711,
+    "bundle_id": "local.personalbrowser.app",
+    "version": "0.10.0",
+    "build": "58",
+    "minimum_ios": "17.0",
+    "architecture": "arm64",
+    "data_schema": 1
+  },
+  "checks": {
+    "python": 53,
+    "macos_core": 66,
+    "ui_passed": 1,
+    "ui_cases": [
+      "testPerSourceVolumeAndMuteUseIndependentRealPlayers"
+    ],
+    "ui_duration_seconds": 75.461,
+    "individual_mute": "first DOM player muted/unmuted while sibling remains unmuted",
+    "independent_volume": "two real PCM players CORS-reloaded via trusted in-page buttons; actual GainNode values read back within 3 percentage points of UI drag targets 25/75%; first unchanged after second adjustment",
+    "cors_denied": "different loopback port media explicitly started first; CORS reload rejected, original-loader restoration message shown, no third GainNode slider",
+    "route_reset": "confirmed full-page reload removes both gain sliders; original fixture controls available again",
+    "legacy_media_handler_and_script": {
+      "unchanged": true,
+      "sha256": "8233d9cc7ff0b82e3aa24f9ad97543226dd5c9124dfd80ce1d73ab3de5b91edc"
+    },
+    "compatibility_roundtrip": "not applicable; no persistence/model/identity change, inventory and gain state memory-only",
+    "anonymous_latest_ipa_feed_hash_size_identity": "passed",
+    "source_release_public_ipa_sha_match": true,
+    "swift_webkit_overlay_strong_dependency": false,
+    "swift_system_runtime_path": "present",
+    "full_ui_suite": "not run under scoped policy",
+    "full_old_ipa_download_audit": "not repeated; historical feed entries/assets retained",
+    "speaker_waveform_or_universal_site_support": "not established by GainNode parameter assertions",
+    "system_menu_route": "compiled; functional UI fixture opens identical mixer directly to avoid flaky system-menu automation; not claimed as a successful menu-navigation UI test"
+  },
+  "pre_delivery_test_corrections": [
+    {
+      "run": 53,
+      "kind": "test compile",
+      "detail": "explicit self required in escaping UI predicate; app runtime code unchanged"
+    },
+    {
+      "run": 54,
+      "kind": "UI automation",
+      "detail": "system-menu action reported zero frame before stable snapshot"
+    },
+    {
+      "run": 55,
+      "kind": "UI automation",
+      "detail": "geometry predicate timeout consumed by slow accessibility queries; replaced menu automation with Debug-only direct mixer fixture"
+    },
+    {
+      "run": 56,
+      "kind": "fixture",
+      "detail": "mute/two actual gain controls passed; paused third media did not preload metadata; added explicit third-player start and second loopback origin port"
+    },
+    {
+      "run": 57,
+      "kind": "UI selector",
+      "detail": "nested WebView descendant query missed rendered fixture controls; use unique application-wide button queries in single-tab test"
+    }
+  ],
+  "implementation": {
+    "scope": "live WKWebView DOM audio/video per frame; per-source mute and explicit opt-in gain",
+    "gain": "own AudioContext + MediaElementAudioSourceNode + GainNode only after successful CORS-mode media reload; smooth gain changes, no volume boost",
+    "activation": "trusted in-page confirmation; selected-source reload explained; failed loader restores original crossorigin attribute without forcing replay",
+    "reset": "explicit confirmed page reload, not disconnecting a source node or merely restoring gain to 100%",
+    "storage": "ephemeral per-document registry, no source URLs/audio data or private playback traces written to disk",
+    "extra_entitlements": false,
+    "monkeypatch_play_pause_or_audio_context": false,
+    "javascript_bridge": "public Objective-C isolated-world evaluation, WKFrameInfo routing and JSONSerialization payload",
+    "debug_fixture": "fixed loopback URL and direct mixer entry require both --ui-testing and --ui-volume-fixture; compiled out of Release"
+  },
+  "limitations": [
+    "Gain enabled only for recognized direct HTTP(S) media files with finite ready metadata and successful CORS-mode reload",
+    "Blob/MSE (including common YouTube playback), live, DRM and srcObject gain unsupported; detected DOM players offer mute",
+    "Opaque Web Audio and native-only players not inventoried; other-app/Apple Music individual volume cannot be controlled",
+    "Fullscreen/PiP/background/site or OS interruption behavior not universally guaranteed; stopped media is not auto-replayed",
+    "Activation reload may interrupt playback or change seek position; removing graph route requires explicit page reload",
+    "Parameters/mute states tested; actual speaker waveform, user iPhone acceptance, cross-tab volume, arbitrary third-party media and all lock/PiP combinations not claimed"
+  ],
+  "rollback": {
+    "v0.9.0-build.52": "1608c4338c8c1e7ad13c1cc4f2ea2edbcfaed82ec49ae749828f37b06d2ff11c",
+    "historical_tags_and_ipas": "retained unchanged"
+  },
+  "device_acceptance": "0.10.0 on user iPhone not yet reported"
+}
