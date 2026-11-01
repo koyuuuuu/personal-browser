@@ -64,7 +64,11 @@ final class BrowserUITests: XCTestCase {
         }
         let firstGain = app.sliders["audioGain-1"]
         XCTAssertEqual(firstGain.value as? String, firstAppliedValue, "Changing the second source must preserve the first gain")
+        app.navigationBars["音声ミキサー"].buttons["閉じる"].tap()
+        page.buttons["Play third"].tap()
+        openMixer.tap()
         app.swipeUp()
+        XCTAssertTrue(app.buttons["enableAudioGain-3"].waitForExistence(timeout: 10), "Explicitly load the third player's metadata before enabling its CORS check")
         app.buttons["enableAudioGain-3"].tap()
         let confirm = page.buttons["読み直して再生して有効化"]
         XCTAssertTrue(confirm.waitForExistence(timeout: 5)); confirm.tap()

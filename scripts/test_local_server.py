@@ -54,7 +54,10 @@ def main():
                 data, mime = audio, 'audio/wav'
             elif self.path in ['/concurrent-audio-a', '/concurrent-audio-b', '/volume-fixture']:
                 title = 'Volume fixture' if self.path == '/volume-fixture' else 'Concurrent A' if self.path.endswith('-a') else 'Concurrent B'
-                extra_player = '<audio aria-label="No CORS" src="http://localhost:18765/audio.wav" preload="auto"></audio>' if self.path == '/volume-fixture' else ''
+                # A different loopback port guarantees a second origin without
+                # localhost DNS/IPv6 differences. iOS may defer preload: start
+                # this player explicitly before testing its CORS-mode reload.
+                extra_player = '<audio id="third" aria-label="No CORS" src="http://127.0.0.1:18767/audio.wav" preload="auto"></audio><button onclick="document.getElementById(\'third\').play()">Play third</button>' if self.path == '/volume-fixture' else ''
                 data = ('''<!doctype html><meta name="viewport" content="width=device-width,initial-scale=1">
                 <title>''' + title + '''</title><h1>''' + title + '''</h1>
                 <audio id="first" src="/audio.wav" loop preload="auto"></audio>
@@ -140,7 +143,8 @@ def main():
         def log_message(self, *args):
             pass
 
-    servers = [ThreadingHTTPServer(('127.0.0.1', 18765), Handler), ThreadingHTTPServer(('127.0.0.1', 18766), Handler)]
+    servers = [ThreadingHTTPServer(('127.0.0.1', 18765), Handler), ThreadingHTTPServer(('127.0.0.1', 18766), Handler),
+               ThreadingHTTPServer(('127.0.0.1', 18767), Handler)]
     context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER); context.load_cert_chain(args.cert, args.key)
     servers[1].socket = context.wrap_socket(servers[1].socket, server_side=True)
     for server in servers:
