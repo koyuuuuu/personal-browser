@@ -44,6 +44,7 @@ final class BrowserUITests: XCTestCase {
         XCTAssertEqual(XCTWaiter.wait(for: [XCTNSPredicateExpectation(predicate: NSPredicate { _, _ in firstMute.value as? String == "1" }, object: nil)], timeout: 5), .completed)
         XCTAssertEqual(secondMute.value as? String, "0", "Muting one DOM player must not mute its sibling")
         firstMute.coordinate(withNormalizedOffset: CGVector(dx: 0.9, dy: 0.5)).tap()
+        var firstAppliedValue: String?
         for id in ["1", "2"] {
             let enable = app.buttons["enableAudioGain-" + id]
             if !enable.isHittable { app.swipeUp() }
@@ -63,9 +64,10 @@ final class BrowserUITests: XCTestCase {
             }
             XCTAssertEqual(XCTWaiter.wait(for: [XCTNSPredicateExpectation(predicate: applied, object: nil)], timeout: 6), .completed,
                            "Read back the actual GainNode parameter, not just the slider's requested value")
+            if id == "1" { firstAppliedValue = slider.value as? String }
         }
         let firstGain = app.sliders["audioGain-1"]
-        XCTAssertEqual(firstGain.value as? String, "25%", "Changing the second source must preserve the first gain")
+        XCTAssertEqual(firstGain.value as? String, firstAppliedValue, "Changing the second source must preserve the first gain")
         app.swipeUp()
         tapMenuControl("enableAudioGain-3")
         let confirm = page.buttons["読み直して再生して有効化"]
@@ -77,7 +79,7 @@ final class BrowserUITests: XCTestCase {
         XCTAssertFalse(app.sliders["audioGain-3"].exists)
         tapMenuControl("resetAudioRouteButton")
         tapMenuControl("再読込して制御を解除")
-        XCTAssertEqual(XCTWaiter.wait(for: [XCTNSPredicateExpectation(predicate: NSPredicate { _, _ in !app.sliders["audioGain-1"].exists && !app.sliders["audioGain-2"].exists }, object: nil)], timeout: 10), .completed)
+        XCTAssertEqual(XCTWaiter.wait(for: [XCTNSPredicateExpectation(predicate: NSPredicate { _, _ in !self.app.sliders["audioGain-1"].exists && !self.app.sliders["audioGain-2"].exists }, object: nil)], timeout: 10), .completed)
         tapMenuControl("閉じる")
         XCTAssertTrue(page.buttons["Play first"].waitForExistence(timeout: 8))
     }
