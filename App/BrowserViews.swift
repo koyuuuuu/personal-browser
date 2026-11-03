@@ -34,6 +34,10 @@ struct BrowserRootView: View {
     @Environment(\.dynamicTypeSize) private var systemTextSize
     #if DEBUG
     @State private var preparedAudioFixture = false
+    @State private var preparedResilienceFixture = false
+    private var resilienceFixture: Bool {
+        ProcessInfo.processInfo.arguments.contains("--ui-testing") && ProcessInfo.processInfo.arguments.contains("--ui-resilience-fixture")
+    }
     private var audioFixture: Bool {
         ProcessInfo.processInfo.arguments.contains("--ui-testing") && ProcessInfo.processInfo.arguments.contains("--ui-volume-fixture")
     }
@@ -47,6 +51,9 @@ struct BrowserRootView: View {
                 Button("ミキサー（検証）") { sheet = .audioMixer }
                     .buttonStyle(.borderedProminent).accessibilityIdentifier("audioMixerFixtureButton")
                     .padding(.trailing, 12).padding(.bottom, 145)
+            } else if resilienceFixture, let selected = store.selectedTab {
+                ResilienceFixtureControls(store: store, tab: selected)
+                    .frame(width: 160).padding(.trailing, 10).padding(.bottom, 145)
             }
             #endif
         }
@@ -56,6 +63,16 @@ struct BrowserRootView: View {
                 preparedAudioFixture = true
                 AudioMixingController.shared.setEnabled(true)
                 store.navigate("http://127.0.0.1:18765/volume-fixture")
+            }
+            if resilienceFixture && !preparedResilienceFixture {
+                preparedResilienceFixture = true
+                AppPromotionBlocker.shared.setEnabled(true)
+                // These cases exercise DOM compatibility/recovery, not network
+                // filter compilation; no external filtering requests in fixtures.
+                var features = store.features; features.blockAdvertisements = false; store.updateFeatures(features)
+                let args = ProcessInfo.processInfo.arguments
+                let path = args.contains("--ui-promotion-page") ? "app-promotion-fixture" : args.contains("--ui-normal-scroll-fixture") ? "scroll-fixture" : "locked-viewport"
+                store.navigate("http://127.0.0.1:18765/" + path)
             }
             #endif
         }
@@ -145,6 +162,28 @@ struct BrowserRootView: View {
         sheet = .share(ShareRequest(url: url))
     }
 }
+
+#if DEBUG
+@MainActor
+private struct ResilienceFixtureControls: View {
+    @ObservedObject var store: BrowserStore
+    @ObservedObject var tab: BrowserTab
+    @ObservedObject private var promotions = AppPromotionBlocker.shared
+    var body: some View {
+        VStack(spacing: 3) {
+            Text("\(tab.automaticRecoveryCount)").accessibilityIdentifier("automaticPageRecoveryCount")
+            Button("表示終了を通知") {
+                if let view = tab.existingWebView { tab.webViewWebContentProcessDidTerminate(view) }
+            }.accessibilityIdentifier("simulatePageTerminationButton")
+            Button("接続失敗") { store.navigate("http://127.0.0.1:18769/unavailable") }
+                .accessibilityIdentifier("loadUnavailablePageButton")
+            Button("誘導対策を切替") { promotions.setEnabled(!promotions.enabled) }
+                .accessibilityIdentifier("toggleAppPromotionFixtureButton")
+            Button("再読込（検証）") { tab.retryPage() }.accessibilityIdentifier("reloadResilienceFixtureButton")
+        }.font(.caption).buttonStyle(.borderedProminent)
+    }
+}
+#endif
 
 struct ActivityView: UIViewControllerRepresentable {
     let items: [Any]

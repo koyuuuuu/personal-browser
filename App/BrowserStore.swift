@@ -172,6 +172,10 @@ final class BrowserStore: ObservableObject {
             self.scheduleSave()
         }
         tab.onStateChange = { [weak self] in self?.scheduleSave() }
+        tab.mayRecoverAutomatically = { [weak self, weak tab] in
+            guard let self, let tab else { return false }
+            return self.selectedID == tab.id
+        }
         tab.onVerticalScroll = { [weak self, weak tab] delta in
             guard let self, let tab, self.selectedID == tab.id else { return }
             self.scrollChrome(delta: Double(delta))
@@ -253,6 +257,7 @@ final class BrowserStore: ObservableObject {
         }
         selectedTab?.capturePreview()
         selectedID = tab.id
+        if tab.pageUnavailable { revealChrome(); tab.recoverPageIfNeeded() }
         if recordingVisit { tabSelections.visit(tab.id) }
         activationOrder.removeAll { $0 == tab.id }; activationOrder.append(tab.id)
         trimLiveTabs()
@@ -421,10 +426,15 @@ final class BrowserStore: ObservableObject {
     func setLandscape(_ value: Bool) {
         guard value != landscape else { return }
         landscape = value; chromeState.setLandscape(value); publishChrome()
+        if selectedTab?.pageUnavailable == true { revealChrome() }
     }
-    func hideChrome() { chromeState.hide(); publishChrome() }
+    func hideChrome() {
+        if selectedTab?.pageUnavailable == true { revealChrome(); return }
+        chromeState.hide(); publishChrome()
+    }
     func revealChrome() { chromeState.reveal(); publishChrome(); ignoreChromeScrollUntil = Date().addingTimeInterval(0.6) }
     func scrollChrome(delta: Double) {
+        if selectedTab?.pageUnavailable == true { revealChrome(); return }
         guard Date() >= ignoreChromeScrollUntil else { return }
         chromeState.scroll(delta: delta); publishChrome()
     }
@@ -437,7 +447,9 @@ final class BrowserStore: ObservableObject {
         tab.previewData = try? previews.image(for: record)
     }
     func applicationBackgrounded() { flush() }
-    func applicationForegrounded() {}
+    func applicationForegrounded() {
+        if selectedTab?.pageUnavailable == true { revealChrome(); selectedTab?.recoverPageIfNeeded() }
+    }
     func updatePresentation(_ value: PresentationPreferences) {
         presentation = value.normalized()
         for tab in tabs { tab.applyPresentation(presentation) }

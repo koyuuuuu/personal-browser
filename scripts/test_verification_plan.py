@@ -5,6 +5,15 @@ from verification_plan import AREAS, ROOT, changed_methods, plan
 
 
 class VerificationPolicyTests(unittest.TestCase):
+    def test_resilience_runs_only_related_escape_promotion_retry_and_normal_scroll_checks(self):
+        result = plan(["App/AppPromotionBlocker.swift", "App/AppPromotionScript.swift", "App/ChromeRecoveryObserver.swift", "Sources/BrowserCore/PageRecovery.swift", "App/BrowserViews.swift", "App/BrowserWebKitBridge.h", "App/BrowserWebKitBridge.m", "App/FeatureSettingsView.swift", "App/BrowserChrome.swift", "App/BrowserTab.swift", "App/BrowserStore.swift", "UITests/BrowserUITests.swift"],
+                      store_changes={"makeTab", "select", "setLandscape", "hideChrome", "scrollChrome", "applicationForegrounded"},
+                      tab_changes={"preamble", "resolve", "init", "createWebView", "configureBlocking", "load", "capturePreview", "releaseWebView", "dispose", "webView", "show", "webViewWebContentProcessDidTerminate", "cancelPageRecovery", "recoverPageIfNeeded", "retryPage", "updateUIView"},
+                      chrome_changes={"preamble", "viewport", "actionButton"}, ui_changes={"setUpWithError"})
+        self.assertEqual(result["ui_tests"], sorted(AREAS["browsing-resilience"]))
+        self.assertFalse(result["compatibility"])
+        self.assertFalse(result["verify_archives"])
+
     def test_source_volume_runs_only_its_real_player_scenario_without_storage_or_archive_checks(self):
         result = plan(["App/AudioSourcesController.swift", "App/MediaVolumeScript.swift", "App/AudioSourcesView.swift", "App/BrowserViews.swift", "App/BrowserWebKitBridge.h", "App/BrowserWebKitBridge.m", "App/BrowserTab.swift", "App/BrowserChrome.swift", "UITests/BrowserUITests.swift"],
                       tab_changes={"createWebView", "releaseWebView"}, chrome_changes={"actionButton"}, ui_changes={"tapMenuControl"})

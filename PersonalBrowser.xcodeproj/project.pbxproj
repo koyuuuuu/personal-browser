@@ -5,6 +5,26 @@
 	};
 	"objectVersion" = 56;
 	"objects" = {
+		"6F62DA4C08A0CD82C98782BB" = {
+			"isa" = "PBXFileReference";
+			"lastKnownFileType" = "sourcecode.swift";
+			"path" = "AppPromotionBlocker.swift";
+			"sourceTree" = "<group>";
+		};
+		"1AA002211015FD390F4C6184" = {
+			"isa" = "PBXBuildFile";
+			"fileRef" = "6F62DA4C08A0CD82C98782BB";
+		};
+		"9A2F6D54F407CE75B8570A7B" = {
+			"isa" = "PBXFileReference";
+			"lastKnownFileType" = "sourcecode.swift";
+			"path" = "AppPromotionScript.swift";
+			"sourceTree" = "<group>";
+		};
+		"FBECB66496D20B73ECD857EE" = {
+			"isa" = "PBXBuildFile";
+			"fileRef" = "9A2F6D54F407CE75B8570A7B";
+		};
 		"F157FF45225FAB6A0C23FFB2" = {
 			"isa" = "PBXFileReference";
 			"lastKnownFileType" = "sourcecode.swift";
@@ -100,6 +120,16 @@
 		"F5ABAACB98CE198A32459B60" = {
 			"isa" = "PBXBuildFile";
 			"fileRef" = "54C800F57869AEF5FC3CAB28";
+		};
+		"7A677F3FBDE6F8B8C27712C1" = {
+			"isa" = "PBXFileReference";
+			"lastKnownFileType" = "sourcecode.swift";
+			"path" = "ChromeRecoveryObserver.swift";
+			"sourceTree" = "<group>";
+		};
+		"E1B61F9F8912CAC6E89771A7" = {
+			"isa" = "PBXBuildFile";
+			"fileRef" = "7A677F3FBDE6F8B8C27712C1";
 		};
 		"FDFF98B80400028AC5F76A26" = {
 			"isa" = "PBXFileReference";
@@ -322,6 +352,8 @@
 		"1C48CE29E4E135EE62951B22" = {
 			"isa" = "PBXGroup";
 			"children" = (
+				"6F62DA4C08A0CD82C98782BB",
+				"9A2F6D54F407CE75B8570A7B",
 				"F157FF45225FAB6A0C23FFB2",
 				"AF4B2F391E8945DF171E8D0F",
 				"EC80378C164AC5AEDCE3E716",
@@ -332,6 +364,7 @@
 				"E7A2536D3C797A21F68AD776",
 				"9A8C1008C72D87ADFD089820",
 				"54C800F57869AEF5FC3CAB28",
+				"7A677F3FBDE6F8B8C27712C1",
 				"FDFF98B80400028AC5F76A26",
 				"9AB7B064CE0B98587CD37030",
 				"A9CCEDB582C1DDC4DEA293C4",
@@ -459,6 +492,16 @@
 			"isa" = "PBXBuildFile";
 			"fileRef" = "0258D0175D953E32562EF129";
 		};
+		"E4C724E6FF7AF4892861D28A" = {
+			"isa" = "PBXFileReference";
+			"lastKnownFileType" = "sourcecode.swift";
+			"path" = "PageRecovery.swift";
+			"sourceTree" = "<group>";
+		};
+		"DB9ACD5616FAE46366CB6AB4" = {
+			"isa" = "PBXBuildFile";
+			"fileRef" = "E4C724E6FF7AF4892861D28A";
+		};
 		"35634339432D2526FB455AA5" = {
 			"isa" = "PBXFileReference";
 			"lastKnownFileType" = "sourcecode.swift";
@@ -572,6 +615,7 @@
 				"569E783A45A9624CE9A07852",
 				"45A530510519E6D25DAD872F",
 				"0258D0175D953E32562EF129",
+				"E4C724E6FF7AF4892861D28A",
 				"35634339432D2526FB455AA5",
 				"91A51E60D9EB4278FCB2CF14",
 				"5107DB4C887A7FAEBDA1E8E4",
@@ -690,7 +734,7 @@
 				"INFOPLIST_FILE" = "App/Info.plist";
 				"GENERATE_INFOPLIST_FILE" = "NO";
 				"CURRENT_PROJECT_VERSION" = "1";
-				"MARKETING_VERSION" = "0.10.0";
+				"MARKETING_VERSION" = "0.10.1";
 				"CODE_SIGN_STYLE" = "Automatic";
 				"TARGETED_DEVICE_FAMILY" = "1";
 				"SUPPORTED_PLATFORMS" = "iphoneos iphonesimulator";
@@ -718,7 +762,7 @@
 				"INFOPLIST_FILE" = "App/Info.plist";
 				"GENERATE_INFOPLIST_FILE" = "NO";
 				"CURRENT_PROJECT_VERSION" = "1";
-				"MARKETING_VERSION" = "0.10.0";
+				"MARKETING_VERSION" = "0.10.1";
 				"CODE_SIGN_STYLE" = "Automatic";
 				"TARGETED_DEVICE_FAMILY" = "1";
 				"SUPPORTED_PLATFORMS" = "iphoneos iphonesimulator";
@@ -800,6 +844,8 @@
 			"isa" = "PBXSourcesBuildPhase";
 			"buildActionMask" = 2147483647;
 			"files" = (
+				"1AA002211015FD390F4C6184",
+				"FBECB66496D20B73ECD857EE",
 				"D7E598445737DD44E09FF002",
 				"FE3000A0FF59936B42A8E29C",
 				"1A8960C76308A9512900F64B",
@@ -809,6 +855,7 @@
 				"C14B9745C3326C0F7C9BC809",
 				"C6150AF80F394D78175E2EEB",
 				"F5ABAACB98CE198A32459B60",
+				"E1B61F9F8912CAC6E89771A7",
 				"2B9766949F79DD811AFDAC89",
 				"6A29F5F7C6BA8B045ADE92C3",
 				"C276B1C88341F830C225ACB9",
@@ -839,6 +886,7 @@
 				"F2301E9DF7FCD0E1655D50A0",
 				"50BECF23DECAA0FC7BF7C48B",
 				"DA9C3EB926325121D508F8D5",
+				"DB9ACD5616FAE46366CB6AB4",
 				"32356271187395332A71A4E6",
 				"F739ADBFE475305DF67409B3",
 				"FB2A7AB93D59B211329BB367",

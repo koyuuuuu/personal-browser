@@ -76,6 +76,33 @@ def main():
                 setInterval(sample,250);
                 </script>''' + extra_player).encode('utf-8')
                 mime = 'text/html; charset=utf-8'
+            elif self.path == '/locked-viewport':
+                data = b'''<!doctype html><meta name="viewport" content="width=device-width,initial-scale=1">
+                <title>Locked viewport</title><style>html,body{overflow:hidden;height:100%;margin:0}.cover{position:fixed;inset:0;touch-action:none;background:#ddd}</style>
+                <div class="cover" role="dialog" aria-modal="true"><h1>Locked viewport</h1><p>Document scrolling is blocked.</p></div>
+                <script>document.addEventListener('touchmove',e=>e.preventDefault(),{passive:false});</script>'''
+                mime = 'text/html; charset=utf-8'
+            elif self.path == '/app-promotion-fixture':
+                data = b'''<!doctype html><meta name="viewport" content="width=device-width,initial-scale=1">
+                <title>App promotion fixture</title><style>body.rpl-scroll-lock{overflow:hidden}main{min-height:900px}dialog{max-width:280px}</style>
+                <main inert><h1>Promotion content</h1><p id="choice"></p><p id="result"></p>
+                <button onclick="document.getElementById('result').textContent='Underlying action worked'">Underlying action</button>
+                <button onclick="document.getElementById('login').showModal()">Show login</button>
+                <button onclick="check()">Check compatibility</button></main>
+                <dialog id="app-upsell-blocking-bottom-sheet-direct"><p>Use the Reddit app</p><a href="https://reddit.app.link/test">Open app</a>
+                <button onclick="this.closest('dialog').close();document.getElementById('choice').textContent='Browser choice used'">Continue in browser</button></dialog>
+                <div id="shadow-host"></div><div class="smartbanner"><a href="https://apps.apple.com/app/id123">Get app</a></div>
+                <dialog id="login"><p>Login remains</p><button onclick="this.closest('dialog').close()">Close login</button></dialog>
+                <script>
+                document.body.className='rpl-scroll-lock';
+                document.getElementById('shadow-host').attachShadow({mode:'open'}).innerHTML='<xpromo-app-selector><a href="reddit://test">Open app</a></xpromo-app-selector>';
+                document.getElementById('app-upsell-blocking-bottom-sheet-direct').showModal();
+                function check(){const n=document.getElementById('shadow-host').shadowRoot.querySelector('xpromo-app-selector');
+                  const ok=!document.querySelector('main').inert && getComputedStyle(document.body).overflowY!=='hidden' &&
+                  !document.getElementById('app-upsell-blocking-bottom-sheet-direct').open && getComputedStyle(n).display==='none' && getComputedStyle(document.querySelector('.smartbanner')).display==='none';
+                  document.getElementById('result').textContent=ok?'Promotion removed; content usable':'Still blocked';}
+                </script>'''
+                mime = 'text/html; charset=utf-8'
             elif self.path == '/selection-fixture':
                 data = '''<!doctype html><meta name="viewport" content="width=device-width,initial-scale=1">
                 <title>Selection fixture</title><p id="sample">日本語 C++ &amp; # %2B</p>

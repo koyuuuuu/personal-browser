@@ -1,6 +1,8 @@
 #import <WebKit/WebKit.h>
 
 NS_ASSUME_NONNULL_BEGIN
+void PBApplyAppPromotionPolicy(WKWebView *view, BOOL enabled)
+    NS_SWIFT_NAME(applyAppPromotionPolicy(_:enabled:));
 /// Calls the documented Objective-C API without the optional Swift overlay.
 void PBApplyAudioMixingPolicy(WKWebView *view, BOOL enabled)
     NS_SWIFT_NAME(applyAudioMixingPolicy(_:enabled:));

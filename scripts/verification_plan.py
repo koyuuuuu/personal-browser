@@ -10,6 +10,7 @@ ROOT = Path(__file__).resolve().parents[1]
 
 # One representative scenario per behavior, rather than overlapping smoke tests.
 AREAS = {
+    "browsing-resilience": ["testLockedViewportChromeAndBoundedRecovery", "testAppPromotionSuppressionPreservesLoginAndCanBeDisabled", "testPortraitForwardScrollHidesBarsAndBottomBounceDoesNotReveal"],
     "audio-volume": ["testPerSourceVolumeAndMuteUseIndependentRealPlayers"],
     "audio-mixing": ["testConcurrentAudioPreferenceAndRealPlayersAcrossTabs"],
     "selection-search": ["testSelectedTextSearchOpensAnAdjacentNewTab"],
@@ -31,6 +32,10 @@ AREAS = {
     "launch": ["testWebKitRendersAndExecutesOfflinePage"],
 }
 PATH_AREAS = {
+    "App/ChromeRecoveryObserver.swift": ["browsing-resilience"],
+    "App/AppPromotionBlocker.swift": ["browsing-resilience"],
+    "App/AppPromotionScript.swift": ["browsing-resilience"],
+    "Sources/BrowserCore/PageRecovery.swift": ["browsing-resilience"],
     "App/BrowserViews.swift": ["chrome", "home"],
     "App/TabGridView.swift": ["tabs"], "App/TabOverview.swift": ["tabs"],
     "App/HomePageView.swift": ["home", "favorites"], "App/FavoritesSettingsView.swift": ["favorites"],
@@ -120,8 +125,11 @@ def plan(changed, store_changes=(), ui_changes=(), tab_changes=None, pending_app
     changed = set(changed)
     areas = set()
     volume_context = bool(changed & {"App/AudioSourcesController.swift", "App/MediaVolumeScript.swift", "App/AudioSourcesView.swift"})
+    resilience_context = bool(changed & {"App/ChromeRecoveryObserver.swift", "App/AppPromotionBlocker.swift", "App/AppPromotionScript.swift", "Sources/BrowserCore/PageRecovery.swift"})
     for path in changed:
-        if volume_context and path in {"App/BrowserViews.swift", "App/BrowserWebKitBridge.h", "App/BrowserWebKitBridge.m"}:
+        if resilience_context and path in {"App/BrowserViews.swift", "App/BrowserWebKitBridge.h", "App/BrowserWebKitBridge.m", "App/FeatureSettingsView.swift"}:
+            areas.add("browsing-resilience")
+        elif volume_context and path in {"App/BrowserViews.swift", "App/BrowserWebKitBridge.h", "App/BrowserWebKitBridge.m"}:
             areas.add("audio-volume")
         elif path == "App/SettingsView.swift" and "App/AudioMixingSettingsView.swift" in changed:
             areas.add("audio-mixing")
@@ -130,7 +138,9 @@ def plan(changed, store_changes=(), ui_changes=(), tab_changes=None, pending_app
     selection_context = bool(changed & {"App/SelectedTextWebView.swift", "App/SelectedTextSearch.swift"})
     if "App/BrowserChrome.swift" in changed:
         action_methods = {"disabledAddress", "performAddress", "perform", "actionButton"}
-        if volume_context and chrome_changes is not None and set(chrome_changes) <= {"actionButton"}:
+        if resilience_context and chrome_changes is not None and set(chrome_changes) <= {"preamble", "viewport", "actionButton"}:
+            areas.add("browsing-resilience")
+        elif volume_context and chrome_changes is not None and set(chrome_changes) <= {"actionButton"}:
             areas.add("audio-volume")
         elif selection_context and chrome_changes is not None and set(chrome_changes) <= {"viewport"}:
             areas.add("selection-search")
@@ -140,7 +150,13 @@ def plan(changed, store_changes=(), ui_changes=(), tab_changes=None, pending_app
             areas.update(["chrome", "search"])
     if "App/BrowserTab.swift" in changed:
         names = set(tab_changes or ())
-        if tab_changes is None:
+        resilience_methods = {"preamble", "resolve", "init", "createWebView", "configureBlocking", "load", "capturePreview", "releaseWebView", "dispose", "webView", "show", "webViewWebContentProcessDidTerminate", "cancelPageRecovery", "recoverPageIfNeeded", "retryPage", "updateUIView"}
+        if resilience_context and tab_changes is not None and names <= resilience_methods:
+            # Trust/permission handlers and navigation allow/cancel routing are
+            # unchanged; exercise the failure/retry/escape paths, not every TLS,
+            # external URL, preview or audio scenario sharing this source file.
+            areas.add("browsing-resilience")
+        elif tab_changes is None:
             areas.update(["links", "security", "previews"])
         else:
             if names & {"preamble", "init", "createWebView", "releaseWebView", "loadTestFixture"}: areas.add("launch")
@@ -149,7 +165,10 @@ def plan(changed, store_changes=(), ui_changes=(), tab_changes=None, pending_app
             if "capturePreview" in names: areas.add("previews")
             if any(name.startswith("scrollView") for name in names): areas.add("chrome")
     store_changes = set(store_changes)
-    if "App/BrowserStore.swift" in changed:
+    resilience_store = resilience_context and store_changes <= {"makeTab", "select", "setLandscape", "hideChrome", "scrollChrome", "applicationForegrounded"}
+    if "App/BrowserStore.swift" in changed and resilience_store:
+        areas.add("browsing-resilience")
+    elif "App/BrowserStore.swift" in changed:
         if store_changes & {"preamble", "init"}:
             areas.update(["launch", "tabs"])
         for name in store_changes:
@@ -170,7 +189,7 @@ def plan(changed, store_changes=(), ui_changes=(), tab_changes=None, pending_app
         tests.update(AREAS["launch"])
     # These cases already launch and render a real WKWebView fixture, including
     # when a shared UI helper changes along with the feature under test.
-    if areas & {"selection-search", "audio-mixing", "audio-volume"}:
+    if areas & {"selection-search", "audio-mixing", "audio-volume", "browsing-resilience"}:
         tests.difference_update(AREAS["launch"])
     return {
         "areas": sorted(areas), "ui_tests": sorted(tests),

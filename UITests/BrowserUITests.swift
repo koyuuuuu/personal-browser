@@ -1,4 +1,5 @@
 import XCTest
+import UIKit
 
 final class BrowserUITests: XCTestCase {
     private var app: XCUIApplication!
@@ -13,6 +14,11 @@ final class BrowserUITests: XCTestCase {
         if name.contains("testPerSourceVolumeAndMuteUseIndependentRealPlayers") {
             app.launchArguments += ["--ui-no-fixture", "--ui-volume-fixture"]
         }
+        if name.contains("testLockedViewportChromeAndBoundedRecovery") || name.contains("testAppPromotionSuppressionPreservesLoginAndCanBeDisabled") || name.contains("testPortraitForwardScrollHidesBarsAndBottomBounceDoesNotReveal") {
+            app.launchArguments += ["--ui-no-fixture", "--ui-resilience-fixture"]
+            if name.contains("testAppPromotion") { app.launchArguments += ["--ui-promotion-page"] }
+            if name.contains("testPortraitForwardScroll") { app.launchArguments += ["--ui-normal-scroll-fixture"] }
+        }
         app.launch()
         let ready = app.textFields["addressField"].waitForExistence(timeout: 15)
         if !ready { Self.launchFailure = true }
@@ -26,6 +32,56 @@ final class BrowserUITests: XCTestCase {
             screenshot.lifetime = .keepAlways
             add(screenshot)
         }
+    }
+
+    func testLockedViewportChromeAndBoundedRecovery() {
+        XCTAssertTrue(app.staticTexts["Locked viewport"].firstMatch.waitForExistence(timeout: 20))
+        let field = app.textFields["addressField"]
+        for orientation in [UIDeviceOrientation.portrait, .landscapeLeft] {
+            XCUIDevice.shared.orientation = orientation
+            for upward in [true, false] {
+                if field.exists { app.buttons["hideChromeButton"].tap() }
+                XCTAssertEqual(XCTWaiter.wait(for: [XCTNSPredicateExpectation(predicate: NSPredicate { _, _ in !field.exists }, object: nil)], timeout: 5), .completed)
+                let start = app.coordinate(withNormalizedOffset: CGVector(dx: 0.3, dy: upward ? 0.65 : 0.3))
+                let end = app.coordinate(withNormalizedOffset: CGVector(dx: 0.3, dy: upward ? 0.3 : 0.65))
+                start.press(forDuration: 0.03, thenDragTo: end)
+                XCTAssertTrue(field.waitForExistence(timeout: 8), "Actual finger input must restore bars even when touchmove is cancelled and the viewport cannot move")
+            }
+        }
+        XCUIDevice.shared.orientation = .portrait
+        XCTAssertTrue(field.waitForExistence(timeout: 8))
+        app.buttons["hideChromeButton"].tap()
+        app.buttons["simulatePageTerminationButton"].tap()
+        let count = app.staticTexts["automaticPageRecoveryCount"]
+        XCTAssertEqual(XCTWaiter.wait(for: [XCTNSPredicateExpectation(predicate: NSPredicate { _, _ in count.label == "1" }, object: nil)], timeout: 10), .completed)
+        XCTAssertTrue(app.staticTexts["Locked viewport"].firstMatch.waitForExistence(timeout: 10))
+        XCTAssertTrue(field.exists, "Recovery must keep browser controls visible")
+        app.buttons["loadUnavailablePageButton"].tap()
+        XCTAssertEqual(XCTWaiter.wait(for: [XCTNSPredicateExpectation(predicate: NSPredicate { _, _ in count.label == "2" }, object: nil)], timeout: 15), .completed)
+        let tabs = app.buttons["failedPageTabsButton"]
+        XCTAssertTrue(tabs.waitForExistence(timeout: 10))
+        XCTAssertTrue(field.exists)
+        app.buttons["hideChromeButton"].tap(); XCTAssertTrue(field.exists, "A failed page must keep its escape controls")
+        tabs.tap()
+        XCTAssertTrue(app.navigationBars["タブ 1"].waitForExistence(timeout: 5))
+    }
+
+    func testAppPromotionSuppressionPreservesLoginAndCanBeDisabled() {
+        XCTAssertTrue(app.staticTexts["Browser choice used"].waitForExistence(timeout: 20))
+        app.buttons["Check compatibility"].tap()
+        XCTAssertTrue(app.staticTexts["Promotion removed; content usable"].waitForExistence(timeout: 8))
+        app.buttons["Underlying action"].tap()
+        XCTAssertTrue(app.staticTexts["Underlying action worked"].exists)
+        app.buttons["Show login"].tap()
+        XCTAssertTrue(app.staticTexts["Login remains"].waitForExistence(timeout: 5))
+        app.buttons["Close login"].tap()
+        app.buttons["toggleAppPromotionFixtureButton"].tap()
+        app.buttons["reloadResilienceFixtureButton"].tap()
+        XCTAssertTrue(app.staticTexts["Use the Reddit app"].waitForExistence(timeout: 10), "Disabling the feature must preserve the original app prompt after reload")
+        app.buttons["toggleAppPromotionFixtureButton"].tap()
+        XCTAssertTrue(app.staticTexts["Browser choice used"].waitForExistence(timeout: 10))
+        app.buttons["Check compatibility"].tap()
+        XCTAssertTrue(app.staticTexts["Promotion removed; content usable"].waitForExistence(timeout: 8))
     }
 
     func testPerSourceVolumeAndMuteUseIndependentRealPlayers() {

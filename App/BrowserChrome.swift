@@ -40,6 +40,7 @@ struct TabBrowserView: View {
         }
         .background(Color(uiColor: .systemBackground))
         .onAppear { address = SearchAddress.display(tab.url) }
+        .onChange(of: tab.errorMessage) { _, value in if value != nil { store.revealChrome() } }
         .onChange(of: tab.id) { _, _ in address = SearchAddress.display(tab.url); addressFocused = false }
         .onChange(of: tab.url) { _, url in if !addressFocused { address = SearchAddress.display(url) } }
         .onChange(of: addressFocused) { _, focused in if !focused { address = SearchAddress.display(tab.url) } }
@@ -71,6 +72,19 @@ struct TabBrowserView: View {
                 }
                 AddressSwipeOverlay(controller: swipe, store: store, width: width, height: geometry.size.height)
                     .allowsHitTesting(false).accessibilityHidden(true)
+                if tab.pageUnavailable {
+                    VStack(spacing: 14) {
+                        Image(systemName: "exclamationmark.triangle").font(.largeTitle)
+                        Text("ページを読み込めませんでした").font(.headline)
+                        if tab.canRetryPage {
+                            Button("再読み込み") { tab.retryPage() }.buttonStyle(.borderedProminent)
+                                .accessibilityIdentifier("failedPageReloadButton")
+                        }
+                        Button("タブ一覧") { store.revealChrome(); showSheet(.tabs) }.buttonStyle(.bordered)
+                            .accessibilityIdentifier("failedPageTabsButton")
+                    }.padding().frame(maxWidth: .infinity, maxHeight: .infinity)
+                        .background(Color(uiColor: .systemBackground))
+                }
             }
             .overlay(alignment: .topTrailing) {
                 if tab.hasContent, !tab.selectedText.isEmpty {
@@ -326,6 +340,9 @@ struct BrowserChrome: View {
             Button("タブ一覧", systemImage: "square.on.square") { showSheet(.tabs) }
             Button("閉じたタブを戻す", systemImage: "arrow.uturn.backward") { store.restoreClosedTab() }.disabled(store.closedTabs.isEmpty)
             Button("ホーム", systemImage: "house") { store.showHome() }
+            if let alternative = BrowserSitePolicy.redditWebAlternative(tab.url) {
+                Button("Redditの旧Web表示で開く", systemImage: "globe") { tab.load(alternative) }
+            }
             Divider()
             Button("お気に入りに追加", systemImage: "star") { store.addFavorite() }.disabled(disabled(.share))
             Button("ブックマークに追加", systemImage: "bookmark") { store.addBookmark() }.disabled(disabled(.share))

@@ -1,10 +1,10 @@
 {
-  "version": "0.10.0",
+  "version": "0.10.1",
   "bundle_id": "local.personalbrowser.app",
   "data_schema": 1,
   "public_repository": "koyuuuuu/personal-browser-distribution",
   "name": "Personal Browser",
   "developer_name": "Personal Browser",
   "description": "自分専用のブラウザ。タブ、履歴、ブックマーク、プライベート閲覧、UIカスタマイズに対応。",
-  "release_notes": "メニューに音声ミキサーを追加。検出できたページ内音声・動画を個別ミュートし、対応する直接ファイルは明示的なCORS再読込後に音源ごとの音量を調整できます。Blob・MSE・DRM・ネイティブ画面や他アプリの音量は対象外です。既存の再生方式、タブや保存済みデータを維持します。"
+  "release_notes": "スクロールを止めるページでも指の上下操作でバーを復帰。読込失敗・表示プロセス終了時はバーと再読込・タブ一覧を表示し、安全な要求だけ回数制限付きで自動復旧。Reddit等のアプリ誘導を軽減する任意設定とReddit旧Web表示へのメニューを追加。データ・再生方式を維持。"
 }

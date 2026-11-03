@@ -6,6 +6,7 @@ import UniformTypeIdentifiers
 struct FeatureSettingsView: View {
     @ObservedObject var store: BrowserStore
     @ObservedObject private var blocker = ContentBlocking.shared
+    @ObservedObject private var promotions = AppPromotionBlocker.shared
     @State private var imageSelection: PhotosPickerItem?
     @State private var host = ""
     @AppStorage("site-icons.enabled") private var siteIcons = true
@@ -19,6 +20,10 @@ struct FeatureSettingsView: View {
                     Text("強力").tag(BlockingStrength.strong)
                 }.accessibilityIdentifier("blockingStrengthPicker")
                 Toggle("広告枠も非表示にする", isOn: blocking(\.cosmetic)).accessibilityIdentifier("cosmeticBlockingToggle")
+                Toggle("アプリへの誘導を軽減", isOn: Binding(get: { promotions.enabled }, set: { promotions.setEnabled($0) }))
+                    .accessibilityIdentifier("appPromotionBlockingToggle")
+                Text("対応するアプリ誘導表示を閉じ、閲覧のスクロール制限を解除します。ログイン・年齢確認などは対象外です。サイトごとの除外を共有します。完全に元へ戻すにはページを再読込してください。")
+                    .font(.caption).foregroundStyle(.secondary)
                 Toggle("フィルターを自動更新", isOn: blocking(\.automaticUpdates))
                 if blocker.ruleCount > 0 { Text("適用可能なルール：\(blocker.ruleCount.formatted())件").font(.caption) }
                 if !blocker.generatedAt.isEmpty { Text("フィルター生成日時：\(blocker.generatedAt)").font(.caption).textSelection(.enabled) }

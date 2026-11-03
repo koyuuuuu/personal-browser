@@ -63,6 +63,14 @@ final class BrowserTab: NSObject, ObservableObject, Identifiable, WKNavigationDe
     @Published var canGoForward = false
     @Published var hasContent = false
     @Published var errorMessage: String?
+    @Published private(set) var pageUnavailable = false
+    @Published private(set) var automaticRecoveryCount = 0
+    var documentScrollLocked = false
+    var mayRecoverAutomatically: (() -> Bool)?
+    private var recoveryPolicy = PageRecoveryPolicy()
+    private var recoveryTask: Task<Void, Never>?
+    private var pendingRecoveryRequest: URLRequest?
+    private var lastNavigationWasDownload = false
     @Published var dialog: JavaScriptDialog?
     @Published private(set) var selectedText = ""
     var onSearchText: ((String) -> Void)?
@@ -138,6 +146,7 @@ final class BrowserTab: NSObject, ObservableObject, Identifiable, WKNavigationDe
             if self?.hasMixingPlayback != value { self?.hasMixingPlayback = value }
         }
         AudioSourcesController.shared.attach(view, tabID: id)
+        AppPromotionBlocker.shared.attach(view, excluded: preferences.blockingExceptions) { [weak self] in self?.documentScrollLocked = $0 }
         view.navigationDelegate = self; view.uiDelegate = self
         view.allowsBackForwardNavigationGestures = swipeNavigation
         view.isFindInteractionEnabled = true
@@ -193,6 +202,7 @@ final class BrowserTab: NSObject, ObservableObject, Identifiable, WKNavigationDe
     }
 
     private func configureBlocking(for url: URL?, view: WKWebView) async {
+        AppPromotionBlocker.shared.update(view, excluded: preferences.blockingExceptions)
         let request = UUID(); blockingRequest = request
         guard preferences.shouldBlock(url) else {
             for list in appliedRules { view.configuration.userContentController.remove(list) }
@@ -211,6 +221,9 @@ final class BrowserTab: NSObject, ObservableObject, Identifiable, WKNavigationDe
 
     func load(_ url: URL) {
         guard WebURLPolicy.allows(url) else { return }
+        cancelPageRecovery(resetBudget: true)
+        lastNavigationWasDownload = false
+        pageUnavailable = false
         pendingConnection?.resolve(allow: false); pendingConnection = nil; navigationGrants = [:]; certificateWarningShown = false
         retriedInterruptedURLs.removeAll()
         lastTopLevelRequest = URLRequest(url: url)
@@ -227,7 +240,7 @@ final class BrowserTab: NSObject, ObservableObject, Identifiable, WKNavigationDe
     }
 
     func capturePreview() {
-        guard !snapshotInProgress, let view = liveWebView, hasContent, !hasActiveMedia, !isPictureInPicture,
+        guard !snapshotInProgress, !pageUnavailable, let view = liveWebView, hasContent, !hasActiveMedia, !isPictureInPicture,
               UIApplication.shared.applicationState == .active, view.window != nil, view.alpha == 1,
               let capturedURL = url, WebURLPolicy.allows(capturedURL), view.bounds.width > 1, view.bounds.height > 1 else { return }
         snapshotInProgress = true
@@ -267,7 +280,9 @@ final class BrowserTab: NSObject, ObservableObject, Identifiable, WKNavigationDe
     }
 
     private func releaseWebView() {
+        cancelPageRecovery(resetBudget: false)
         if let view = liveWebView {
+            AppPromotionBlocker.shared.detach(view)
             AudioSourcesController.shared.detach(view)
             AudioMixingController.shared.detach(view)
         }
@@ -348,9 +363,11 @@ final class BrowserTab: NSObject, ObservableObject, Identifiable, WKNavigationDe
         onPreview = nil; onVerticalScroll = nil; onRevealChrome = nil; onVisit = nil; onStateChange = nil; onPopup = nil; onClose = nil; onExternalURL = nil
         onAnalyzeLink = nil; onMessageLink = nil; onSaveLink = nil; onOpenLink = nil; onShareLink = nil; onOpenInSafari = nil; onOpenInBrowser = nil; onDownload = nil
         onSearchText = nil
+        mayRecoverAutomatically = nil
     }
 
     func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
+        pageUnavailable = false
         if let url = webView.url {
             self.url = url
             onVisit?(url, webView.title ?? url.host ?? "ページ")
@@ -360,6 +377,8 @@ final class BrowserTab: NSObject, ObservableObject, Identifiable, WKNavigationDe
     }
 
     func webView(_ webView: WKWebView, didStartProvisionalNavigation navigation: WKNavigation!) {
+        cancelPageRecovery(resetBudget: false)
+        pageUnavailable = false; documentScrollLocked = false
         errorMessage = nil; navigationGrants = [:]; certificateWarningShown = false
     }
 
@@ -389,6 +408,11 @@ final class BrowserTab: NSObject, ObservableObject, Identifiable, WKNavigationDe
             }
         }
         errorMessage = error.localizedDescription
+        pageUnavailable = true; isLoading = false; onRevealChrome?()
+        if !lastNavigationWasDownload, PageRecoveryPolicy.isTransient(domain: failure.domain, code: code) {
+            pendingRecoveryRequest = lastTopLevelRequest
+            recoverPageIfNeeded()
+        }
         if [NSURLErrorSecureConnectionFailed, NSURLErrorServerCertificateUntrusted, NSURLErrorServerCertificateHasBadDate,
             NSURLErrorServerCertificateHasUnknownRoot, NSURLErrorServerCertificateNotYetValid].contains(code),
            let original = url, let alternative = ConnectionSecurity.httpAlternative(original), pendingConnection == nil, !certificateWarningShown {
@@ -434,7 +458,52 @@ final class BrowserTab: NSObject, ObservableObject, Identifiable, WKNavigationDe
 
     func webViewWebContentProcessDidTerminate(_ webView: WKWebView) {
         mediaFrames.removeAll(); pipFrames.removeAll(); hasActiveMedia = false; isPictureInPicture = false
-        errorMessage = "ページの表示処理が終了しました。再読み込みしてください。"
+        hasMixingPlayback = false; isLoading = false; pageUnavailable = true
+        errorMessage = "ページの表示処理が終了しました。"
+        onRevealChrome?()
+        if !lastNavigationWasDownload, var request = lastTopLevelRequest {
+            if let visible = webView.url {
+                guard WebURLPolicy.allows(visible) else { return }
+                request.url = visible
+            }
+            pendingRecoveryRequest = request
+            recoverPageIfNeeded()
+        }
+    }
+
+    private func cancelPageRecovery(resetBudget: Bool) {
+        recoveryTask?.cancel(); recoveryTask = nil; pendingRecoveryRequest = nil
+        if resetBudget { recoveryPolicy.userNavigation() }
+    }
+
+    func recoverPageIfNeeded() {
+        guard hasContent, pageUnavailable, recoveryTask == nil, mayRecoverAutomatically?() == true,
+              UIApplication.shared.applicationState == .active,
+              let view = liveWebView, let request = pendingRecoveryRequest, let target = request.url,
+              WebURLPolicy.allows(target) else { return }
+        recoveryTask = Task { @MainActor [weak self, weak view] in
+            try? await Task.sleep(for: .milliseconds(350))
+            guard let self, let view, !Task.isCancelled else { return }
+            self.recoveryTask = nil
+            guard self.liveWebView === view, self.pageUnavailable,
+                  self.mayRecoverAutomatically?() == true, UIApplication.shared.applicationState == .active else { return }
+            self.pendingRecoveryRequest = nil
+            guard self.recoveryPolicy.claim(method: request.httpMethod, hasBody: request.httpBody != nil || request.httpBodyStream != nil) else { return }
+            self.automaticRecoveryCount += 1
+            self.onRevealChrome?()
+            var retry = request; retry.cachePolicy = .reloadIgnoringLocalCacheData
+            view.load(retry)
+        }
+    }
+
+    var canRetryPage: Bool {
+        guard !lastNavigationWasDownload else { return false }
+        guard let request = lastTopLevelRequest else { return url.map(WebURLPolicy.allows) ?? false }
+        return BrowserNavigationPolicy.canReplay(method: request.httpMethod, hasBody: request.httpBody != nil || request.httpBodyStream != nil)
+    }
+    func retryPage() {
+        guard canRetryPage, let target = lastTopLevelRequest?.url ?? url else { return }
+        load(target)
     }
 
     func webView(_ webView: WKWebView, decidePolicyFor navigationAction: WKNavigationAction,
@@ -447,7 +516,13 @@ final class BrowserTab: NSObject, ObservableObject, Identifiable, WKNavigationDe
         let topLevel = navigationAction.targetFrame?.isMainFrame != false
         let safeReplay = BrowserNavigationPolicy.canReplay(method: navigationAction.request.httpMethod,
             hasBody: navigationAction.request.httpBody != nil || navigationAction.request.httpBodyStream != nil)
-        if WebURLPolicy.allows(url) && topLevel { lastTopLevelRequest = navigationAction.request }
+        if WebURLPolicy.allows(url), navigationAction.targetFrame?.isMainFrame == true {
+            lastNavigationWasDownload = false
+            if [.linkActivated, .formSubmitted, .formResubmitted, .backForward, .reload].contains(navigationAction.navigationType) {
+                cancelPageRecovery(resetBudget: true)
+            }
+            lastTopLevelRequest = navigationAction.request
+        }
         if WebURLPolicy.allows(url), topLevel, safeReplay,
            navigationAction.navigationType == .linkActivated, !navigationAction.shouldPerformDownload {
             let useApplication = prefersApplication?(url) == true
@@ -459,7 +534,7 @@ final class BrowserTab: NSObject, ObservableObject, Identifiable, WKNavigationDe
             return
         }
         if ["http", "https", "about", "blob", "data"].contains(scheme) {
-            if navigationAction.shouldPerformDownload { decisionHandler(.download) }
+            if navigationAction.shouldPerformDownload { pendingRecoveryRequest = nil; lastNavigationWasDownload = true; decisionHandler(.download) }
             else if navigationAction.targetFrame?.isMainFrame == true {
                 Task { @MainActor in
                     await self.configureBlocking(for: url, view: webView)
@@ -501,6 +576,8 @@ final class BrowserTab: NSObject, ObservableObject, Identifiable, WKNavigationDe
         if navigationResponse.canShowMIMEType {
             decisionHandler(.allow)
         } else {
+            pendingRecoveryRequest = nil
+            lastNavigationWasDownload = true
             decisionHandler(.download)
         }
     }
@@ -641,9 +718,16 @@ struct WebSurface: UIViewRepresentable {
             view.alpha = (tab.id == selected.id && tab.hasContent) || tab.isCapturingPreview ? 1 : 0.01
         }
         if let view = selected.existingWebView { host.bringSubviewToFront(view) }
+        host.chromeRecovery.webView = selected.existingWebView
+        host.chromeRecovery.hidden = { [weak store] in store?.chromeVisible == false }
+        host.chromeRecovery.locked = { [weak selected] in selected?.documentScrollLocked == true }
+        host.chromeRecovery.reveal = { [weak store] in store?.revealChrome() }
         host.setNeedsLayout()
     }
 }
 final class WebSurfaceView: UIView {
+    let chromeRecovery = ChromeRecoveryObserver()
+    override init(frame: CGRect) { super.init(frame: frame); chromeRecovery.install(on: self) }
+    required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }
     override func layoutSubviews() { super.layoutSubviews(); clipsToBounds = true; for view in subviews { view.frame = bounds } }
 }
