@@ -1,0 +1,98 @@
+{
+  "date_utc": "2026-11-03",
+  "version": "0.10.1",
+  "build": "60",
+  "source_commit": "50df6642e5bfafa60d2dd90dfc3dfa7a2423ee70",
+  "tag": "v0.10.1-build.60",
+  "ci_run": "https://github.com/koyuuuuu/personal-browser/actions/runs/41675739095",
+  "delivery_status": "published",
+  "source_visibility": "public",
+  "public_release": "https://github.com/koyuuuuu/personal-browser-distribution/releases/tag/v0.10.1-build.60",
+  "source_url": "https://raw.githubusercontent.com/koyuuuuu/personal-browser-distribution/main/source.json",
+  "ipa": {
+    "sha256": "976757cfab7981ddc12f2d54b6bcd3b2925d0f4a5219cd9ee789687219ec2d93",
+    "size": 5387661,
+    "bundle_id": "local.personalbrowser.app",
+    "version": "0.10.1",
+    "build": "60",
+    "minimum_ios": "17.0",
+    "architecture": "arm64",
+    "data_schema": 1
+  },
+  "checks": {
+    "python": 54,
+    "macos_core": 71,
+    "ui_passed": 3,
+    "ui_cases": [
+      {
+        "name": "testAppPromotionSuppressionPreservesLoginAndCanBeDisabled",
+        "duration_seconds": 75.209
+      },
+      {
+        "name": "testLockedViewportChromeAndBoundedRecovery",
+        "duration_seconds": 46.571
+      },
+      {
+        "name": "testPortraitForwardScrollHidesBarsAndBottomBounceDoesNotReveal",
+        "duration_seconds": 41.231
+      }
+    ],
+    "locked_viewport": "actual finger drags in portrait and landscape restore bars in both directions despite overflow hidden and touchmove preventDefault",
+    "process_exit_recovery": "Debug-only invocation of public termination delegate notification; real subsequent page reload and recovery count1; NOT an actual OS memory-pressure kill",
+    "network_recovery": "actual connection refusal on fixed unused loopback port, one automatic attempt, failed-page escape controls remain visible, hide button cannot trap user, tab overview opens",
+    "promotion_suppression": "known Reddit-style dialog chooses Continue in browser; open Shadow DOM xpromo and generic smartbanner hidden, scroll lock/main inert removed, underlying button works",
+    "legitimate_dialog": "ordinary login dialog remains usable",
+    "preference": "disable+reload preserves original app prompt; enable suppresses again",
+    "normal_scroll": "forward hides, bottom bounce does not reveal, deliberate reverse restores",
+    "core_policy": "safe methods/body exclusions, retry budget/cooldown, network error domain restrictions, finger/offset rules, Reddit host boundary and URL preservation",
+    "legacy_media_handler_and_script": {
+      "unchanged": true,
+      "sha256": "8233d9cc7ff0b82e3aa24f9ad97543226dd5c9124dfd80ce1d73ab3de5b91edc"
+    },
+    "compatibility_roundtrip": "not applicable; persistence/model formats unchanged, new feature preference uses independent UserDefaults",
+    "anonymous_latest_ipa_feed_hash_size_identity": "passed",
+    "source_release_public_sha_match": true,
+    "swift_webkit_overlay_strong_dependency": false,
+    "swift_system_runtime_path": "present",
+    "full_ui_suite": "not run under scoped policy",
+    "old_ipa_full_redownload_audit": "not repeated; historical metadata/assets retained",
+    "fixture_scope": "fixed loopback pages; Debug-only controls compiled out of Release; network ad-filter compilation disabled only for these DOM/recovery fixtures"
+  },
+  "pre_delivery_corrections": [
+    {
+      "run": 59,
+      "result": "cancelled",
+      "reason": "two invalid XCUIElement.firstMatch test queries corrected before representative native scenario execution; production app code unchanged in follow-up"
+    }
+  ],
+  "implementation": {
+    "gestures": "public passive native ancestor pan, simultaneous recognition, no touch cancellation or WebKit recognizer replacement; actual finger motion independent of scroll callbacks",
+    "retry": "selected/foreground/live safe HTTP GET/HEAD only; no body; event-driven1per60s; explicit navigation resets; deferred until foreground/selection; no periodic failure loop",
+    "excluded_replays": [
+      "POST/body",
+      "certificate/trust",
+      "authentication/policy",
+      "downloads"
+    ],
+    "failure_ui": "bars stay visible plus explicit safe reload/tab overview; last good preview retained",
+    "app_promotions": "independent enabled-by-default browser.appPromotions.block.v1; existing site exclusion domains; original embedded isolated-world script, bounded open-shadow DOM scan; exact browser choice/known components; genuine other dialogs prevent unlock",
+    "fallback": "explicit Reddit old.reddit.com menu option retains path/query/fragment, strict host validation",
+    "data": "bundle/schema/cookie store/library paths unchanged; no browsing/DOM traces persisted by new observer",
+    "extra_entitlements": false,
+    "remote_executable_scripts": false,
+    "third_party_filter_sources": "unchanged EasyList/EasyPrivacy/Japanese configuration; public MobileApp selector names researched, no new filter/scriptlet package imported"
+  },
+  "limitations": [
+    "Reddit main site returned a JavaScript challenge to the research environment; functional acceptance measured on controlled fixtures, not claimed for every real Reddit page",
+    "Server-side app/login/access requirements cannot be removed; no bypass of genuine login/age/permission gates",
+    "Closed shadow roots and new/unknown prompt layouts may require further targeted changes",
+    "Only safe transient failures/process exits receive bounded auto reload; persistent/offline failures retain manual controls",
+    "Simulated process notification is not actual user-device OS memory-pressure/termination coverage",
+    "No claim of iPhone user acceptance or changed PiP/audio playback verification; baseline media code unchanged"
+  ],
+  "rollback": {
+    "v0.10.0-build.58": "d49710e3b6a303b41c90462f43aa74ecca4e28189b6aeddf29085081c1f331bc",
+    "historical_tags_and_ipas": "retained unchanged"
+  },
+  "device_acceptance": "0.10.1 on user iPhone and actual Reddit pages not yet reported"
+}
