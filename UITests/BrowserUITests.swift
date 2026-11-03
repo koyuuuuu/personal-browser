@@ -35,7 +35,7 @@ final class BrowserUITests: XCTestCase {
     }
 
     func testLockedViewportChromeAndBoundedRecovery() {
-        XCTAssertTrue(app.staticTexts["Locked viewport"].firstMatch.waitForExistence(timeout: 20))
+        XCTAssertTrue(app.staticTexts["Locked viewport"].waitForExistence(timeout: 20))
         let field = app.textFields["addressField"]
         for orientation in [UIDeviceOrientation.portrait, .landscapeLeft] {
             XCUIDevice.shared.orientation = orientation
@@ -54,7 +54,7 @@ final class BrowserUITests: XCTestCase {
         app.buttons["simulatePageTerminationButton"].tap()
         let count = app.staticTexts["automaticPageRecoveryCount"]
         XCTAssertEqual(XCTWaiter.wait(for: [XCTNSPredicateExpectation(predicate: NSPredicate { _, _ in count.label == "1" }, object: nil)], timeout: 10), .completed)
-        XCTAssertTrue(app.staticTexts["Locked viewport"].firstMatch.waitForExistence(timeout: 10))
+        XCTAssertTrue(app.staticTexts["Locked viewport"].waitForExistence(timeout: 10))
         XCTAssertTrue(field.exists, "Recovery must keep browser controls visible")
         app.buttons["loadUnavailablePageButton"].tap()
         XCTAssertEqual(XCTWaiter.wait(for: [XCTNSPredicateExpectation(predicate: NSPredicate { _, _ in count.label == "2" }, object: nil)], timeout: 15), .completed)
