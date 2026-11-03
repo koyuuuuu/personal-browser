@@ -2,6 +2,34 @@
   "releases": [
     {
       "file": "PersonalBrowser.ipa",
+      "sha256": "976757cfab7981ddc12f2d54b6bcd3b2925d0f4a5219cd9ee789687219ec2d93",
+      "bundle_id": "local.personalbrowser.app",
+      "version": "0.10.1",
+      "build": "60",
+      "minimum_ios": "17.0",
+      "target_ios": "18.4.1",
+      "architecture": "arm64",
+      "platform": "iOS device",
+      "embedded_profile": false,
+      "signature_resources": false,
+      "installation_verified": false,
+      "source_commit": "50df6642e5bfafa60d2dd90dfc3dfa7a2423ee70",
+      "data_schema": 1,
+      "size": 5387661,
+      "date": "2026-11-03T16:45:06.237099+00:00",
+      "description": "スクロールを止めるページでも指の上下操作でバーを復帰。読込失敗・表示プロセス終了時はバーと再読込・タブ一覧を表示し、安全な要求だけ回数制限付きで自動復旧。Reddit等のアプリ誘導を軽減する任意設定とReddit旧Web表示へのメニューを追加。データ・再生方式を維持。",
+      "appPermissions": {
+        "entitlements": [],
+        "privacy": {
+          "NSCameraUsageDescription": "閲覧中のWebサイトでカメラを使用するために必要です。",
+          "NSLocalNetworkUsageDescription": "自宅のネットワークにある自作アプリや動画サーバーへ接続するために使用します。",
+          "NSMicrophoneUsageDescription": "閲覧中のWebサイトでマイクを使用するために必要です。"
+        }
+      },
+      "tag": "v0.10.1-build.60"
+    },
+    {
+      "file": "PersonalBrowser.ipa",
       "sha256": "d49710e3b6a303b41c90462f43aa74ecca4e28189b6aeddf29085081c1f331bc",
       "bundle_id": "local.personalbrowser.app",
       "version": "0.10.0",

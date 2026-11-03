@@ -12,6 +12,16 @@
       "iconURL": "https://raw.githubusercontent.com/koyuuuuu/personal-browser-distribution/main/icon.png",
       "versions": [
         {
+          "version": "0.10.1",
+          "buildVersion": "60",
+          "date": "2026-11-03T16:45:06.237099+00:00",
+          "localizedDescription": "スクロールを止めるページでも指の上下操作でバーを復帰。読込失敗・表示プロセス終了時はバーと再読込・タブ一覧を表示し、安全な要求だけ回数制限付きで自動復旧。Reddit等のアプリ誘導を軽減する任意設定とReddit旧Web表示へのメニューを追加。データ・再生方式を維持。",
+          "downloadURL": "https://github.com/koyuuuuu/personal-browser-distribution/releases/download/v0.10.1-build.60/PersonalBrowser.ipa",
+          "size": 5387661,
+          "minOSVersion": "17.0",
+          "sha256": "976757cfab7981ddc12f2d54b6bcd3b2925d0f4a5219cd9ee789687219ec2d93"
+        },
+        {
           "version": "0.10.0",
           "buildVersion": "58",
           "date": "2026-11-01T20:19:19.383568+00:00",
