@@ -1,5 +1,15 @@
 #import "BrowserWebKitBridge.h"
 
+void PBRunPasswordCommand(WKWebView *view, WKFrameInfo *frame, NSDictionary<NSString *, id> *command,
+                          void (^completion)(id _Nullable, NSError * _Nullable))
+{
+    [view callAsyncJavaScript:@"return globalThis.__personalBrowserPasswords?.command(command);"
+                   arguments:@{@"command": command}
+                     inFrame:frame
+              inContentWorld:WKContentWorld.defaultClientWorld
+           completionHandler:completion];
+}
+
 void PBApplyAppPromotionPolicy(WKWebView *view, BOOL enabled)
 {
     NSString *script = enabled ? @"globalThis.__personalBrowserSetAppPromotions?.(true)"

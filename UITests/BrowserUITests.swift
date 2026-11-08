@@ -11,6 +11,9 @@ final class BrowserUITests: XCTestCase {
         XCUIDevice.shared.orientation = .portrait
         app = XCUIApplication()
         app.launchArguments = ["--ui-testing"]
+        if name.contains("testPasswordVaultImportsLocksAndFillsOnlyOnRequest") {
+            app.launchArguments += ["--ui-no-fixture", "--ui-password-fixture"]
+        }
         if name.contains("testPerSourceVolumeAndMuteUseIndependentRealPlayers") {
             app.launchArguments += ["--ui-no-fixture", "--ui-volume-fixture"]
         }
@@ -32,6 +35,39 @@ final class BrowserUITests: XCTestCase {
             screenshot.lifetime = .keepAlways
             add(screenshot)
         }
+    }
+
+    func testPasswordVaultImportsLocksAndFillsOnlyOnRequest() {
+        func reveal(_ button: XCUIElement, upward: Bool) {
+            for _ in 0..<4 {
+                if button.isHittable { return }
+                if upward { app.swipeUp() } else { app.swipeDown() }
+            }
+            XCTAssertTrue(button.isHittable)
+        }
+        XCTAssertTrue(app.staticTexts["Password fixture"].waitForExistence(timeout: 20))
+        XCTAssertTrue(app.buttons["passwordInputButton"].waitForExistence(timeout: 10), "A real DOM login form must be detected")
+        app.buttons["passwordVaultFixtureButton"].tap()
+        app.buttons["unlockPasswordVaultButton"].tap()
+        let importButton = app.buttons["importPasswordFixtureButton"]
+        reveal(importButton, upward: true); importButton.tap()
+        let confirm = app.buttons["confirmPasswordImportButton"]
+        reveal(confirm, upward: true); confirm.tap()
+        // Duplicate import goes through the same parser/merge path.
+        reveal(importButton, upward: false); importButton.tap()
+        reveal(confirm, upward: true); confirm.tap()
+        let lock = app.buttons["lockPasswordVaultButton"]
+        reveal(lock, upward: true); lock.tap()
+        XCTAssertTrue(app.buttons["unlockPasswordVaultButton"].waitForExistence(timeout: 5))
+        app.buttons["unlockPasswordVaultButton"].tap()
+        let fill = app.buttons["fillSavedPasswordButton"]
+        reveal(fill, upward: false); fill.tap()
+        XCTAssertTrue(app.buttons["Check password fill"].waitForExistence(timeout: 5))
+        app.buttons["Check password fill"].tap()
+        XCTAssertTrue(app.staticTexts["Fields filled; not submitted"].waitForExistence(timeout: 5))
+        // Reopen after filling: the vault must have locked automatically.
+        app.buttons["passwordVaultFixtureButton"].tap()
+        XCTAssertTrue(app.buttons["unlockPasswordVaultButton"].waitForExistence(timeout: 5))
     }
 
     func testLockedViewportChromeAndBoundedRecovery() {

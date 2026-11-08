@@ -211,6 +211,56 @@
 			"isa" = "PBXBuildFile";
 			"fileRef" = "3E923CD9BE31B35C0F78F156";
 		};
+		"4803A049A8AE12D1B9E816C1" = {
+			"isa" = "PBXFileReference";
+			"lastKnownFileType" = "sourcecode.swift";
+			"path" = "PasswordFormController.swift";
+			"sourceTree" = "<group>";
+		};
+		"D25A03F0CB176F00224CD9B3" = {
+			"isa" = "PBXBuildFile";
+			"fileRef" = "4803A049A8AE12D1B9E816C1";
+		};
+		"BC4A3B9282419802B6255DD4" = {
+			"isa" = "PBXFileReference";
+			"lastKnownFileType" = "sourcecode.swift";
+			"path" = "PasswordFormScript.swift";
+			"sourceTree" = "<group>";
+		};
+		"D87D76C432722434D78E4446" = {
+			"isa" = "PBXBuildFile";
+			"fileRef" = "BC4A3B9282419802B6255DD4";
+		};
+		"60BB273AA55E5FB1D5EE151C" = {
+			"isa" = "PBXFileReference";
+			"lastKnownFileType" = "sourcecode.swift";
+			"path" = "PasswordImportReader.swift";
+			"sourceTree" = "<group>";
+		};
+		"E83A56BE1FB6DA66FF0C3F88" = {
+			"isa" = "PBXBuildFile";
+			"fileRef" = "60BB273AA55E5FB1D5EE151C";
+		};
+		"97A6D764BE38E30099A1857C" = {
+			"isa" = "PBXFileReference";
+			"lastKnownFileType" = "sourcecode.swift";
+			"path" = "PasswordVault.swift";
+			"sourceTree" = "<group>";
+		};
+		"9632306E975CA2003B3A1544" = {
+			"isa" = "PBXBuildFile";
+			"fileRef" = "97A6D764BE38E30099A1857C";
+		};
+		"6D01148E275DF9D98F9B23D6" = {
+			"isa" = "PBXFileReference";
+			"lastKnownFileType" = "sourcecode.swift";
+			"path" = "PasswordVaultView.swift";
+			"sourceTree" = "<group>";
+		};
+		"F6FEC42DC3C7B525AEF5354B" = {
+			"isa" = "PBXBuildFile";
+			"fileRef" = "6D01148E275DF9D98F9B23D6";
+		};
 		"6F9F31D3C004020DBE918D32" = {
 			"isa" = "PBXFileReference";
 			"lastKnownFileType" = "sourcecode.swift";
@@ -373,6 +423,11 @@
 				"7F17D9354EEC9248D830A539",
 				"1238188354BD19180AF05EE7",
 				"3E923CD9BE31B35C0F78F156",
+				"4803A049A8AE12D1B9E816C1",
+				"BC4A3B9282419802B6255DD4",
+				"60BB273AA55E5FB1D5EE151C",
+				"97A6D764BE38E30099A1857C",
+				"6D01148E275DF9D98F9B23D6",
 				"6F9F31D3C004020DBE918D32",
 				"7DFF5690D9E43389F782B650",
 				"7F687A8BB3F9C47383429BAA",
@@ -502,6 +557,26 @@
 			"isa" = "PBXBuildFile";
 			"fileRef" = "E4C724E6FF7AF4892861D28A";
 		};
+		"22095B716AADC9098CE9B9CB" = {
+			"isa" = "PBXFileReference";
+			"lastKnownFileType" = "sourcecode.swift";
+			"path" = "PasswordCryptography.swift";
+			"sourceTree" = "<group>";
+		};
+		"FBAAD2E2ED0EE54C23845169" = {
+			"isa" = "PBXBuildFile";
+			"fileRef" = "22095B716AADC9098CE9B9CB";
+		};
+		"405BAF770E77BDCF6B0582C7" = {
+			"isa" = "PBXFileReference";
+			"lastKnownFileType" = "sourcecode.swift";
+			"path" = "PasswordVaultModels.swift";
+			"sourceTree" = "<group>";
+		};
+		"FB529A185C1AB120EBA0D14E" = {
+			"isa" = "PBXBuildFile";
+			"fileRef" = "405BAF770E77BDCF6B0582C7";
+		};
 		"35634339432D2526FB455AA5" = {
 			"isa" = "PBXFileReference";
 			"lastKnownFileType" = "sourcecode.swift";
@@ -616,6 +691,8 @@
 				"45A530510519E6D25DAD872F",
 				"0258D0175D953E32562EF129",
 				"E4C724E6FF7AF4892861D28A",
+				"22095B716AADC9098CE9B9CB",
+				"405BAF770E77BDCF6B0582C7",
 				"35634339432D2526FB455AA5",
 				"91A51E60D9EB4278FCB2CF14",
 				"5107DB4C887A7FAEBDA1E8E4",
@@ -734,7 +811,7 @@
 				"INFOPLIST_FILE" = "App/Info.plist";
 				"GENERATE_INFOPLIST_FILE" = "NO";
 				"CURRENT_PROJECT_VERSION" = "1";
-				"MARKETING_VERSION" = "0.10.1";
+				"MARKETING_VERSION" = "0.11.0";
 				"CODE_SIGN_STYLE" = "Automatic";
 				"TARGETED_DEVICE_FAMILY" = "1";
 				"SUPPORTED_PLATFORMS" = "iphoneos iphonesimulator";
@@ -762,7 +839,7 @@
 				"INFOPLIST_FILE" = "App/Info.plist";
 				"GENERATE_INFOPLIST_FILE" = "NO";
 				"CURRENT_PROJECT_VERSION" = "1";
-				"MARKETING_VERSION" = "0.10.1";
+				"MARKETING_VERSION" = "0.11.0";
 				"CODE_SIGN_STYLE" = "Automatic";
 				"TARGETED_DEVICE_FAMILY" = "1";
 				"SUPPORTED_PLATFORMS" = "iphoneos iphonesimulator";
@@ -864,6 +941,11 @@
 				"4F3B9EA07863F46CB504FF0B",
 				"E82967650E1C993CC0CA32FF",
 				"963FC7554E7A60665EAFAC35",
+				"D25A03F0CB176F00224CD9B3",
+				"D87D76C432722434D78E4446",
+				"E83A56BE1FB6DA66FF0C3F88",
+				"9632306E975CA2003B3A1544",
+				"F6FEC42DC3C7B525AEF5354B",
 				"9F347C723944C0DAC55AB56C",
 				"E8DADFD4782657A82EC9A258",
 				"1157A27F7BA8FB81FB4FAF65",
@@ -887,6 +969,8 @@
 				"50BECF23DECAA0FC7BF7C48B",
 				"DA9C3EB926325121D508F8D5",
 				"DB9ACD5616FAE46366CB6AB4",
+				"FBAAD2E2ED0EE54C23845169",
+				"FB529A185C1AB120EBA0D14E",
 				"32356271187395332A71A4E6",
 				"F739ADBFE475305DF67409B3",
 				"FB2A7AB93D59B211329BB367",

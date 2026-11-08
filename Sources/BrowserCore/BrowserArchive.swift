@@ -14,6 +14,14 @@ public enum BrowserArchive {
         public let crc32: UInt32
     }
     public static func entries(in data: Data, kind: LibraryImportKind) throws -> [Entry] {
+        try selectedEntries(in: data, kind: kind, passwordsOnly: false)
+    }
+    /// Dedicated vault opt-in only. General library import continues to skip
+    /// password data before decompression and never receives these entries.
+    public static func passwordEntries(in data: Data) throws -> [Entry] {
+        try selectedEntries(in: data, kind: .bookmarks, passwordsOnly: true)
+    }
+    private static func selectedEntries(in data: Data, kind: LibraryImportKind, passwordsOnly: Bool) throws -> [Entry] {
         func number(_ offset: Int, _ bytes: Int) throws -> UInt32 {
             guard offset >= 0, bytes <= 4, offset + bytes <= data.count else { throw LibraryTransferError.malformed }
             return (0..<bytes).reduce(0) { $0 | UInt32(data[offset + $1]) << ($1 * 8) }
@@ -36,10 +44,14 @@ public enum BrowserArchive {
             guard next <= data.count, let name = String(data: data[(cursor + 46)..<(cursor + 46 + nameLength)], encoding: .utf8) else { throw LibraryTransferError.malformed }
             cursor = next
             let lower = name.lowercased(), ext = URL(fileURLWithPath: name).pathExtension.lowercased()
-            if lower.contains("password") || lower.contains("パスワード") || lower.contains("credential") || lower.contains("__macosx") { continue }
+            if lower.contains("__macosx") { continue }
+            let isPassword = lower.contains("password") || lower.contains("パスワード") || lower.contains("credential")
+            if passwordsOnly {
+                guard isPassword, ext == "csv" else { continue }
+            } else if isPassword { continue }
             guard ["html", "htm", "csv", "json"].contains(ext) else { continue }
-            if kind == .history && (ext == "html" || ext == "htm" || lower.contains("bookmark")) { continue }
-            if kind != .history && (lower.contains("history") || lower.contains("履歴")) { continue }
+            if !passwordsOnly && kind == .history && (ext == "html" || ext == "htm" || lower.contains("bookmark")) { continue }
+            if !passwordsOnly && kind != .history && (lower.contains("history") || lower.contains("履歴")) { continue }
             guard flags & 1 == 0, [0, 8].contains(method), size <= 20 * 1024 * 1024 else { throw LibraryTransferError.unsupported }
             total += size; guard total <= 20 * 1024 * 1024 else { throw LibraryTransferError.tooLarge }
             guard try number(local, 4) == 0x04034b50 else { throw LibraryTransferError.malformed }

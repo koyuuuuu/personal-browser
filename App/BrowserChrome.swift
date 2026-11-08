@@ -5,6 +5,7 @@ import WebKit
 struct TabBrowserView: View {
     @ObservedObject var store: BrowserStore
     @ObservedObject var tab: BrowserTab
+    @ObservedObject private var passwords = PasswordVault.shared
     let showSheet: (BrowserSheet) -> Void
     let share: () -> Void
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -87,11 +88,19 @@ struct TabBrowserView: View {
                 }
             }
             .overlay(alignment: .topTrailing) {
+                VStack(alignment: .trailing, spacing: 4) {
+                if tab.hasPasswordForms, passwords.showInputButton, tab.passwordPageTrusted,
+                   !tab.isPrivate || passwords.allowPrivateFill {
+                    Button("パスワード", systemImage: "key.fill") { showSheet(.passwords(PasswordPageRequest(tab: tab))) }
+                        .font(.caption).buttonStyle(.borderedProminent).padding(8)
+                        .accessibilityIdentifier("passwordInputButton")
+                }
                 if tab.hasContent, !tab.selectedText.isEmpty {
                     let text = tab.selectedText
                     Button("自作ブラウザで検索", systemImage: "magnifyingglass") { store.searchSelection(text, from: tab) }
                         .font(.caption).buttonStyle(.borderedProminent).padding(8)
                         .accessibilityIdentifier("selectedTextSearchButton")
+                }
                 }
             }
             .frame(width: width, height: geometry.size.height)
@@ -350,6 +359,7 @@ struct BrowserChrome: View {
             Button("履歴", systemImage: "clock") { showSheet(.history) }
             Button("共有", systemImage: "square.and.arrow.up", action: share).disabled(disabled(.share))
             Button("ページ内を検索", systemImage: "magnifyingglass") { tab.webView.findInteraction?.presentFindNavigator(showingReplace: false) }.disabled(!tab.hasContent)
+            Button("パスワード", systemImage: "key") { showSheet(.passwords(PasswordPageRequest(tab: tab))) }
             Button("音声ミキサー", systemImage: "slider.vertical.3") { showSheet(.audioMixer) }
             Button("コピーしたリンクをWatch HTMLで解析", systemImage: "play.rectangle.on.rectangle") { store.analyzeCopiedLink() }
             if tab.url.map({ ["/watch", "/watch.html"].contains($0.path.lowercased()) }) == true {

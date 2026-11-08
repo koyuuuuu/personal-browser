@@ -15,6 +15,7 @@ struct SettingsView: View {
                         .accessibilityIdentifier("updateSettingsLink")
                     NavigationLink("ブラウザ機能") { FeatureSettingsView(store: store) }
                         .accessibilityIdentifier("featureSettingsLink")
+                    NavigationLink("パスワード", destination: PasswordVaultView(page: nil)).accessibilityIdentifier("passwordSettingsLink")
                     NavigationLink("お気に入り") { FavoritesSettingsView(store: store) }.accessibilityIdentifier("favoritesSettingsLink")
                     NavigationLink("外部リンク・ショートカット") { ExternalLinksSettingsView(store: store) }
                     NavigationLink("データの取り込み・書き出し") { LibraryTransferView(store: store) }

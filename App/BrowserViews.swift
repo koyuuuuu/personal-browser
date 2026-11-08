@@ -9,6 +9,7 @@ struct ShareRequest: Identifiable {
 
 enum BrowserSheet: Identifiable {
     case tabs, bookmarks, history, settings, downloads, audioMixer
+    case passwords(PasswordPageRequest?)
     case connection(ConnectionRequest)
     case share(ShareRequest), message(ShareRequest), safari(ShareRequest)
     var id: String {
@@ -17,6 +18,7 @@ enum BrowserSheet: Identifiable {
         case .tabs: "tabs"; case .bookmarks: "bookmarks"; case .history: "history"
         case .settings: "settings"; case .downloads: "downloads"; case .share(let payload): "share-" + payload.id.uuidString
         case .audioMixer: "audioMixer"
+        case .passwords: "passwords"
         case .message(let payload): "message-" + payload.id.uuidString
         case .safari(let payload): "safari-" + payload.id.uuidString
         }
@@ -34,6 +36,7 @@ struct BrowserRootView: View {
     @Environment(\.dynamicTypeSize) private var systemTextSize
     #if DEBUG
     @State private var preparedAudioFixture = false
+    @State private var preparedPasswordFixture = false
     @State private var preparedResilienceFixture = false
     private var resilienceFixture: Bool {
         ProcessInfo.processInfo.arguments.contains("--ui-testing") && ProcessInfo.processInfo.arguments.contains("--ui-resilience-fixture")
@@ -47,7 +50,11 @@ struct BrowserRootView: View {
         connectedContent
         .overlay(alignment: .bottomTrailing) {
             #if DEBUG
-            if audioFixture {
+            if PasswordVault.fixture, let tab = store.selectedTab {
+                Button("保管庫（検証）") { sheet = .passwords(PasswordPageRequest(tab: tab)) }
+                    .buttonStyle(.borderedProminent).accessibilityIdentifier("passwordVaultFixtureButton")
+                    .padding(.trailing, 12).padding(.bottom, 145)
+            } else if audioFixture {
                 Button("ミキサー（検証）") { sheet = .audioMixer }
                     .buttonStyle(.borderedProminent).accessibilityIdentifier("audioMixerFixtureButton")
                     .padding(.trailing, 12).padding(.bottom, 145)
@@ -59,6 +66,11 @@ struct BrowserRootView: View {
         }
         .onAppear {
             #if DEBUG
+            if PasswordVault.fixture && !preparedPasswordFixture {
+                preparedPasswordFixture = true
+                var features = store.features; features.blockAdvertisements = false; store.updateFeatures(features)
+                store.navigate("http://127.0.0.1:18765/password-vault-fixture")
+            }
             if audioFixture && !preparedAudioFixture {
                 preparedAudioFixture = true
                 AudioMixingController.shared.setEnabled(true)
@@ -151,6 +163,7 @@ struct BrowserRootView: View {
         case .settings: SettingsView(store: store)
         case .downloads: DownloadsView(store: store)
         case .audioMixer: NavigationStack { AudioSourcesView(store: store) }
+        case .passwords(let request): NavigationStack { PasswordVaultView(page: request) }
         case .share(let payload): ActivityView(items: [payload.url])
         case .message(let payload): MessageComposer(url: payload.url)
         case .safari(let payload): SafariScreen(url: payload.url)

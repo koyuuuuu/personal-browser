@@ -1,6 +1,10 @@
 #import <WebKit/WebKit.h>
 
 NS_ASSUME_NONNULL_BEGIN
+/// Secrets are passed as arguments, never embedded in JavaScript source.
+void PBRunPasswordCommand(WKWebView *view, WKFrameInfo *frame, NSDictionary<NSString *, id> *command,
+    void (^completion)(id _Nullable result, NSError * _Nullable error))
+    NS_SWIFT_NAME(runPasswordCommand(_:frame:command:completion:));
 void PBApplyAppPromotionPolicy(WKWebView *view, BOOL enabled)
     NS_SWIFT_NAME(applyAppPromotionPolicy(_:enabled:));
 /// Calls the documented Objective-C API without the optional Swift overlay.

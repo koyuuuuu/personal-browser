@@ -5,6 +5,13 @@ from verification_plan import AREAS, ROOT, changed_methods, plan
 
 
 class VerificationPolicyTests(unittest.TestCase):
+    def test_password_vault_runs_its_import_lock_fill_case_and_conditional_archive_compatibility(self):
+        paths = ["App/PasswordVault.swift", "App/PasswordVaultView.swift", "App/PasswordFormController.swift", "App/BrowserTab.swift", "App/BrowserChrome.swift", "App/BrowserViews.swift", "App/BrowserWebKitBridge.h", "App/BrowserWebKitBridge.m", "App/SettingsView.swift", "App/FeatureSettingsView.swift", "App/Info.plist", "Sources/BrowserCore/BrowserArchive.swift"]
+        result = plan(paths, tab_changes={"preamble", "resolve", "createWebView", "releaseWebView", "webView", "webViewWebContentProcessDidTerminate"}, chrome_changes={"preamble", "viewport", "actionButton"}, ui_changes={"setUpWithError"})
+        self.assertEqual(result["ui_tests"], AREAS["password-vault"])
+        self.assertTrue(result["compatibility"])
+        self.assertFalse(result["verify_archives"])
+
     def test_resilience_runs_only_related_escape_promotion_retry_and_normal_scroll_checks(self):
         result = plan(["App/AppPromotionBlocker.swift", "App/AppPromotionScript.swift", "App/ChromeRecoveryObserver.swift", "Sources/BrowserCore/PageRecovery.swift", "App/BrowserViews.swift", "App/BrowserWebKitBridge.h", "App/BrowserWebKitBridge.m", "App/FeatureSettingsView.swift", "App/BrowserChrome.swift", "App/BrowserTab.swift", "App/BrowserStore.swift", "UITests/BrowserUITests.swift"],
                       store_changes={"makeTab", "select", "setLandscape", "hideChrome", "scrollChrome", "applicationForegrounded"},

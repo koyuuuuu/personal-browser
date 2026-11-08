@@ -43,6 +43,7 @@ final class BrowserTab: NSObject, ObservableObject, Identifiable, WKNavigationDe
     var isCapturingPreview: Bool { snapshotInProgress }
     var isProtectedForMedia: Bool { hasActiveMedia || isPictureInPicture || hasMixingPlayback }
     @Published private(set) var hasMixingPlayback = false
+    @Published private(set) var hasPasswordForms = false
     private var previousScrollY: CGFloat?
     var onConnectionRequest: ((ConnectionRequest) -> Void)?
     var trustsCertificate: ((String, String) -> Bool)?
@@ -146,6 +147,9 @@ final class BrowserTab: NSObject, ObservableObject, Identifiable, WKNavigationDe
             if self?.hasMixingPlayback != value { self?.hasMixingPlayback = value }
         }
         AudioSourcesController.shared.attach(view, tabID: id)
+        PasswordFormController.shared.attach(view, tabID: id, isPrivate: isPrivate,
+            trusted: { [weak self] in self?.passwordPageTrusted == true },
+            found: { [weak self] value in if self?.hasPasswordForms != value { self?.hasPasswordForms = value } })
         AppPromotionBlocker.shared.attach(view, excluded: preferences.blockingExceptions) { [weak self] in self?.documentScrollLocked = $0 }
         view.navigationDelegate = self; view.uiDelegate = self
         view.allowsBackForwardNavigationGestures = swipeNavigation
@@ -189,6 +193,18 @@ final class BrowserTab: NSObject, ObservableObject, Identifiable, WKNavigationDe
             }
         }
         return view
+    }
+
+    var passwordPageTrusted: Bool {
+        guard let view = liveWebView, !view.isLoading, !pageUnavailable,
+              mayRecoverAutomatically?() == true, UIApplication.shared.applicationState == .active,
+              let url = view.url else { return false }
+        #if DEBUG
+        if PasswordVault.fixture, url.absoluteString == "http://127.0.0.1:18765/password-vault-fixture" { return true }
+        #endif
+        guard url.scheme?.lowercased() == "https", view.hasOnlySecureContent,
+              let trust = view.serverTrust, SecTrustEvaluateWithError(trust, nil) else { return false }
+        return true
     }
 
     func applyPreferences(_ value: FeaturePreferences, swipe: Bool) {
@@ -282,6 +298,7 @@ final class BrowserTab: NSObject, ObservableObject, Identifiable, WKNavigationDe
     private func releaseWebView() {
         cancelPageRecovery(resetBudget: false)
         if let view = liveWebView {
+            PasswordFormController.shared.detach(view)
             AppPromotionBlocker.shared.detach(view)
             AudioSourcesController.shared.detach(view)
             AudioMixingController.shared.detach(view)
@@ -377,6 +394,7 @@ final class BrowserTab: NSObject, ObservableObject, Identifiable, WKNavigationDe
     }
 
     func webView(_ webView: WKWebView, didStartProvisionalNavigation navigation: WKNavigation!) {
+        PasswordFormController.shared.reset(webView)
         cancelPageRecovery(resetBudget: false)
         pageUnavailable = false; documentScrollLocked = false
         errorMessage = nil; navigationGrants = [:]; certificateWarningShown = false
@@ -457,6 +475,7 @@ final class BrowserTab: NSObject, ObservableObject, Identifiable, WKNavigationDe
     }
 
     func webViewWebContentProcessDidTerminate(_ webView: WKWebView) {
+        PasswordFormController.shared.reset(webView)
         mediaFrames.removeAll(); pipFrames.removeAll(); hasActiveMedia = false; isPictureInPicture = false
         hasMixingPlayback = false; isLoading = false; pageUnavailable = true
         errorMessage = "ページの表示処理が終了しました。"

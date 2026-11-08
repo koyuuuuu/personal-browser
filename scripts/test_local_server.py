@@ -76,6 +76,15 @@ def main():
                 setInterval(sample,250);
                 </script>''' + extra_player).encode('utf-8')
                 mime = 'text/html; charset=utf-8'
+            elif self.path == '/password-vault-fixture':
+                data = b'''<!doctype html><meta name="viewport" content="width=device-width,initial-scale=1">
+                <title>Password fixture</title><h1>Password fixture</h1>
+                <form onsubmit="event.preventDefault();document.getElementById('status').textContent='Submitted'">
+                <input aria-label="Fixture username" id="user" autocomplete="username">
+                <input aria-label="Fixture password" id="pw" type="password" autocomplete="current-password">
+                <button type="button" onclick="document.getElementById('status').textContent=document.getElementById('user').value==='fixture-user' &amp;&amp; document.getElementById('pw').value==='fixture-secret'?'Fields filled; not submitted':'Fields empty'">Check password fill</button>
+                </form><p id="status">Not submitted</p>'''
+                mime = 'text/html; charset=utf-8'
             elif self.path == '/locked-viewport':
                 data = b'''<!doctype html><meta name="viewport" content="width=device-width,initial-scale=1">
                 <title>Locked viewport</title><style>html,body{overflow:hidden;height:100%;margin:0}.cover{position:fixed;inset:0;touch-action:none;background:#ddd}</style>
