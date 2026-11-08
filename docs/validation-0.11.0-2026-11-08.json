@@ -1,0 +1,103 @@
+{
+  "date_utc": "2026-11-08",
+  "version": "0.11.0",
+  "build": "65",
+  "source_commit": "2a8e4d4134e3f42daf416dd26b919ab7fc385597",
+  "tag": "v0.11.0-build.65",
+  "ci_run": "https://github.com/koyuuuuu/personal-browser/actions/runs/42460178192",
+  "delivery_status": "published",
+  "source_visibility": "public",
+  "public_release": "https://github.com/koyuuuuu/personal-browser-distribution/releases/tag/v0.11.0-build.65",
+  "source_url": "https://raw.githubusercontent.com/koyuuuuu/personal-browser-distribution/main/source.json",
+  "ipa": {
+    "file": "PersonalBrowser.ipa",
+    "sha256": "1ab5cfbf67ae2e498175b55c243c69070a28cccbfaac74583e6ed21f0433c313",
+    "bundle_id": "local.personalbrowser.app",
+    "version": "0.11.0",
+    "build": "65",
+    "minimum_ios": "17.0",
+    "target_ios": "18.4.1",
+    "architecture": "arm64",
+    "platform": "iOS device",
+    "embedded_profile": false,
+    "signature_resources": false,
+    "installation_verified": false,
+    "size": 5585851,
+    "data_schema": 1
+  },
+  "checks": {
+    "python": 55,
+    "macos_core": 77,
+    "ui_passed": 1,
+    "ui_cases": [
+      {
+        "name": "testPasswordVaultImportsLocksAndFillsOnlyOnRequest",
+        "duration_seconds": 49.969
+      }
+    ],
+    "core_security": "exact HTTPS scheme/host/port and trust policy; malformed origin rejection; UTF8/UTF16 quoted CSV/Unicode/newlines/whitespace; exact-byte username and password identity; duplicate/conflict rules; AES-GCM roundtrip/wrong key/tamper/new nonce; encrypted backup/wrong passphrase/metadata rejection; dedicated stored/deflated password ZIP and general-library isolation",
+    "native_fixture": "real WebKit login form metadata; explicit CSV import/commit, duplicate remains1, lock/reopen actual encrypted file, explicit fill of both fields, no auto-submit, post-fill lock",
+    "compatibility_roundtrip": "passed conditional baseline library/favorites/toolbar roundtrips because shared ZIP selector changed",
+    "anonymous_latest_ipa_feed_hash_size_identity": "passed",
+    "source_release_public_sha_match": true,
+    "password_test_auth_bypass_in_release": false,
+    "face_id_purpose_present": true,
+    "swift_webkit_overlay_strong_dependency": false,
+    "swift_system_runtime_path": "present",
+    "legacy_media_handler_and_script": {
+      "unchanged": true,
+      "sha256": "8233d9cc7ff0b82e3aa24f9ad97543226dd5c9124dfd80ce1d73ab3de5b91edc"
+    },
+    "full_ui_suite": "not run under scoped policy",
+    "old_ipa_full_redownload_audit": "not repeated; historical metadata/assets retained"
+  },
+  "implementation": {
+    "storage": "independent Application Support/PersonalBrowserPasswordVault directory, encrypted AES256GCM envelope with opaque keyID; excluded from device backup; complete file protection; atomic writes",
+    "key": "Keychain WhenPasscodeSetThisDeviceOnly+userPresence, native device-owner authentication, no shared groups or iCloud",
+    "locking": "background and fixed configurable30/60/300sec; common-runloop timer plus expiry checked before writes/commands; native sensitive screens cover inactive",
+    "forms": "isolated defaultClient metadata only; explicit capture to confirmation editor; no private saving; private fill defaultoff; exact origin, system trust, no mixed content, same-origin frames/form action, tab/epoch/document/form identities checked before/after command; no submission",
+    "bridge": "public Objective-C callAsyncJavaScript with static source and arguments dictionary, not optional Swift overlay or secret string interpolation",
+    "import": "dedicated local bounded CSV/Safari ZIP; preserve exact secret bytes; existing conflicts kept unless explicit replace; general-library import still skips password files before decompression",
+    "backup": "encrypted JSON only, random salt16, PBKDF2HMACSHA256600000, AES256GCM; passphrase>=12chars; explicit authenticated replacement to recover inaccessible vault without silent reset",
+    "data": "existing bundle/schema1/library/cookie store/settings retained; new feature prefs independent UserDefaults; Apple password integration unchanged",
+    "extra_entitlements": false,
+    "third_party_credential_services": false
+  },
+  "pre_delivery_corrections": [
+    {
+      "run": 61,
+      "result": "failed",
+      "reason": "new PasswordPageRequest initializer needed explicit MainActor annotation; Core77 and compatibility already passed; native UI not executed"
+    },
+    {
+      "run": 62,
+      "result": "cancelled before publication",
+      "reason": "superseded by exact UTF8 credential comparison correction discovered during review; not a test failure"
+    },
+    {
+      "run": 63,
+      "result": "failed UI harness",
+      "reason": "XCTest hittable returned true for clipped confirm button under home indicator; taps did not commit imports. Verified controlled fixture video. Fixed full-visible bounds and explicit saved-record assertions; production code unchanged"
+    },
+    {
+      "run": 64,
+      "result": "cancelled before tests",
+      "reason": "follow-up existence guard before querying offscreen test geometry; superseded by final run"
+    }
+  ],
+  "limitations": [
+    "Native UI fixture uses Debug-only deterministic auth/master key and one fixed local HTTP trust bypass, all compiled out of Release; NOT device Keychain ACL/FaceID/passcode verification",
+    "No actual Safari/Brave user password files were requested or uploaded; import interoperability checked with synthetic format fixtures",
+    "User tap/authentication/selection required; no unattended fill, automatic login submission or background capture",
+    "HTTP, invalid certificates, mixed content, cross-origin frames/actions, hidden fields and new-password fields excluded from normal filling; some multi-step/custom/closed-shadow forms need manual work",
+    "No Apple Passwords synchronization, passkey/OTP/cookie import, iCloud sync or credential-provider extension",
+    "Signing account/access group changes, device passcode removal, app deletion/device loss can make local key unavailable; encrypted backup needed before such changes",
+    "Actual user iPhone/SideStore update, FaceID and site-specific acceptance not yet reported"
+  ],
+  "rollback": {
+    "v0.10.1-build.60": "976757cfab7981ddc12f2d54b6bcd3b2925d0f4a5219cd9ee789687219ec2d93",
+    "historical_tags_and_ipas": "retained unchanged",
+    "vault": "older apps ignore separate encrypted vault; do not roll back user data or delete installed app"
+  },
+  "device_acceptance": "not yet reported for new password vault"
+}

@@ -2,7 +2,7 @@
 
 iPhone 12 / iOS 18.4.1向けの個人用ブラウザ。SwiftUIとWKWebViewで新規実装し、Windowsで編集、クラウドmacOSでビルド、SideStoreで実機へ導入・再署名する。
 
-**最新配信版は0.10.1 build 60。スクロール停止時のバー復帰、読込失敗の限定自動復旧、アプリ誘導対策を追加。** [リリース](https://github.com/koyuuuuu/personal-browser-distribution/releases/tag/v0.10.1-build.60)、[配信記録](docs/validation-0.10.1-2026-11-03.json)。本体ソースは[koyuuuuu/personal-browser](https://github.com/koyuuuuu/personal-browser)で公開し、標準の公開リポジトリ用Actionsランナーを利用する。有料ランナーや課金設定は追加していない。
+**最新配信版は0.11.0 build 65。端末認証付きパスワード保管庫、Safari／Brave取り込み、選択式のフォーム入力を追加。** [リリース](https://github.com/koyuuuuu/personal-browser-distribution/releases/tag/v0.11.0-build.65)、[配信記録](docs/validation-0.11.0-2026-11-08.json)。本体ソースは[koyuuuuu/personal-browser](https://github.com/koyuuuuu/personal-browser)で公開し、標準の公開リポジトリ用Actionsランナーを利用する。有料ランナーや課金設定は追加していない。
 
 [v0.1.0の保存済みリリース](https://github.com/koyuuuuu/personal-browser/releases/tag/v0.1.0)から、初期版のビルド元とIPA保管先を参照できる。初期IPAは`ipa-archive`ブランチ、新版はGitHub Releasesに保存し、Actionsの1日保持期限が過ぎても取得できる。arm64実機用、最低iOS 17.0。SideStoreで個人用に署名して導入する。現在は本体リポジトリ全体が公開されている。
 
@@ -59,3 +59,5 @@ mainへのアプリ・テスト・ビルド・配信コードのpushで、Linux�
 0.10.0 build58を配信済み。「メニュー → 音声ミキサー」で検出した音源を個別ミュートし、対応する直接ファイルはCORS付き再読込とページ上の明示確認後に0〜100%の相対音量を調整する。Blob/MSE・DRM・ライブ・他アプリ等の音量は対象外。Python53/Core66/関連UI1件・実機用ビルドと配信照合に成功。[使い方・制約](docs/changes-0.10.0.ja.md)。
 
 0.10.1 build60を配信済み。スクロール禁止ページでも指操作でバーを戻し、失敗中はバー・再読込・タブ一覧を表示。安全な要求の自動復旧、任意のアプリ誘導軽減とReddit旧Web表示メニューを追加。Python54/Core71/関連UI3件・実機用ビルドと配信照合に成功。[仕様・制約](docs/changes-0.10.1.ja.md)。
+
+0.11.0 build65を配信済み。「設定 → パスワード」で管理・取り込み・暗号化バックアップ、ログインページのボタンから認証後にアカウントを選択して入力できます。既存データ・Appleのパスワード連携は維持。Python55/Core77/関連UI1件・条件付き互換性・実機用ビルドと配信照合に成功。実機Face ID／Keychainは未確認です。[使い方と制約](docs/password-vault.ja.md)。
