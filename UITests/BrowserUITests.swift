@@ -40,11 +40,13 @@ final class BrowserUITests: XCTestCase {
     func testPasswordVaultImportsLocksAndFillsOnlyOnRequest() {
         func reveal(_ button: XCUIElement, upward: Bool) {
             for _ in 0..<4 {
-                let rect = button.frame, window = app.frame
                 // SwiftUI may call a partly clipped row hittable even when its
                 // actual tap point is under the home indicator. Require the
                 // whole button inside the content area before interacting.
-                if button.exists && button.isHittable && rect.minY > window.minY + 110 && rect.maxY < window.maxY - 110 { return }
+                if button.exists {
+                    let rect = button.frame, window = app.frame
+                    if button.isHittable && rect.minY > window.minY + 110 && rect.maxY < window.maxY - 110 { return }
+                }
                 if upward { app.swipeUp() } else { app.swipeDown() }
             }
             XCTFail("The requested vault control must be fully visible")
