@@ -12,6 +12,16 @@
       "iconURL": "https://raw.githubusercontent.com/koyuuuuu/personal-browser-distribution/main/icon.png",
       "versions": [
         {
+          "version": "0.11.0",
+          "buildVersion": "65",
+          "date": "2026-11-08T07:51:24.792322+00:00",
+          "localizedDescription": "端末認証付きの暗号化パスワード保管庫を追加。Safari・BraveのCSV／Safari ZIPから専用画面で取り込み、サイト・ポート・証明書を照合して選択したログインフォームに入力。自動送信なし、プライベート入力は初期オフ。編集・削除・自動ロック設定とパスフレーズ付き暗号化バックアップに対応。既存の閲覧データとAppleのパスワードは維持。",
+          "downloadURL": "https://github.com/koyuuuuu/personal-browser-distribution/releases/download/v0.11.0-build.65/PersonalBrowser.ipa",
+          "size": 5585851,
+          "minOSVersion": "17.0",
+          "sha256": "1ab5cfbf67ae2e498175b55c243c69070a28cccbfaac74583e6ed21f0433c313"
+        },
+        {
           "version": "0.10.1",
           "buildVersion": "60",
           "date": "2026-11-03T16:45:06.237099+00:00",
@@ -176,6 +186,7 @@
         "entitlements": [],
         "privacy": {
           "NSCameraUsageDescription": "閲覧中のWebサイトでカメラを使用するために必要です。",
+          "NSFaceIDUsageDescription": "このブラウザのパスワード保管庫を安全に開くために使用します。",
           "NSLocalNetworkUsageDescription": "自宅のネットワークにある自作アプリや動画サーバーへ接続するために使用します。",
           "NSMicrophoneUsageDescription": "閲覧中のWebサイトでマイクを使用するために必要です。"
         }

@@ -2,6 +2,35 @@
   "releases": [
     {
       "file": "PersonalBrowser.ipa",
+      "sha256": "1ab5cfbf67ae2e498175b55c243c69070a28cccbfaac74583e6ed21f0433c313",
+      "bundle_id": "local.personalbrowser.app",
+      "version": "0.11.0",
+      "build": "65",
+      "minimum_ios": "17.0",
+      "target_ios": "18.4.1",
+      "architecture": "arm64",
+      "platform": "iOS device",
+      "embedded_profile": false,
+      "signature_resources": false,
+      "installation_verified": false,
+      "source_commit": "2a8e4d4134e3f42daf416dd26b919ab7fc385597",
+      "data_schema": 1,
+      "size": 5585851,
+      "date": "2026-11-08T07:51:24.792322+00:00",
+      "description": "端末認証付きの暗号化パスワード保管庫を追加。Safari・BraveのCSV／Safari ZIPから専用画面で取り込み、サイト・ポート・証明書を照合して選択したログインフォームに入力。自動送信なし、プライベート入力は初期オフ。編集・削除・自動ロック設定とパスフレーズ付き暗号化バックアップに対応。既存の閲覧データとAppleのパスワードは維持。",
+      "appPermissions": {
+        "entitlements": [],
+        "privacy": {
+          "NSCameraUsageDescription": "閲覧中のWebサイトでカメラを使用するために必要です。",
+          "NSFaceIDUsageDescription": "このブラウザのパスワード保管庫を安全に開くために使用します。",
+          "NSLocalNetworkUsageDescription": "自宅のネットワークにある自作アプリや動画サーバーへ接続するために使用します。",
+          "NSMicrophoneUsageDescription": "閲覧中のWebサイトでマイクを使用するために必要です。"
+        }
+      },
+      "tag": "v0.11.0-build.65"
+    },
+    {
+      "file": "PersonalBrowser.ipa",
       "sha256": "976757cfab7981ddc12f2d54b6bcd3b2925d0f4a5219cd9ee789687219ec2d93",
       "bundle_id": "local.personalbrowser.app",
       "version": "0.10.1",
@@ -448,6 +477,7 @@
         "entitlements": [],
         "privacy": {
           "NSCameraUsageDescription": "閲覧中のWebサイトでカメラを使用するために必要です。",
+          "NSFaceIDUsageDescription": "このブラウザのパスワード保管庫を安全に開くために使用します。",
           "NSLocalNetworkUsageDescription": "自宅のネットワークにある自作アプリや動画サーバーへ接続するために使用します。",
           "NSMicrophoneUsageDescription": "閲覧中のWebサイトでマイクを使用するために必要です。"
         }
