@@ -1,6 +1,6 @@
 import Combine
 import CryptoKit
-import LocalAuthentication
+@preconcurrency import LocalAuthentication
 import Security
 import UIKit
 

@@ -59,7 +59,7 @@ public enum PasswordCryptography {
                 salt.bindMemory(to: UInt8.self).baseAddress!, salt.count, CCPseudoRandomAlgorithm(kCCPRFHmacAlgSHA256), 600000, &output, 32)
         }}
         guard result == kCCSuccess else { throw PasswordVaultError.backupPassword }
-        defer { output.withUnsafeMutableBytes { $0.initializeMemory(as: UInt8.self, repeating: 0) } }
+        defer { _ = output.withUnsafeMutableBytes { $0.initializeMemory(as: UInt8.self, repeating: 0) } }
         return SymmetricKey(data: output)
         #else
         throw PasswordVaultError.unavailable

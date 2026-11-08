@@ -5,7 +5,7 @@ import UniformTypeIdentifiers
 struct PasswordPageRequest {
     let targets: [PasswordFormTarget]
     let isPrivate: Bool
-    init(tab: BrowserTab) { targets = PasswordFormController.shared.targets(for: tab); isPrivate = tab.isPrivate }
+    @MainActor init(tab: BrowserTab) { targets = PasswordFormController.shared.targets(for: tab); isPrivate = tab.isPrivate }
 }
 
 @MainActor
