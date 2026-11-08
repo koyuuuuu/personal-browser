@@ -76,7 +76,7 @@ public struct PasswordRecord: Codable, Identifiable, Equatable, Sendable {
               title.utf8.count <= 1024, notes.utf8.count <= 16384 else { throw PasswordVaultError.invalidRecord }
         return self
     }
-    public var accountKey: String { site.display + "\u{0}" + username }
+    public var accountKey: String { site.display + "\u{0}" + Data(username.utf8).base64EncodedString() }
 }
 
 public struct PasswordVaultPayload: Codable, Sendable {
@@ -106,7 +106,7 @@ public struct PasswordImportResult: Sendable {
         for value in incoming {
             let value = try value.validated()
             if let index = positions[value.accountKey] {
-                if result.records[index].password == value.password && result.records[index].notes == value.notes { result.duplicates += 1 }
+                if result.records[index].password.utf8.elementsEqual(value.password.utf8) && result.records[index].notes.utf8.elementsEqual(value.notes.utf8) { result.duplicates += 1 }
                 else {
                     result.conflicts += 1
                     if replace { var update = value; update.id = result.records[index].id; result.records[index] = update }

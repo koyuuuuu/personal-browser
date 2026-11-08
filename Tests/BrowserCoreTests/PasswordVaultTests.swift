@@ -52,6 +52,14 @@ final class PasswordVaultTests: XCTestCase {
         let replaced = try PasswordImportResult.merged([new], into: [old], replace: true)
         XCTAssertEqual(replaced.records[0].id, old.id); XCTAssertEqual(replaced.records[0].password, "replacement")
         XCTAssertThrowsError(try PasswordImportResult.merged([new], into: [old,old], replace: false))
+        // Swift String equality is canonically equivalent; credential identity
+        // and password replacement must nevertheless preserve the actual bytes.
+        let composed = try record("\u{00e9}"), decomposed = try record("e\u{0301}")
+        let changed = try PasswordImportResult.merged([decomposed], into: [composed], replace: true)
+        XCTAssertEqual(Array(changed.records[0].password.utf8), Array(decomposed.password.utf8))
+        XCTAssertEqual(changed.conflicts, 1)
+        var first = old, second = old; first.username = "\u{00e9}"; second.username = "e\u{0301}"
+        XCTAssertEqual(try PasswordImportResult.merged([second], into: [first], replace: false).records.count, 2)
     }
     func testVaultAuthenticatesCiphertextAndDoesNotExposePlaintext() throws {
         let value = try record(), key = SymmetricKey(size: .bits256)
