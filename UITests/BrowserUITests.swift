@@ -40,10 +40,14 @@ final class BrowserUITests: XCTestCase {
     func testPasswordVaultImportsLocksAndFillsOnlyOnRequest() {
         func reveal(_ button: XCUIElement, upward: Bool) {
             for _ in 0..<4 {
-                if button.isHittable { return }
+                let rect = button.frame, window = app.frame
+                // SwiftUI may call a partly clipped row hittable even when its
+                // actual tap point is under the home indicator. Require the
+                // whole button inside the content area before interacting.
+                if button.exists && button.isHittable && rect.minY > window.minY + 110 && rect.maxY < window.maxY - 110 { return }
                 if upward { app.swipeUp() } else { app.swipeDown() }
             }
-            XCTAssertTrue(button.isHittable)
+            XCTFail("The requested vault control must be fully visible")
         }
         XCTAssertTrue(app.staticTexts["Password fixture"].waitForExistence(timeout: 20))
         XCTAssertTrue(app.buttons["passwordInputButton"].waitForExistence(timeout: 10), "A real DOM login form must be detected")
@@ -53,19 +57,24 @@ final class BrowserUITests: XCTestCase {
         reveal(importButton, upward: true); importButton.tap()
         let confirm = app.buttons["confirmPasswordImportButton"]
         reveal(confirm, upward: true); confirm.tap()
+        let record = app.buttons["passwordRecord-127.0.0.1"]
+        reveal(record, upward: false)
+        XCTAssertEqual(app.buttons.matching(identifier: "passwordRecord-127.0.0.1").count, 1, "The import must actually be committed")
         // Duplicate import goes through the same parser/merge path.
         reveal(importButton, upward: false); importButton.tap()
         reveal(confirm, upward: true); confirm.tap()
+        reveal(record, upward: false)
+        XCTAssertEqual(app.buttons.matching(identifier: "passwordRecord-127.0.0.1").count, 1)
         let lock = app.buttons["lockPasswordVaultButton"]
         reveal(lock, upward: true); lock.tap()
         XCTAssertTrue(app.buttons["unlockPasswordVaultButton"].waitForExistence(timeout: 5))
         app.buttons["unlockPasswordVaultButton"].tap()
         let fill = app.buttons["fillSavedPasswordButton"]
-        reveal(fill, upward: false); fill.tap()
+        XCTAssertTrue(fill.waitForExistence(timeout: 5), "The encrypted vault must retain its record after locking and reopening")
+        fill.tap()
         XCTAssertTrue(app.buttons["Check password fill"].waitForExistence(timeout: 5))
         app.buttons["Check password fill"].tap()
         XCTAssertTrue(app.staticTexts["Fields filled; not submitted"].waitForExistence(timeout: 5))
-        // Reopen after filling: the vault must have locked automatically.
         app.buttons["passwordVaultFixtureButton"].tap()
         XCTAssertTrue(app.buttons["unlockPasswordVaultButton"].waitForExistence(timeout: 5))
     }
