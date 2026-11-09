@@ -78,9 +78,10 @@ def main():
                 mime = 'text/html; charset=utf-8'
             elif self.path == '/password-vault-fixture':
                 data = b'''<!doctype html><meta name="viewport" content="width=device-width,initial-scale=1">
-                <title>Password fixture</title><h1>Password fixture</h1>
+                <title>Password fixture</title>
+                <style>body{font:16px -apple-system;margin:8px}h1{font-size:20px}input{font-size:16px;box-sizing:border-box;max-width:100%;width:100%;display:block;margin:6px 0}button{font-size:14px;margin:3px 2px}</style><h1>Password fixture</h1>
                 <form onsubmit="event.preventDefault();window.fixtureSubmitted=true;document.getElementById('status').textContent='Submitted'">
-                <input aria-label="Fixture username" id="user" name="username">
+                <input aria-label="Fixture username" id="user" name="username" autocapitalize="none" autocorrect="off" spellcheck="false">
                 <input aria-label="Fixture password" id="pw" type="password">
                 <button type="button" onclick="document.getElementById('status').textContent=document.getElementById('user').value==='fixture-user' &amp;&amp; document.getElementById('pw').value==='fixture-secret'?'Fields filled; not submitted':'Fields empty'">Check password fill</button>
                 <button type="button" onclick="document.getElementById('user').value='';document.getElementById('pw').value='';window.fixtureSubmitted=false;document.getElementById('status').textContent='Fields empty'">Reset login form</button>

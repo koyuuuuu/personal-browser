@@ -48,16 +48,21 @@ struct BrowserRootView: View {
 
     var body: some View {
         connectedContent
-        .overlay(alignment: .bottomTrailing) {
+        .safeAreaInset(edge: .top, spacing: 0) {
             #if DEBUG
             if PasswordVault.fixture, let tab = store.selectedTab {
-                VStack {
+                HStack {
                     Button("保管庫（検証）") { sheet = .passwords(PasswordPageRequest(tab: tab)) }
                         .accessibilityIdentifier("passwordVaultFixtureButton")
                     Button("自動入力（検証）") { PasswordVault.shared.setAutomaticallyFill(true) }
                         .accessibilityIdentifier("enableAutomaticPasswordFixtureButton")
-                }.buttonStyle(.borderedProminent).padding(.trailing, 12).padding(.bottom, 200)
-            } else if audioFixture {
+                }.font(.caption).buttonStyle(.borderedProminent).padding(4)
+            }
+            #endif
+        }
+        .overlay(alignment: .bottomTrailing) {
+            #if DEBUG
+            if audioFixture {
                 Button("ミキサー（検証）") { sheet = .audioMixer }
                     .buttonStyle(.borderedProminent).accessibilityIdentifier("audioMixerFixtureButton")
                     .padding(.trailing, 12).padding(.bottom, 145)

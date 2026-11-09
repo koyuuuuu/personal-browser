@@ -38,11 +38,11 @@ struct PasswordSuggestionBar: View {
                     HStack(spacing: 8) {
                         Label(target.site.host, systemImage: "key.fill").font(.caption).lineLimit(1)
                         Spacer()
-                        Button { forms.dismissKeyboard(for: tab.id) } label: { Image(systemName: "keyboard.chevron.compact.down") }
+                        Button { forms.dismissKeyboard(for: tab.id) } label: { Image(systemName: "keyboard.chevron.compact.down").frame(width: 40, height: 32) }
                             .accessibilityLabel("キーボードを閉じる").accessibilityIdentifier("passwordKeyboardDismissButton")
-                        Button { openVault(PasswordPageRequest(tab: tab)) } label: { Image(systemName: "gearshape") }
+                        Button { openVault(PasswordPageRequest(tab: tab)) } label: { Image(systemName: "gearshape").frame(width: 40, height: 32) }
                             .accessibilityLabel("パスワード保管庫").accessibilityIdentifier("passwordInputButton")
-                        Button { dismissedDocument = context } label: { Image(systemName: "xmark") }
+                        Button { dismissedDocument = context } label: { Image(systemName: "xmark").frame(width: 40, height: 32) }
                             .accessibilityLabel("パスワード候補を閉じる")
                     }
                     ScrollView(.horizontal, showsIndicators: false) {
