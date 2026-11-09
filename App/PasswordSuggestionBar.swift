@@ -67,7 +67,7 @@ struct PasswordSuggestionBar: View {
                     if let status { Text(status).font(.caption2).foregroundStyle(.secondary).lineLimit(2) }
                 }.padding(.horizontal, 10).padding(.vertical, 6)
                     .background(.bar).overlay(alignment: .top) { Divider() }
-                    .disabled(busy).privacySensitive().accessibilityIdentifier("passwordSuggestionBar")
+                    .disabled(busy).privacySensitive()
             }
         }
         .task(id: Request(target: target, revision: vault.revision, enabled: vault.automaticallyFill, visible: visible, formCount: targets.count)) {
