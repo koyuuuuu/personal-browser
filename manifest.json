@@ -2,6 +2,35 @@
   "releases": [
     {
       "file": "PersonalBrowser.ipa",
+      "sha256": "4c85a9f591483297b082847cb62a46058351c7a69ffd15a7efe1661379e8014d",
+      "bundle_id": "local.personalbrowser.app",
+      "version": "0.12.0",
+      "build": "70",
+      "minimum_ios": "17.0",
+      "target_ios": "18.4.1",
+      "architecture": "arm64",
+      "platform": "iOS device",
+      "embedded_profile": false,
+      "signature_resources": false,
+      "installation_verified": false,
+      "source_commit": "5c10ecbf797c7020954b49b44cb20dc11e03c598",
+      "data_schema": 1,
+      "size": 5626380,
+      "date": "2026-11-09T16:41:20.117584+00:00",
+      "description": "ログインページの下部にApple標準パスワードへの入口とブラウザ保管庫のアカウント候補を追加。フォームの自動入力属性を補助し、ユーザー名だけのログイン段階にも対応。保管庫解除中・一致する候補とフォームが各1件・未入力の通常タブだけ、確認なしで入力する任意設定を追加（初期オフ）。Appleの認証を省略せず、ログイン送信・入力済み内容の上書きを行いません。既存データ・暗号化保管庫を維持。",
+      "appPermissions": {
+        "entitlements": [],
+        "privacy": {
+          "NSCameraUsageDescription": "閲覧中のWebサイトでカメラを使用するために必要です。",
+          "NSFaceIDUsageDescription": "このブラウザのパスワード保管庫を安全に開くために使用します。",
+          "NSLocalNetworkUsageDescription": "自宅のネットワークにある自作アプリや動画サーバーへ接続するために使用します。",
+          "NSMicrophoneUsageDescription": "閲覧中のWebサイトでマイクを使用するために必要です。"
+        }
+      },
+      "tag": "v0.12.0-build.70"
+    },
+    {
+      "file": "PersonalBrowser.ipa",
       "sha256": "1ab5cfbf67ae2e498175b55c243c69070a28cccbfaac74583e6ed21f0433c313",
       "bundle_id": "local.personalbrowser.app",
       "version": "0.11.0",
