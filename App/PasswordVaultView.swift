@@ -120,6 +120,7 @@ struct PasswordVaultView: View {
 
             if let message { Section { Text(message).accessibilityIdentifier("passwordVaultStatus") } }
         }
+        .id(vault.unlocked) // A lock transition must reveal the unlock controls at the top.
         .disabled(busy || vault.busy)
         .navigationTitle("パスワード")
         .toolbar { ToolbarItem(placement: .topBarLeading) { Button("閉じる") { dismiss() } } }

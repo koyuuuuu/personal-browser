@@ -72,6 +72,7 @@ struct BrowserRootView: View {
             if PasswordVault.fixture && !preparedPasswordFixture {
                 preparedPasswordFixture = true
                 PasswordVault.shared.setAutomaticallyFill(false)
+                PasswordVault.shared.setLockSeconds(300)
                 var features = store.features; features.blockAdvertisements = false; store.updateFeatures(features)
                 store.navigate("http://127.0.0.1:18765/password-vault-fixture")
             }
