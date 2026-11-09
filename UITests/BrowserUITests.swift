@@ -390,11 +390,17 @@ final class BrowserUITests: XCTestCase {
         let field = app.textFields["addressField"]
         let menu = app.buttons["menuButton"]
         func checkControls() {
+            XCTAssertTrue(field.isHittable)
             for control in [field, menu] {
-                XCTAssertTrue(control.isHittable)
                 XCTAssertGreaterThan(control.frame.minY, app.frame.minY)
                 XCTAssertLessThanOrEqual(control.frame.maxY, app.frame.maxY - 15)
             }
+            // Menu wrappers have no AX hit point on this simulator; verify a
+            // physical tap opens Settings and returns to the same page instead.
+            tapMenuControl("menuButton")
+            app.buttons["設定"].tap()
+            XCTAssertTrue(app.navigationBars["設定"].waitForExistence(timeout: 5))
+            app.navigationBars["設定"].buttons["閉じる"].tap()
         }
         checkControls()
         navigate("http://127.0.0.1:18765/layout-fixture")

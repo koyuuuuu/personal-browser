@@ -92,7 +92,7 @@ jobs:
         run: |
           for result in build/UI-*.xcresult; do
             if [ -d "$result" ]; then
-              xcrun xcresulttool export attachments --path "$result" --output-path build/test-attachments || true
+              xcrun xcresulttool export attachments --path "$result" --output-path "build/test-attachments/$(basename "$result" .xcresult)" || true
             fi
           done
       - name: Summarize app crash symbols without exporting raw reports
