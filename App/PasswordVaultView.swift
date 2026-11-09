@@ -167,7 +167,7 @@ struct PasswordVaultView: View {
         }
         .onChange(of: vault.unlocked) { _, open in if !open { clear() } }
         .onChange(of: phase) { _, value in if value == .background { clear(); vault.lock() } }
-        .onDisappear { clear(); vault.lock() }
+        .onDisappear { clear() }
     }
     @ViewBuilder private var pageSection: some View {
         if let page {
