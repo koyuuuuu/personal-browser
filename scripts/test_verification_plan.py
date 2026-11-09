@@ -6,7 +6,7 @@ from verification_plan import AREAS, ROOT, changed_methods, plan
 
 class VerificationPolicyTests(unittest.TestCase):
     def test_password_vault_runs_its_import_lock_fill_case_and_conditional_archive_compatibility(self):
-        paths = ["App/PasswordVault.swift", "App/PasswordVaultView.swift", "App/PasswordFormController.swift", "App/BrowserTab.swift", "App/BrowserChrome.swift", "App/BrowserViews.swift", "App/BrowserWebKitBridge.h", "App/BrowserWebKitBridge.m", "App/SettingsView.swift", "App/FeatureSettingsView.swift", "App/Info.plist", "Sources/BrowserCore/BrowserArchive.swift"]
+        paths = ["App/PasswordVault.swift", "App/PasswordVaultView.swift", "App/PasswordSuggestionBar.swift", "App/PasswordFormController.swift", "App/BrowserTab.swift", "App/BrowserChrome.swift", "App/BrowserViews.swift", "App/BrowserWebKitBridge.h", "App/BrowserWebKitBridge.m", "App/SettingsView.swift", "App/FeatureSettingsView.swift", "App/Info.plist", "Sources/BrowserCore/BrowserArchive.swift"]
         result = plan(paths, tab_changes={"preamble", "resolve", "createWebView", "releaseWebView", "webView", "webViewWebContentProcessDidTerminate"}, chrome_changes={"preamble", "viewport", "actionButton"}, ui_changes={"setUpWithError"})
         self.assertEqual(result["ui_tests"], AREAS["password-vault"])
         self.assertTrue(result["compatibility"])

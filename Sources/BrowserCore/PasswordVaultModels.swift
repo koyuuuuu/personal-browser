@@ -199,3 +199,13 @@ public enum PasswordCSV {
         return result
     }
 }
+
+/// Automatic filling is deliberately narrower than explicit account selection.
+public enum PasswordAutomaticFillPolicy {
+    public static func candidate(records: [PasswordRecord], site: PasswordOrigin, enabled: Bool,
+        unlocked: Bool, isPrivate: Bool, formCount: Int, isMainFrame: Bool, eligible: Bool) -> PasswordRecord? {
+        guard enabled, unlocked, !isPrivate, formCount == 1, isMainFrame, eligible else { return nil }
+        let matches = records.filter { $0.site == site }
+        return matches.count == 1 ? matches[0] : nil
+    }
+}

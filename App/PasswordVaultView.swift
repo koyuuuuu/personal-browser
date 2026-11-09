@@ -97,7 +97,14 @@ struct PasswordVaultView: View {
                 Section { Button("今すぐロック", systemImage: "lock") { vault.lock() }.accessibilityIdentifier("lockPasswordVaultButton") }
             }
             Section("自動入力の設定") {
-                Toggle("ログインフォームに入力ボタンを表示", isOn: Binding(get: { vault.showInputButton }, set: { vault.setShowInput($0) }))
+                Toggle("保管庫の解除中は確認なしで自動入力", isOn: Binding(get: { vault.automaticallyFill }, set: { vault.setAutomaticallyFill($0) }))
+                    .accessibilityIdentifier("automaticPasswordFillToggle")
+                Text("初期オフ。一致するアカウントとログインフォームが1件ずつの場合だけ、未入力・未編集の欄へ入力します。プライベートタブでは動作せず、ロック解除・Appleの認証・ログインの送信は省略しません。")
+                    .font(.footnote).foregroundStyle(.secondary)
+                Toggle("Appleの自動入力の認識を補助", isOn: Binding(get: { vault.improveAppleAutoFill }, set: { vault.setImproveAppleAutoFill($0) }))
+                Text("下部の「Appleのパスワード」はフォームにカーソルを移してiOS標準の候補へ進みます。Appleに保存したアカウントの一覧取得や、Appleの認証なしの入力はできません。iOSの「設定 → 一般 → 自動入力とパスワード」でパスワードの自動入力を有効にしてください。")
+                    .font(.footnote).foregroundStyle(.secondary)
+                Toggle("ログインフォームに下部候補を表示", isOn: Binding(get: { vault.showInputButton }, set: { vault.setShowInput($0) }))
                 Toggle("プライベートタブでも入力を許可", isOn: Binding(get: { vault.allowPrivateFill }, set: { vault.setPrivateFill($0) }))
                 Picker("自動ロック", selection: Binding(get: { vault.lockSeconds }, set: { vault.setLockSeconds($0) })) {
                     Text("30秒").tag(30); Text("1分").tag(60); Text("5分").tag(300)
@@ -177,7 +184,7 @@ struct PasswordVaultView: View {
                                 }.accessibilityIdentifier("fillSavedPasswordButton")
                             }
                         }
-                        if !page.isPrivate {
+                        if !page.isPrivate && target.isPasswordField {
                             Button("このフォームの入力内容を確認して保存") {
                                 perform { editing = try await PasswordFormController.shared.capture(target) }
                             }

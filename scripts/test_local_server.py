@@ -79,11 +79,25 @@ def main():
             elif self.path == '/password-vault-fixture':
                 data = b'''<!doctype html><meta name="viewport" content="width=device-width,initial-scale=1">
                 <title>Password fixture</title><h1>Password fixture</h1>
-                <form onsubmit="event.preventDefault();document.getElementById('status').textContent='Submitted'">
-                <input aria-label="Fixture username" id="user" autocomplete="username">
-                <input aria-label="Fixture password" id="pw" type="password" autocomplete="current-password">
+                <form onsubmit="event.preventDefault();window.fixtureSubmitted=true;document.getElementById('status').textContent='Submitted'">
+                <input aria-label="Fixture username" id="user" name="username">
+                <input aria-label="Fixture password" id="pw" type="password">
                 <button type="button" onclick="document.getElementById('status').textContent=document.getElementById('user').value==='fixture-user' &amp;&amp; document.getElementById('pw').value==='fixture-secret'?'Fields filled; not submitted':'Fields empty'">Check password fill</button>
-                </form><p id="status">Not submitted</p>'''
+                <button type="button" onclick="document.getElementById('user').value='';document.getElementById('pw').value='';window.fixtureSubmitted=false;document.getElementById('status').textContent='Fields empty'">Reset login form</button>
+                <button type="button" onclick="this.form.innerHTML='&lt;input aria-label=UsernameOnly id=user autocomplete=username&gt;';document.getElementById('status').textContent='Username step empty'">Username-only step</button>
+                </form><p id="status">Not submitted</p><p id="system-status"></p>
+                <script>
+                document.addEventListener('focusin',e=>{
+                  if(['user','pw'].includes(e.target.id) && document.getElementById('user').autocomplete==='username' && document.getElementById('pw').autocomplete==='current-password')document.getElementById('system-status').textContent='System field focused; hints ready';
+                });
+                setInterval(()=>{
+                  const user=document.getElementById('user').value,pw=document.getElementById('pw')?.value;
+                  if(window.fixtureSubmitted)document.getElementById('status').textContent='Submitted';
+                  else if(user==='fixture-user' && pw==='fixture-secret')document.getElementById('status').textContent='Fields filled; not submitted';
+                  else if(!document.getElementById('pw') && user==='fixture-user')document.getElementById('status').textContent='Username step filled; not submitted';
+                  else if(user==='my-edit')document.getElementById('status').textContent='User edit retained';
+                },200);
+                </script>'''
                 mime = 'text/html; charset=utf-8'
             elif self.path == '/locked-viewport':
                 data = b'''<!doctype html><meta name="viewport" content="width=device-width,initial-scale=1">

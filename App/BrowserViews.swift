@@ -51,9 +51,12 @@ struct BrowserRootView: View {
         .overlay(alignment: .bottomTrailing) {
             #if DEBUG
             if PasswordVault.fixture, let tab = store.selectedTab {
-                Button("保管庫（検証）") { sheet = .passwords(PasswordPageRequest(tab: tab)) }
-                    .buttonStyle(.borderedProminent).accessibilityIdentifier("passwordVaultFixtureButton")
-                    .padding(.trailing, 12).padding(.bottom, 145)
+                VStack {
+                    Button("保管庫（検証）") { sheet = .passwords(PasswordPageRequest(tab: tab)) }
+                        .accessibilityIdentifier("passwordVaultFixtureButton")
+                    Button("自動入力（検証）") { PasswordVault.shared.setAutomaticallyFill(true) }
+                        .accessibilityIdentifier("enableAutomaticPasswordFixtureButton")
+                }.buttonStyle(.borderedProminent).padding(.trailing, 12).padding(.bottom, 200)
             } else if audioFixture {
                 Button("ミキサー（検証）") { sheet = .audioMixer }
                     .buttonStyle(.borderedProminent).accessibilityIdentifier("audioMixerFixtureButton")
@@ -68,6 +71,7 @@ struct BrowserRootView: View {
             #if DEBUG
             if PasswordVault.fixture && !preparedPasswordFixture {
                 preparedPasswordFixture = true
+                PasswordVault.shared.setAutomaticallyFill(false)
                 var features = store.features; features.blockAdvertisements = false; store.updateFeatures(features)
                 store.navigate("http://127.0.0.1:18765/password-vault-fixture")
             }
@@ -141,7 +145,7 @@ struct BrowserRootView: View {
 
     @ViewBuilder private var browsingContent: some View {
         if let tab = store.selectedTab {
-            TabBrowserView(store: store, tab: tab, showSheet: { sheet = $0 }, share: share)
+            TabBrowserView(store: store, tab: tab, passwordActionsAllowed: sheet == nil, showSheet: { sheet = $0 }, share: share)
         } else { ProgressView("Webサイトデータを消去中…") }
     }
     @ViewBuilder private var updateBanner: some View {

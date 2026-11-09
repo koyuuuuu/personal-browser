@@ -15,6 +15,15 @@ final class PasswordVault: ObservableObject {
     @Published private(set) var showInputButton = UserDefaults.standard.object(forKey: "password-vault.show-input.v1") as? Bool ?? true
     @Published private(set) var allowPrivateFill = UserDefaults.standard.bool(forKey: "password-vault.private-fill.v1")
     @Published private(set) var lockSeconds = UserDefaults.standard.object(forKey: "password-vault.lock-seconds.v1") as? Int ?? 60
+    @Published private(set) var automaticallyFill = UserDefaults.standard.bool(forKey: "password-vault.auto-fill-unlocked.v1")
+    @Published private(set) var improveAppleAutoFill = UserDefaults.standard.object(forKey: "password-vault.apple-hints.v1") as? Bool ?? true
+    func setAutomaticallyFill(_ value: Bool) {
+        automaticallyFill = value; UserDefaults.standard.set(value, forKey: "password-vault.auto-fill-unlocked.v1")
+    }
+    func setImproveAppleAutoFill(_ value: Bool) {
+        improveAppleAutoFill = value; UserDefaults.standard.set(value, forKey: "password-vault.apple-hints.v1")
+        PasswordFormController.shared.setAppleHints(value)
+    }
     private var key: SymmetricKey?
     private var keyID: UUID?
     private var context: LAContext?

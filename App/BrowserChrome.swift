@@ -5,7 +5,7 @@ import WebKit
 struct TabBrowserView: View {
     @ObservedObject var store: BrowserStore
     @ObservedObject var tab: BrowserTab
-    @ObservedObject private var passwords = PasswordVault.shared
+    let passwordActionsAllowed: Bool
     let showSheet: (BrowserSheet) -> Void
     let share: () -> Void
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -89,12 +89,6 @@ struct TabBrowserView: View {
             }
             .overlay(alignment: .topTrailing) {
                 VStack(alignment: .trailing, spacing: 4) {
-                if tab.hasPasswordForms, passwords.showInputButton, tab.passwordPageTrusted,
-                   !tab.isPrivate || passwords.allowPrivateFill {
-                    Button("パスワード", systemImage: "key.fill") { showSheet(.passwords(PasswordPageRequest(tab: tab))) }
-                        .font(.caption).buttonStyle(.borderedProminent).padding(8)
-                        .accessibilityIdentifier("passwordInputButton")
-                }
                 if tab.hasContent, !tab.selectedText.isEmpty {
                     let text = tab.selectedText
                     Button("自作ブラウザで検索", systemImage: "magnifyingglass") { store.searchSelection(text, from: tab) }
@@ -102,6 +96,9 @@ struct TabBrowserView: View {
                         .accessibilityIdentifier("selectedTextSearchButton")
                 }
                 }
+            }
+            .safeAreaInset(edge: .bottom, spacing: 0) {
+                PasswordSuggestionBar(tab: tab, allowed: passwordActionsAllowed && !addressFocused) { showSheet(.passwords($0)) }
             }
             .frame(width: width, height: geometry.size.height)
             .clipped().contentShape(Rectangle())

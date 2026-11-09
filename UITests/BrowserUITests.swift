@@ -79,6 +79,29 @@ final class BrowserUITests: XCTestCase {
         XCTAssertTrue(app.staticTexts["Fields filled; not submitted"].waitForExistence(timeout: 5))
         app.buttons["passwordVaultFixtureButton"].tap()
         XCTAssertTrue(app.buttons["unlockPasswordVaultButton"].waitForExistence(timeout: 5))
+        app.buttons["unlockPasswordVaultButton"].tap()
+        app.navigationBars["パスワード"].buttons["閉じる"].tap()
+        let apple = app.buttons["applePasswordSuggestionButton"]
+        XCTAssertTrue(apple.waitForExistence(timeout: 5)); apple.tap()
+        XCTAssertTrue(app.staticTexts["System field focused; hints ready"].waitForExistence(timeout: 8), "The public native button must focus the real web field with AutoFill hints")
+        app.buttons["passwordKeyboardDismissButton"].tap()
+        app.buttons["Reset login form"].tap()
+        XCTAssertTrue(app.staticTexts["Fields empty"].waitForExistence(timeout: 5))
+        app.buttons["inlineSavedPasswordButton"].tap()
+        XCTAssertTrue(app.staticTexts["Fields filled; not submitted"].waitForExistence(timeout: 5))
+        app.buttons["Reset login form"].tap()
+        XCTAssertTrue(app.staticTexts["Fields empty"].waitForExistence(timeout: 5))
+        app.buttons["enableAutomaticPasswordFixtureButton"].tap()
+        XCTAssertTrue(app.staticTexts["Fields filled; not submitted"].waitForExistence(timeout: 8), "Unlocked opt-in mode must fill without another selection and must not submit")
+        app.buttons["Reset login form"].tap()
+        XCTAssertTrue(app.staticTexts["Fields empty"].waitForExistence(timeout: 5))
+        let username = app.textFields["Fixture username"]
+        username.tap()
+        username.typeText("my-edit")
+        app.buttons["passwordKeyboardDismissButton"].tap()
+        XCTAssertTrue(app.staticTexts["User edit retained"].waitForExistence(timeout: 5))
+        app.buttons["Username-only step"].tap()
+        XCTAssertTrue(app.staticTexts["Username step filled; not submitted"].waitForExistence(timeout: 8))
     }
 
     func testLockedViewportChromeAndBoundedRecovery() {

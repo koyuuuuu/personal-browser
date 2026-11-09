@@ -33,6 +33,7 @@ AREAS = {
     "launch": ["testWebKitRendersAndExecutesOfflinePage"],
 }
 PATH_AREAS = {
+    "App/PasswordSuggestionBar.swift": ["password-vault"],
     "App/PasswordVault.swift": ["password-vault"],
     "App/PasswordVaultView.swift": ["password-vault"],
     "App/PasswordImportReader.swift": ["password-vault"],
@@ -133,7 +134,7 @@ def changed_methods(before, after):
 def plan(changed, store_changes=(), ui_changes=(), tab_changes=None, pending_app_paths=None, chrome_changes=None):
     changed = set(changed)
     areas = set()
-    password_context = bool(changed & {"App/PasswordVault.swift", "App/PasswordVaultView.swift", "App/PasswordFormController.swift", "App/PasswordFormScript.swift"})
+    password_context = bool(changed & {"App/PasswordVault.swift", "App/PasswordVaultView.swift", "App/PasswordFormController.swift", "App/PasswordFormScript.swift", "App/PasswordSuggestionBar.swift"})
     volume_context = bool(changed & {"App/AudioSourcesController.swift", "App/MediaVolumeScript.swift", "App/AudioSourcesView.swift"})
     resilience_context = bool(changed & {"App/ChromeRecoveryObserver.swift", "App/AppPromotionBlocker.swift", "App/AppPromotionScript.swift", "Sources/BrowserCore/PageRecovery.swift"})
     for path in changed:

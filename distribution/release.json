@@ -1,10 +1,10 @@
 {
-  "version": "0.11.0",
+  "version": "0.12.0",
   "bundle_id": "local.personalbrowser.app",
   "data_schema": 1,
   "public_repository": "koyuuuuu/personal-browser-distribution",
   "name": "Personal Browser",
   "developer_name": "Personal Browser",
   "description": "自分専用のブラウザ。タブ、履歴、ブックマーク、プライベート閲覧、UIカスタマイズに対応。",
-  "release_notes": "端末認証付きの暗号化パスワード保管庫を追加。Safari・BraveのCSV／Safari ZIPから専用画面で取り込み、サイト・ポート・証明書を照合して選択したログインフォームに入力。自動送信なし、プライベート入力は初期オフ。編集・削除・自動ロック設定とパスフレーズ付き暗号化バックアップに対応。既存の閲覧データとAppleのパスワードは維持。"
+  "release_notes": "ログインページの下部にApple標準パスワードへの入口とブラウザ保管庫のアカウント候補を追加。フォームの自動入力属性を補助し、ユーザー名だけのログイン段階にも対応。保管庫解除中・一致する候補とフォームが各1件・未入力の通常タブだけ、確認なしで入力する任意設定を追加（初期オフ）。Appleの認証を省略せず、ログイン送信・入力済み内容の上書きを行いません。既存データ・暗号化保管庫を維持。"
 }

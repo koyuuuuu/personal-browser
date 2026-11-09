@@ -6,6 +6,21 @@ final class PasswordVaultTests: XCTestCase {
     private func record(_ password: String = "not-a-real-secret") throws -> PasswordRecord {
         try PasswordRecord(site: PasswordOrigin("https://example.com/login?a=1"), username: "日本語 user", password: password).validated()
     }
+    func testAutomaticFillRequiresOneExactAccountVisibleUntouchedFormAndUnlockedSession() throws {
+        let value = try record(), site = value.site
+        func candidate(_ records: [PasswordRecord] = [], enabled: Bool = true, unlocked: Bool = true, isPrivate: Bool = false, count: Int = 1, main: Bool = true, eligible: Bool = true) -> PasswordRecord? {
+            PasswordAutomaticFillPolicy.candidate(records: records, site: site, enabled: enabled, unlocked: unlocked,
+                isPrivate: isPrivate, formCount: count, isMainFrame: main, eligible: eligible)
+        }
+        XCTAssertEqual(candidate([value]), value)
+        XCTAssertNil(candidate([value], enabled: false)); XCTAssertNil(candidate([value], unlocked: false))
+        XCTAssertNil(candidate([value], isPrivate: true)); XCTAssertNil(candidate([value], count: 2))
+        XCTAssertNil(candidate([value], main: false)); XCTAssertNil(candidate([value], eligible: false))
+        var other = value; other.id = UUID(); other.username = "another-account"
+        XCTAssertNil(candidate([value,other]))
+        other.site = try PasswordOrigin("https://example.com:444")
+        XCTAssertNil(candidate([other])); XCTAssertNil(candidate())
+    }
     func testOriginIsExactAndRejectsUnsafeURLsAndMalformedDecodedHost() throws {
         let saved = try PasswordOrigin("https://EXAMPLE.com/login?q=secret#fragment")
         XCTAssertEqual(saved.display, "https://example.com")
