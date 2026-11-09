@@ -2,7 +2,7 @@
 
 iPhone 12 / iOS 18.4.1向けの個人用ブラウザ。SwiftUIとWKWebViewで新規実装し、Windowsで編集、クラウドmacOSでビルド、SideStoreで実機へ導入・再署名する。
 
-**最新配信版は0.12.0 build 70。下部のパスワード候補、Apple標準入力への入口、解除中の任意の自動入力を追加。** [リリース](https://github.com/koyuuuuu/personal-browser-distribution/releases/tag/v0.12.0-build.70)、[配信記録](docs/validation-0.12.0-2026-11-09.json)。本体ソースは[koyuuuuu/personal-browser](https://github.com/koyuuuuu/personal-browser)で公開し、標準の公開リポジトリ用Actionsランナーを利用する。有料ランナーや課金設定は追加していない。
+**最新配信版は0.12.1 build 72。0.12.0更新後の黒い画面・下部ツールバーの位置ずれを修正。** [リリース](https://github.com/koyuuuuu/personal-browser-distribution/releases/tag/v0.12.1-build.72)、[配信記録](docs/validation-0.12.1-2026-11-09.json)。本体ソースは[koyuuuuu/personal-browser](https://github.com/koyuuuuu/personal-browser)で公開し、標準の公開リポジトリ用Actionsランナーを利用する。有料ランナーや課金設定は追加していない。
 
 [v0.1.0の保存済みリリース](https://github.com/koyuuuuu/personal-browser/releases/tag/v0.1.0)から、初期版のビルド元とIPA保管先を参照できる。初期IPAは`ipa-archive`ブランチ、新版はGitHub Releasesに保存し、Actionsの1日保持期限が過ぎても取得できる。arm64実機用、最低iOS 17.0。SideStoreで個人用に署名して導入する。現在は本体リポジトリ全体が公開されている。
 
@@ -62,4 +62,4 @@ mainへのアプリ・テスト・ビルド・配信コードのpushで、Linux�
 
 0.11.0 build65を配信済み。「設定 → パスワード」で管理・取り込み・暗号化バックアップ、ログインページのボタンから認証後にアカウントを選択して入力できます。既存データ・Appleのパスワード連携は維持。Python55/Core77/関連UI1件・条件付き互換性・実機用ビルドと配信照合に成功。実機Face ID／Keychainは未確認です。[使い方と制約](docs/password-vault.ja.md)。
 
-0.12.0 build70を配信済み。ログインページ下部の候補から保管庫のアカウントを入力し、「Appleのパスワード」からiOS標準候補へ進めます。設定の確認なし入力はブラウザ保管庫の解除中・一致1件・空欄の通常タブだけ（初期オフ）。Appleの認証は省略しません。Python55/Core78/関連UI1件・実機用ビルドと配信照合に成功。実際のiCloud候補・FaceIDは実機未確認です。[設定と制約](docs/changes-0.12.0.ja.md)。
+0.12.1 build72を配信済み。空の検証用insetを配布版から除去し、Web表示と候補欄の高さを明示的に分配。ログインページ下部の候補から保管庫のアカウントを入力し、「Appleのパスワード」からiOS標準候補へ進めます。設定の確認なし入力はブラウザ保管庫の解除中・一致1件・空欄の通常タブだけ（初期オフ）。Appleの認証は省略しません。Python55/Core78/関連Debug UI5件・Release UI1件・実機用ビルドと配信照合に成功。実機でのレイアウト改善は更新後の確認待ち。実際のiCloud候補・FaceIDは実機未確認です。[設定と制約](docs/changes-0.12.0.ja.md)。

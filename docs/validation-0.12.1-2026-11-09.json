@@ -1,0 +1,66 @@
+{
+  "date_utc": "2026-11-09",
+  "version": "0.12.1",
+  "source_commit": "89798604f4765a0660c6b85d34a83daaea0b8c77",
+  "user_report": "0.12.0 build70 displays black content and toolbar too low on user iPhone",
+  "delivery_status": "published",
+  "implementation": [
+    "Construct reserved password-fixture inset only for DEBUG plus the explicit fixture; no empty production inset",
+    "Allocate page and intrinsically sized credential bar in the same VStack; preserve mounted WebSurface"
+  ],
+  "checks": {
+    "persistence_roundtrip": "not applicable; no persistence/model/keychain/cookie changes",
+    "full_ui_suite": "not run; representative layout/home/search/password cases only",
+    "python": 55,
+    "macos_core": 78,
+    "debug_ui_passed": 5,
+    "release_ui_passed": 1,
+    "release_case": "testReleaseBrowsingLayoutAndPageInteraction",
+    "release_duration_seconds": 36.293,
+    "native_device_build": "passed",
+    "local_ipa_inspection_and_build_info_hash": "passed",
+    "anonymous_delivery_audit": "passed",
+    "ci_jobs": "check/ios/publish/delivery-audit all success"
+  },
+  "previous_attempt": {
+    "run": 71,
+    "source_commit": "4805bc01c9d5123adc1c57b4ccb9af9adc860af4",
+    "python": 55,
+    "macos_core": 78,
+    "debug_ui_passed": 5,
+    "release": "initial toolbar geometry valid, but test incorrectly required SwiftUI Menu AX isHittable; corrected to existing physical-tap helper and actual Settings presentation/return; no app behavior or bounds/DOM assertions weakened",
+    "published": false
+  },
+  "limitations": [
+    "Physical iPhone acceptance pending; Simulator results do not prove all device behavior",
+    "Existing Apple credential/FaceID/iCloud limitations remain unchanged"
+  ],
+  "preservation": {
+    "bundle_id": "local.personalbrowser.app",
+    "data_schema": 1,
+    "webview_media_code": "unchanged",
+    "vault_crypto_and_fill_policy": "unchanged",
+    "historical_releases": "not overwritten"
+  },
+  "build": "72",
+  "tag": "v0.12.1-build.72",
+  "ci_run": "https://github.com/koyuuuuu/personal-browser/actions/runs/42679254822",
+  "public_release": "https://github.com/koyuuuuu/personal-browser-distribution/releases/tag/v0.12.1-build.72",
+  "source_url": "https://raw.githubusercontent.com/koyuuuuu/personal-browser-distribution/main/source.json",
+  "ipa": {
+    "file": "PersonalBrowser.ipa",
+    "sha256": "549436452fc986159e4b6ccf13732b8b9a2f80fcc476dac11be36a61c6b749b6",
+    "bundle_id": "local.personalbrowser.app",
+    "version": "0.12.1",
+    "build": "72",
+    "minimum_ios": "17.0",
+    "target_ios": "18.4.1",
+    "architecture": "arm64",
+    "platform": "iOS device",
+    "embedded_profile": false,
+    "signature_resources": false,
+    "installation_verified": false,
+    "size": 5627491,
+    "data_schema": 1
+  }
+}
