@@ -19,3 +19,5 @@ Appleに保存したアカウント一覧をアプリ独自の候補へ読み出
 参考：Appleの[HTMLフォームの自動入力指定](https://developer.apple.com/documentation/security/enabling-password-autofill-on-an-html-input-element)、[自動入力の処理と認証](https://developer.apple.com/documentation/security/about-the-password-autofill-workflow)、[WKWebViewによる資格情報の処理](https://developer.apple.com/documentation/authenticationservices/password-use-in-web-browsers)。
 
 検証は既存の保管庫UI代表1件を拡張し、下部候補の選択入力、公開APIでのWeb欄フォーカスと属性補助、解除中の自動入力・非送信・手入力の保持・ユーザー名だけの段階を確認します。CIの端末にはAppleの実アカウントや保存パスワードを登録せず、Appleの候補内容・Face ID・iCloudキーチェーンの実機動作を確認済みとは扱いません。従来の暗号化・インポート試験に、未解除・複数候補・別ポート・プライベート・サブフレーム・編集済み等の自動入力拒否条件を追加します。
+
+配信済み版は **0.12.0 build70**、ソース `5c10ecbf797c7020954b49b44cb20dc11e03c598`。Python55／Core78／関連UI1件（165.327秒）・実機用IPA・匿名配信照合に成功しました。[検証記録](validation-0.12.0-2026-11-09.json)。保存形式が変わらないため旧版データ往復試験は実行していません。

@@ -1,0 +1,102 @@
+{
+  "date_utc": "2026-11-09",
+  "version": "0.12.0",
+  "build": "70",
+  "source_commit": "5c10ecbf797c7020954b49b44cb20dc11e03c598",
+  "tag": "v0.12.0-build.70",
+  "ci_run": "https://github.com/koyuuuuu/personal-browser/actions/runs/42655081132",
+  "delivery_status": "published",
+  "source_visibility": "public",
+  "public_release": "https://github.com/koyuuuuu/personal-browser-distribution/releases/tag/v0.12.0-build.70",
+  "source_url": "https://raw.githubusercontent.com/koyuuuuu/personal-browser-distribution/main/source.json",
+  "ipa": {
+    "file": "PersonalBrowser.ipa",
+    "sha256": "4c85a9f591483297b082847cb62a46058351c7a69ffd15a7efe1661379e8014d",
+    "bundle_id": "local.personalbrowser.app",
+    "version": "0.12.0",
+    "build": "70",
+    "minimum_ios": "17.0",
+    "target_ios": "18.4.1",
+    "architecture": "arm64",
+    "platform": "iOS device",
+    "embedded_profile": false,
+    "signature_resources": false,
+    "installation_verified": false,
+    "size": 5626380,
+    "data_schema": 1
+  },
+  "checks": {
+    "python": 55,
+    "macos_core": 78,
+    "ui_passed": 1,
+    "ui_cases": [
+      {
+        "name": "testPasswordVaultImportsLocksAndFillsOnlyOnRequest",
+        "duration_seconds": 165.327
+      }
+    ],
+    "native": "existing real CSV/import/duplicate/encrypted file lock/read/fill; bottom Apple button focuses real WK login field and missing autocomplete hints become username/current-password; bottom saved-account fill; opt-in unlocked automatic fill without another selection and without submit; trusted user edit retained; new username-only form receives username only",
+    "core_automatic_policy": "requires enabled/unlocked/normal tab/one exact account/one current form/mainframe/empty unedited; rejects disabled, locked, private, ambiguous accounts/forms, subframe, different port and ineligible fields",
+    "crypto_import": "existing AES-GCM/PBKDF2/wrong key/tamper/backup/CSV/Unicode exact bytes/ZIP isolation cases retained",
+    "compatibility_roundtrip": "not applicable; existing persistence/vault formats and keys unchanged, independent UserDefaults only",
+    "anonymous_latest_ipa_feed_hash_size_identity": "passed",
+    "source_release_public_sha_match": true,
+    "password_test_auth_bypass_in_release": false,
+    "swift_webkit_overlay_strong_dependency": false,
+    "legacy_media_handler_and_script": {
+      "unchanged": true,
+      "sha256": "8233d9cc7ff0b82e3aa24f9ad97543226dd5c9124dfd80ce1d73ab3de5b91edc"
+    },
+    "full_ui_suite": "not run under scoped policy",
+    "old_ipa_full_redownload_audit": "not repeated; historical metadata/assets retained",
+    "fixture_timeout": "Debug fixture uses existing supported300sec preference for long UI interactions; production default60sec and explicit/background lock unchanged",
+    "fixture_controls": "reserved native top inset compiled out of Release; responsive16px controlled form"
+  },
+  "implementation": {
+    "apple": "no direct enumeration/read of Apple saved accounts; public focus of real HTML field, iOS owns credential QuickType/key picker and authentication; helper adds missing/off/on autocomplete hints conservatively, preserves explicit new-password/OTP and avoids multiple-password ambiguity",
+    "ui": "native bottom suggestions; own account names only unlocked and exact origin; explicit account selection fills; locked local button authenticates then fills unique account or presents choices; gear opens existing manager, x dismisses current document",
+    "automatic": "defaultoff, user-enabled, existing authenticated nonexpired session only; one exact account/form, mainframe normal tab, foreground selected trusted HTTPS, blank/unedited; native and JS rechecks, one attempt per form/document, no auto-auth/retries/submit; suppressed with modals/address editing/inactive/dismissed bar",
+    "username_only": "requires explicit autocomplete=username; native omits password argument and JS rejects one if present; no password capture for username-only form",
+    "privacy": "metadata only field-kind/focus/eligibility booleans, no unsolicited credential values; private explicit own-fill setting retained, auto always excluded in private; Apple focus allowed independently of own private-fill",
+    "preferences": "new independent browser vault auto-fill-unlocked and apple-hints keys; no keychain/vault/library/schema/cookie format changes",
+    "bridge": "public Objective-C static-code argument command; no optional Swift WebKit overlay/private APIs; update only own user scripts and preserve all other modules/mounted WebViews",
+    "extra_entitlements": false,
+    "associated_domains_added": false,
+    "third_party_credential_service": false
+  },
+  "limitations": [
+    "Apple stored-account availability/names cannot be read into the custom bar; Apple button is an entry point, not a claim of a matching saved credential",
+    "Apple credential selection/FaceID authentication cannot be bypassed by this setting; no guaranteed standard candidate on every website",
+    "CI has no actual Apple password account; verifies actual WK focus and HTML hints, NOT real iCloud entries/QuickType credential content/FaceID or physical keyboard behavior",
+    "Debug-only deterministic auth/key/fixed loopback trust bypass compiled out of Release; device Keychain ACL/FaceID acceptance separate",
+    "Own no-confirmation mode only works while vault is already unlocked, with one account/form and eligible fields; does not silently unlock or fill private/hidden/cross-origin/edited forms",
+    "Unknown/multistep/custom/closed-shadow forms and site-authentication restrictions may still need manual interaction"
+  ],
+  "rollback": {
+    "v0.11.0-build.65": "1ab5cfbf67ae2e498175b55c243c69070a28cccbfaac74583e6ed21f0433c313",
+    "historical_tags_and_ipas": "retained unchanged"
+  },
+  "pre_delivery_corrections": [
+    {
+      "run": 66,
+      "result": "failed UI harness",
+      "reason": "native bar displayed correctly, but parent accessibility identifier overrode header button identifiers; Core78 passed. Separate review found manager dismissal immediately locked the vault, preventing a cached bottom-suggestion session, and corrected it."
+    },
+    {
+      "run": 67,
+      "result": "superseded before publication",
+      "reason": "cancelled in favor of distinct child button identifiers; same scoped representative UI remains required"
+    }
+  ],
+  "additional_pre_delivery_correction": {
+    "run": 68,
+    "result": "failed native UI",
+    "reason": "after actual import/duplicate/explicit lock, old settings scroll offset left the unlock section offscreen; reset Form identity on lock state changes. Long UI fixture uses the real supported300sec setting rather than timing out during slow gestures; production default60sec and explicit lock behavior unchanged"
+  },
+  "fixture_layout_correction": {
+    "run": 69,
+    "result": "failed UI harness after real Apple focus",
+    "reason": "floating DEBUG fixture button overlapped Web reset after keyboard reflow/autozoom and opened manager instead; reserve a separate top inset and responsive16px fixture; enlarge native header touch targets"
+  },
+  "device_acceptance": "not yet reported for Apple credential UI or new bottom/automatic mode"
+}
