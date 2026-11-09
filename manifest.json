@@ -2,6 +2,35 @@
   "releases": [
     {
       "file": "PersonalBrowser.ipa",
+      "sha256": "549436452fc986159e4b6ccf13732b8b9a2f80fcc476dac11be36a61c6b749b6",
+      "bundle_id": "local.personalbrowser.app",
+      "version": "0.12.1",
+      "build": "72",
+      "minimum_ios": "17.0",
+      "target_ios": "18.4.1",
+      "architecture": "arm64",
+      "platform": "iOS device",
+      "embedded_profile": false,
+      "signature_resources": false,
+      "installation_verified": false,
+      "source_commit": "89798604f4765a0660c6b85d34a83daaea0b8c77",
+      "data_schema": 1,
+      "size": 5627491,
+      "date": "2026-11-09T19:10:47.973873+00:00",
+      "description": "0.12.0で画面が真っ暗になり下部ツールバーが画面外へずれる不具合を修正。検証用UIを配布版のレイアウトから除外し、パスワード候補欄とWeb表示領域の高さを明示的に分配。ブックマーク・履歴・設定・保管庫を維持。",
+      "appPermissions": {
+        "entitlements": [],
+        "privacy": {
+          "NSCameraUsageDescription": "閲覧中のWebサイトでカメラを使用するために必要です。",
+          "NSFaceIDUsageDescription": "このブラウザのパスワード保管庫を安全に開くために使用します。",
+          "NSLocalNetworkUsageDescription": "自宅のネットワークにある自作アプリや動画サーバーへ接続するために使用します。",
+          "NSMicrophoneUsageDescription": "閲覧中のWebサイトでマイクを使用するために必要です。"
+        }
+      },
+      "tag": "v0.12.1-build.72"
+    },
+    {
+      "file": "PersonalBrowser.ipa",
       "sha256": "4c85a9f591483297b082847cb62a46058351c7a69ffd15a7efe1661379e8014d",
       "bundle_id": "local.personalbrowser.app",
       "version": "0.12.0",

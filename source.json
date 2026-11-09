@@ -12,6 +12,16 @@
       "iconURL": "https://raw.githubusercontent.com/koyuuuuu/personal-browser-distribution/main/icon.png",
       "versions": [
         {
+          "version": "0.12.1",
+          "buildVersion": "72",
+          "date": "2026-11-09T19:10:47.973873+00:00",
+          "localizedDescription": "0.12.0で画面が真っ暗になり下部ツールバーが画面外へずれる不具合を修正。検証用UIを配布版のレイアウトから除外し、パスワード候補欄とWeb表示領域の高さを明示的に分配。ブックマーク・履歴・設定・保管庫を維持。",
+          "downloadURL": "https://github.com/koyuuuuu/personal-browser-distribution/releases/download/v0.12.1-build.72/PersonalBrowser.ipa",
+          "size": 5627491,
+          "minOSVersion": "17.0",
+          "sha256": "549436452fc986159e4b6ccf13732b8b9a2f80fcc476dac11be36a61c6b749b6"
+        },
+        {
           "version": "0.12.0",
           "buildVersion": "70",
           "date": "2026-11-09T16:41:20.117584+00:00",
