@@ -41,12 +41,17 @@ trap cleanup EXIT
 if [[ -n "${UI_TESTS:-}" ]]; then
     IFS=',' read -r -a ui_names <<< "$UI_TESTS"
     ui_selection=()
+    release_layout=0
     for name in "${ui_names[@]}"; do
         if [[ ! "$name" =~ ^test[A-Za-z0-9_]+$ ]]; then
             echo 'Invalid selected UI test name.' >&2
             exit 1
         fi
-        ui_selection+=("-only-testing:PersonalBrowserUITests/BrowserUITests/$name")
+        if [[ "$name" == "testReleaseBrowsingLayoutAndPageInteraction" ]]; then
+            release_layout=1
+        else
+            ui_selection+=("-only-testing:PersonalBrowserUITests/BrowserUITests/$name")
+        fi
     done
     simulator_sdk="$(xcodebuild -version -sdk iphonesimulator SDKVersion)"
     simulator_id="$(xcrun simctl list devices available --json | python3 scripts/select_simulator.py --sdk-version "$simulator_sdk")"
@@ -72,6 +77,7 @@ CERT_CONFIG
     done
     curl --silent --fail http://127.0.0.1:18765/health >/dev/null
 
+    if [[ ${#ui_selection[@]} -gt 0 ]]; then
     xcodebuild test \
         "${ui_selection[@]}" \
         -project PersonalBrowser.xcodeproj \
@@ -87,6 +93,18 @@ CERT_CONFIG
         "CURRENT_PROJECT_VERSION=${build_number}" \
         COMPILER_INDEX_STORE_ENABLE=NO \
         2>&1 | tee build/ui-tests.log
+    fi
+    if [[ "$release_layout" == "1" ]]; then
+        xcodebuild test \
+            -only-testing:PersonalBrowserUITests/BrowserUITests/testReleaseBrowsingLayoutAndPageInteraction \
+            -project PersonalBrowser.xcodeproj -scheme PersonalBrowser \
+            -configuration Release -destination "platform=iOS Simulator,id=${simulator_id}" \
+            -parallel-testing-enabled NO ONLY_ACTIVE_ARCH=YES \
+            -derivedDataPath build/simulator-release \
+            -resultBundlePath "build/UI-Release-${GITHUB_RUN_ID:-local}-${GITHUB_RUN_ATTEMPT:-1}.xcresult" \
+            "${signing[@]}" "BROWSER_BUNDLE_ID=${bundle_id}" "CURRENT_PROJECT_VERSION=${build_number}" \
+            COMPILER_INDEX_STORE_ENABLE=NO 2>&1 | tee build/ui-release-tests.log
+    fi
 
 else
     echo 'UI checks: not applicable to this change; no Simulator started.'

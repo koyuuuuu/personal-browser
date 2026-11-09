@@ -385,6 +385,40 @@ final class BrowserUITests: XCTestCase {
         XCTAssertFalse(app.otherElements["homeSearchSuggestions"].exists)
     }
 
+    // Runs in Release: no Debug launch fixture, auth bypass or reserved inset.
+    func testReleaseBrowsingLayoutAndPageInteraction() {
+        let field = app.textFields["addressField"]
+        let menu = app.buttons["menuButton"]
+        func checkControls() {
+            for control in [field, menu] {
+                XCTAssertTrue(control.isHittable)
+                XCTAssertGreaterThan(control.frame.minY, app.frame.minY)
+                XCTAssertLessThanOrEqual(control.frame.maxY, app.frame.maxY - 15)
+            }
+        }
+        checkControls()
+        navigate("http://127.0.0.1:18765/layout-fixture")
+        let page = app.webViews.firstMatch
+        let button = page.buttons["Check visible page"]
+        XCTAssertTrue(button.waitForExistence(timeout: 20))
+        XCTAssertTrue(button.isHittable)
+        XCTAssertGreaterThan(page.frame.height, 250)
+        XCTAssertLessThanOrEqual(page.frame.maxY, field.frame.minY)
+        button.tap()
+        XCTAssertTrue(page.staticTexts["Visible page responded"].waitForExistence(timeout: 5))
+        checkControls()
+        XCUIDevice.shared.orientation = .landscapeLeft
+        settlePresentation()
+        // Landscape begins with hidden chrome; the page must remain visible.
+        XCTAssertTrue(button.isHittable)
+        XCTAssertGreaterThan(page.frame.width, page.frame.height)
+        button.tap()
+        XCUIDevice.shared.orientation = .portrait
+        settlePresentation()
+        app.swipeDown()
+        checkControls()
+    }
+
     func testWebKitRendersAndExecutesOfflinePage() {
         let page = app.webViews.firstMatch
         XCTAssertTrue(page.waitForExistence(timeout: 15))

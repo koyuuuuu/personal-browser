@@ -47,19 +47,7 @@ struct BrowserRootView: View {
     #endif
 
     var body: some View {
-        connectedContent
-        .safeAreaInset(edge: .top, spacing: 0) {
-            #if DEBUG
-            if PasswordVault.fixture, let tab = store.selectedTab {
-                HStack {
-                    Button("保管庫（検証）") { sheet = .passwords(PasswordPageRequest(tab: tab)) }
-                        .accessibilityIdentifier("passwordVaultFixtureButton")
-                    Button("自動入力（検証）") { PasswordVault.shared.setAutomaticallyFill(true) }
-                        .accessibilityIdentifier("enableAutomaticPasswordFixtureButton")
-                }.font(.caption).buttonStyle(.borderedProminent).padding(4)
-            }
-            #endif
-        }
+        fixtureContent
         .overlay(alignment: .bottomTrailing) {
             #if DEBUG
             if audioFixture {
@@ -121,6 +109,27 @@ struct BrowserRootView: View {
             Button("開く") { UIApplication.shared.open(url); store.externalURL = nil }
             Button("キャンセル", role: .cancel) { store.externalURL = nil }
         } message: { url in Text(url.absoluteString) }
+    }
+
+    // Do not install a safe-area inset whose content compiles to EmptyView in
+    // Release. The fixture must not participate in production layout at all.
+    @ViewBuilder private var fixtureContent: some View {
+        #if DEBUG
+        if PasswordVault.fixture {
+            connectedContent.safeAreaInset(edge: .top, spacing: 0) {
+                if let tab = store.selectedTab {
+                    HStack {
+                        Button("保管庫（検証）") { sheet = .passwords(PasswordPageRequest(tab: tab)) }
+                            .accessibilityIdentifier("passwordVaultFixtureButton")
+                        Button("自動入力（検証）") { PasswordVault.shared.setAutomaticallyFill(true) }
+                            .accessibilityIdentifier("enableAutomaticPasswordFixtureButton")
+                    }.font(.caption).buttonStyle(.borderedProminent).padding(4)
+                }
+            }
+        } else { connectedContent }
+        #else
+        connectedContent
+        #endif
     }
 
     private var connectedContent: some View {

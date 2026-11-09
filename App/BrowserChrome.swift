@@ -56,49 +56,53 @@ struct TabBrowserView: View {
 
     private func viewport(width: CGFloat) -> some View {
         GeometryReader { geometry in
-            ZStack {
-                WebSurface(store: store).accessibilityIdentifier("webContent").accessibilityHidden(!tab.hasContent)
-                if !tab.hasContent {
-                    HomePageView(store: store, isPrivate: tab.isPrivate).id(tab.id)
-                        .simultaneousGesture(DragGesture(minimumDistance: 25).onEnded { value in
-                            guard abs(value.translation.height) > abs(value.translation.width) else { return }
-                            if value.translation.height > 25 { store.revealChrome() }
-                            else if value.translation.height < -25 { store.scrollChrome(delta: 40) }
-                        })
-                }
-                if !tab.hasContent && !tab.isPrivate && addressFocused && store.searchSuggestions.enabled {
-                    HomeSearchSuggestions(query: address, engine: store.snapshot.settings.searchEngine) { value in
-                        addressFocused = false; store.search(value)
+            VStack(spacing: 0) {
+                ZStack {
+                    WebSurface(store: store).accessibilityIdentifier("webContent").accessibilityHidden(!tab.hasContent)
+                    if !tab.hasContent {
+                        HomePageView(store: store, isPrivate: tab.isPrivate).id(tab.id)
+                            .simultaneousGesture(DragGesture(minimumDistance: 25).onEnded { value in
+                                guard abs(value.translation.height) > abs(value.translation.width) else { return }
+                                if value.translation.height > 25 { store.revealChrome() }
+                                else if value.translation.height < -25 { store.scrollChrome(delta: 40) }
+                            })
+                    }
+                    if !tab.hasContent && !tab.isPrivate && addressFocused && store.searchSuggestions.enabled {
+                        HomeSearchSuggestions(query: address, engine: store.snapshot.settings.searchEngine) { value in
+                            addressFocused = false; store.search(value)
+                        }
+                    }
+                    AddressSwipeOverlay(controller: swipe, store: store, width: width, height: geometry.size.height)
+                        .allowsHitTesting(false).accessibilityHidden(true)
+                    if tab.pageUnavailable {
+                        VStack(spacing: 14) {
+                            Image(systemName: "exclamationmark.triangle").font(.largeTitle)
+                            Text("ページを読み込めませんでした").font(.headline)
+                            if tab.canRetryPage {
+                                Button("再読み込み") { tab.retryPage() }.buttonStyle(.borderedProminent)
+                                    .accessibilityIdentifier("failedPageReloadButton")
+                            }
+                            Button("タブ一覧") { store.revealChrome(); showSheet(.tabs) }.buttonStyle(.bordered)
+                                .accessibilityIdentifier("failedPageTabsButton")
+                        }.padding().frame(maxWidth: .infinity, maxHeight: .infinity)
+                            .background(Color(uiColor: .systemBackground))
                     }
                 }
-                AddressSwipeOverlay(controller: swipe, store: store, width: width, height: geometry.size.height)
-                    .allowsHitTesting(false).accessibilityHidden(true)
-                if tab.pageUnavailable {
-                    VStack(spacing: 14) {
-                        Image(systemName: "exclamationmark.triangle").font(.largeTitle)
-                        Text("ページを読み込めませんでした").font(.headline)
-                        if tab.canRetryPage {
-                            Button("再読み込み") { tab.retryPage() }.buttonStyle(.borderedProminent)
-                                .accessibilityIdentifier("failedPageReloadButton")
-                        }
-                        Button("タブ一覧") { store.revealChrome(); showSheet(.tabs) }.buttonStyle(.bordered)
-                            .accessibilityIdentifier("failedPageTabsButton")
-                    }.padding().frame(maxWidth: .infinity, maxHeight: .infinity)
-                        .background(Color(uiColor: .systemBackground))
+                .overlay(alignment: .topTrailing) {
+                    VStack(alignment: .trailing, spacing: 4) {
+                    if tab.hasContent, !tab.selectedText.isEmpty {
+                        let text = tab.selectedText
+                        Button("自作ブラウザで検索", systemImage: "magnifyingglass") { store.searchSelection(text, from: tab) }
+                            .font(.caption).buttonStyle(.borderedProminent).padding(8)
+                            .accessibilityIdentifier("selectedTextSearchButton")
+                    }
+                    }
                 }
-            }
-            .overlay(alignment: .topTrailing) {
-                VStack(alignment: .trailing, spacing: 4) {
-                if tab.hasContent, !tab.selectedText.isEmpty {
-                    let text = tab.selectedText
-                    Button("自作ブラウザで検索", systemImage: "magnifyingglass") { store.searchSelection(text, from: tab) }
-                        .font(.caption).buttonStyle(.borderedProminent).padding(8)
-                        .accessibilityIdentifier("selectedTextSearchButton")
-                }
-                }
-            }
-            .safeAreaInset(edge: .bottom, spacing: 0) {
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                // Reserve the bar's actual height inside this viewport. A safe-area
+                // inset here does not constrain the UIKit host's explicit frame.
                 PasswordSuggestionBar(tab: tab, allowed: passwordActionsAllowed && !addressFocused) { showSheet(.passwords($0)) }
+                    .fixedSize(horizontal: false, vertical: true)
             }
             .frame(width: width, height: geometry.size.height)
             .clipped().contentShape(Rectangle())

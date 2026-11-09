@@ -10,6 +10,7 @@ ROOT = Path(__file__).resolve().parents[1]
 
 # One representative scenario per behavior, rather than overlapping smoke tests.
 AREAS = {
+    "browsing-layout": ["testReleaseBrowsingLayoutAndPageInteraction", "testPasswordVaultImportsLocksAndFillsOnlyOnRequest"],
     "password-vault": ["testPasswordVaultImportsLocksAndFillsOnlyOnRequest"],
     "browsing-resilience": ["testLockedViewportChromeAndBoundedRecovery", "testAppPromotionSuppressionPreservesLoginAndCanBeDisabled", "testPortraitForwardScrollHidesBarsAndBottomBounceDoesNotReveal"],
     "audio-volume": ["testPerSourceVolumeAndMuteUseIndependentRealPlayers"],
@@ -33,6 +34,7 @@ AREAS = {
     "launch": ["testWebKitRendersAndExecutesOfflinePage"],
 }
 PATH_AREAS = {
+    "browsing-layout": ["testReleaseBrowsingLayoutAndPageInteraction", "testPasswordVaultImportsLocksAndFillsOnlyOnRequest"],
     "App/PasswordSuggestionBar.swift": ["password-vault"],
     "App/PasswordVault.swift": ["password-vault"],
     "App/PasswordVaultView.swift": ["password-vault"],
@@ -46,7 +48,7 @@ PATH_AREAS = {
     "App/AppPromotionBlocker.swift": ["browsing-resilience"],
     "App/AppPromotionScript.swift": ["browsing-resilience"],
     "Sources/BrowserCore/PageRecovery.swift": ["browsing-resilience"],
-    "App/BrowserViews.swift": ["chrome", "home"],
+    "App/BrowserViews.swift": ["chrome", "home", "browsing-layout"],
     "App/TabGridView.swift": ["tabs"], "App/TabOverview.swift": ["tabs"],
     "App/HomePageView.swift": ["home", "favorites"], "App/FavoritesSettingsView.swift": ["favorites"],
     "App/LibraryView.swift": ["library"], "App/SafariImport.swift": ["library"],
@@ -162,7 +164,7 @@ def plan(changed, store_changes=(), ui_changes=(), tab_changes=None, pending_app
         elif chrome_changes is not None and set(chrome_changes) <= action_methods:
             areas.add("tab-navigation")
         else:
-            areas.update(["chrome", "search"])
+            areas.update(["chrome", "search", "browsing-layout"])
     if "App/BrowserTab.swift" in changed:
         names = set(tab_changes or ())
         resilience_methods = {"preamble", "resolve", "init", "createWebView", "configureBlocking", "load", "capturePreview", "releaseWebView", "dispose", "webView", "show", "webViewWebContentProcessDidTerminate", "cancelPageRecovery", "recoverPageIfNeeded", "retryPage", "updateUIView"}

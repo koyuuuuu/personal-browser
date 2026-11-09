@@ -135,6 +135,12 @@ def main():
             elif self.path == '/navigation-fixture':
                 data = b'<!doctype html><meta name="viewport" content="width=device-width,initial-scale=1"><a href="/linked">Browser link</a><form method="post" action="/submitted"><input type="hidden" name="value" value="one"><button>Submit POST</button></form>'
                 mime = 'text/html; charset=utf-8'
+            elif self.path == '/layout-fixture':
+                data = b'''<!doctype html><meta name="viewport" content="width=device-width,initial-scale=1">
+                <body style="background:white;color:black"><h1>Visible layout fixture</h1>
+                <button onclick="document.getElementById('result').textContent='Visible page responded'">Check visible page</button>
+                <p id="result">Ready</p></body>'''
+                mime = 'text/html; charset=utf-8'
             elif self.path == '/scroll-fixture':
                 data = b'<!doctype html><meta name="viewport" content="width=device-width,initial-scale=1"><title>Scroll fixture</title><h1>Scroll fixture</h1><div style="height:1100px;background:linear-gradient(white,lightblue)">Scroll down</div><p>Bottom</p>'
                 mime = 'text/html; charset=utf-8'
