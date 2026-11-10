@@ -68,7 +68,10 @@ final class BrowserUITests: XCTestCase {
         closeFullscreen()
         waitForShape(landscape: false)
         app.buttons["Check video state"].tap()
-        XCTAssertTrue(app.staticTexts["Fullscreen count 1; continued true; wide paused false"].waitForExistence(timeout: 5))
+        // Closing the native player may pause on iOS; do not override that
+        // user action. Progress while fullscreen is asserted independently.
+        XCTAssertTrue(app.staticTexts.matching(NSPredicate(format: "label BEGINSWITH %@", "Fullscreen count 1; continued true;")).firstMatch.waitForExistence(timeout: 5))
+        app.buttons["Play wide"].tap(); settlePresentation()
         app.buttons["Pause wide"].tap()
         app.buttons["videoTiltPortrait"].tap(); settlePresentation()
         app.buttons["videoTiltHorizontal"].tap(); settlePresentation()
@@ -936,11 +939,17 @@ final class BrowserUITests: XCTestCase {
         // after repeated width changes, even when no diffable IDs change.
         for orientation in [UIDeviceOrientation.landscapeLeft, .portrait, .landscapeRight, .portrait] {
             XCUIDevice.shared.orientation = orientation; settlePresentation()
-            let tiles = app.buttons.matching(NSPredicate(format: "value == 'プレビューなし'")).allElementsBoundByIndex.filter { $0.isHittable }
-            XCTAssertGreaterThanOrEqual(tiles.count, 2)
-            let pair = tiles.enumerated().contains { index, first in
-                tiles.dropFirst(index + 1).contains { second in
-                    abs(first.frame.minY - second.frame.minY) < 2 && abs(first.frame.minX - second.frame.minX) > 20
+            let viewport = app.collectionViews.firstMatch.frame.intersection(app.windows.firstMatch.frame)
+            // XCTest can throw for activation points of clipped cells. Inspect
+            // actual visible card frames; gesture actions are checked above.
+            let frames = app.buttons.matching(NSPredicate(format: "value == 'プレビューなし'")).allElementsBoundByIndex.map(\.frame).filter {
+                let visible = $0.intersection(viewport)
+                return !visible.isNull && visible.width > 30 && visible.height > 40
+            }
+            XCTAssertGreaterThanOrEqual(frames.count, 2)
+            let pair = frames.enumerated().contains { index, first in
+                frames.dropFirst(index + 1).contains { second in
+                    abs(first.minY - second.minY) < 2 && abs(first.minX - second.minX) > 20
                 }
             }
             XCTAssertTrue(pair, "Rotation must not leave a one-card-per-row layout")
