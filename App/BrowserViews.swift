@@ -60,7 +60,9 @@ struct BrowserRootView: View {
             }
             #endif
         }
+        .onChange(of: sheet?.id) { _, _ in PasswordFormController.shared.setInterfaceAvailable(sheet == nil) }
         .onAppear {
+            PasswordFormController.shared.setInterfaceAvailable(sheet == nil)
             #if DEBUG
             if PasswordVault.fixture && !preparedPasswordFixture {
                 preparedPasswordFixture = true
@@ -123,6 +125,8 @@ struct BrowserRootView: View {
                             .accessibilityIdentifier("passwordVaultFixtureButton")
                         Button("自動入力（検証）") { PasswordVault.shared.setAutomaticallyFill(true) }
                             .accessibilityIdentifier("enableAutomaticPasswordFixtureButton")
+                        Button("ロック") { PasswordVault.shared.lock() }
+                            .accessibilityIdentifier("lockPasswordFixtureButton")
                     }.font(.caption).buttonStyle(.borderedProminent).padding(4)
                 }
             }
@@ -134,7 +138,13 @@ struct BrowserRootView: View {
 
     private var connectedContent: some View {
         browsingContent
-        .safeAreaInset(edge: .top, spacing: 0) { updateBanner }
+        .safeAreaInset(edge: .top, spacing: 0) {
+            VStack(spacing: 0) {
+                updateBanner
+                if let tab = store.selectedTab { PasswordSaveBanner(tab: tab, allowed: sheet == nil) }
+            }.fixedSize(horizontal: false, vertical: true)
+        }
+        .onChange(of: store.selectedID) { _, _ in PasswordFormController.shared.keepSaveOffer(for: store.selectedTab) }
         .tint(store.selectedTab?.isPrivate == true ? .purple : .blue)
         .sheet(item: $sheet) { route in
             sheetContent(route)

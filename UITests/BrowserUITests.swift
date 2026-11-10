@@ -52,7 +52,7 @@ final class BrowserUITests: XCTestCase {
             XCTFail("The requested vault control must be fully visible")
         }
         XCTAssertTrue(app.staticTexts["Password fixture"].waitForExistence(timeout: 20))
-        XCTAssertTrue(app.buttons["passwordInputButton"].waitForExistence(timeout: 10), "A real DOM login form must be detected")
+        XCTAssertFalse(app.buttons["unlockAndFillPasswordButton"].exists, "Candidates appear only for a focused login field")
         app.buttons["passwordVaultFixtureButton"].tap()
         app.buttons["unlockPasswordVaultButton"].tap()
         let importButton = app.buttons["importPasswordFixtureButton"]
@@ -81,14 +81,17 @@ final class BrowserUITests: XCTestCase {
         XCTAssertTrue(app.buttons["unlockPasswordVaultButton"].waitForExistence(timeout: 5))
         app.buttons["unlockPasswordVaultButton"].tap()
         app.navigationBars["パスワード"].buttons["閉じる"].tap()
-        let apple = app.buttons["applePasswordSuggestionButton"]
-        XCTAssertTrue(apple.waitForExistence(timeout: 5)); apple.tap()
-        XCTAssertTrue(app.staticTexts["System field focused; hints ready"].waitForExistence(timeout: 8), "The public native button must focus the real web field with AutoFill hints")
-        app.buttons["passwordKeyboardDismissButton"].tap()
-        app.buttons["Reset login form"].tap()
-        XCTAssertTrue(app.staticTexts["Fields empty"].waitForExistence(timeout: 5))
-        app.buttons["inlineSavedPasswordButton"].tap()
+        let loginUser = app.textFields["Fixture username"]
+        loginUser.tap()
+        XCTAssertTrue(app.keyboards.firstMatch.waitForExistence(timeout: 8))
+        let inline = app.buttons["inlineSavedPasswordButton"]
+        XCTAssertTrue(inline.waitForExistence(timeout: 5))
+        XCTAssertLessThanOrEqual(inline.frame.maxY, app.keyboards.firstMatch.frame.minY + 2)
+        XCTAssertGreaterThan(inline.frame.maxY, app.keyboards.firstMatch.frame.minY - 65, "Candidates must be immediately above the keyboard")
+        XCTAssertTrue(app.staticTexts["System field focused; hints ready"].waitForExistence(timeout: 8))
+        inline.tap()
         XCTAssertTrue(app.staticTexts["Fields filled; not submitted"].waitForExistence(timeout: 5))
+        app.buttons["passwordKeyboardDismissButton"].tap()
         app.buttons["Reset login form"].tap()
         XCTAssertTrue(app.staticTexts["Fields empty"].waitForExistence(timeout: 5))
         app.buttons["enableAutomaticPasswordFixtureButton"].tap()
@@ -102,6 +105,44 @@ final class BrowserUITests: XCTestCase {
         XCTAssertTrue(app.staticTexts["User edit retained"].waitForExistence(timeout: 5))
         app.buttons["Username-only step"].tap()
         XCTAssertTrue(app.staticTexts["Username step filled; not submitted"].waitForExistence(timeout: 8))
+        // A new signup is offered at real user submit, with no manager visit.
+        app.buttons["lockPasswordFixtureButton"].tap()
+        app.buttons["Registration form"].tap()
+        app.textFields["Fixture username"].tap()
+        app.textFields["Fixture username"].typeText("new-account")
+        app.secureTextFields["New password"].tap()
+        app.secureTextFields["New password"].typeText("registered-fixture")
+        app.secureTextFields["Confirm password"].tap()
+        app.secureTextFields["Confirm password"].typeText("registered-fixture")
+        app.buttons["Submit credentials"].tap()
+        let unlockSave = app.buttons["unlockPasswordSaveButton"]
+        XCTAssertTrue(unlockSave.waitForExistence(timeout: 5)); unlockSave.tap()
+        let save = app.buttons["confirmPasswordSaveButton"]
+        XCTAssertTrue(save.waitForExistence(timeout: 5)); XCTAssertEqual(save.label, "保存"); save.tap()
+        XCTAssertFalse(app.navigationBars["パスワード"].exists)
+        app.buttons["Login form"].tap()
+        app.textFields["Fixture username"].tap()
+        let newAccount = app.buttons.matching(identifier: "inlineSavedPasswordButton").matching(NSPredicate(format: "label CONTAINS %@", "new-account")).firstMatch
+        XCTAssertTrue(newAccount.waitForExistence(timeout: 5)); newAccount.tap()
+        XCTAssertTrue(app.staticTexts["New account filled; not submitted"].waitForExistence(timeout: 5))
+        app.buttons["passwordKeyboardDismissButton"].tap()
+        app.buttons["Change password form"].tap()
+        app.textFields["Fixture username"].tap(); app.textFields["Fixture username"].typeText("new-account")
+        app.secureTextFields["New password"].tap(); app.secureTextFields["New password"].typeText("updated-fixture")
+        app.secureTextFields["Confirm password"].tap(); app.secureTextFields["Confirm password"].typeText("updated-fixture")
+        app.buttons["Submit credentials"].tap()
+        XCTAssertTrue(save.waitForExistence(timeout: 5)); XCTAssertEqual(save.label, "更新"); save.tap()
+        app.buttons["Login form"].tap(); app.textFields["Fixture username"].tap()
+        XCTAssertTrue(newAccount.waitForExistence(timeout: 5)); newAccount.tap()
+        XCTAssertTrue(app.staticTexts["Updated account filled; not submitted"].waitForExistence(timeout: 5))
+        app.buttons["passwordKeyboardDismissButton"].tap()
+        app.buttons["lockPasswordFixtureButton"].tap()
+        app.textFields["Fixture username"].tap()
+        let unlockFill = app.buttons["unlockAndFillPasswordButton"]
+        XCTAssertTrue(unlockFill.waitForExistence(timeout: 5)); unlockFill.tap()
+        XCTAssertTrue(newAccount.waitForExistence(timeout: 5)); newAccount.tap()
+        XCTAssertTrue(app.staticTexts["Updated account filled; not submitted"].waitForExistence(timeout: 5), "Encrypted records must survive lock/unlock and remain directly fillable")
+
     }
 
     func testLockedViewportChromeAndBoundedRecovery() {
@@ -412,6 +453,14 @@ final class BrowserUITests: XCTestCase {
         XCTAssertLessThanOrEqual(page.frame.maxY, field.frame.minY)
         button.tap()
         XCTAssertTrue(page.staticTexts["Visible page responded"].waitForExistence(timeout: 5))
+        let input = page.textFields["Layout username"]
+        input.tap()
+        XCTAssertTrue(app.keyboards.firstMatch.waitForExistence(timeout: 8))
+        input.typeText("layout-fixture-user")
+        XCTAssertGreaterThan(page.frame.height, 80)
+        XCTAssertLessThanOrEqual(page.frame.maxY, app.keyboards.firstMatch.frame.minY)
+        button.tap()
+        settlePresentation()
         checkControls()
         XCUIDevice.shared.orientation = .landscapeLeft
         settlePresentation()

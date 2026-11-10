@@ -6,6 +6,7 @@ enum PasswordFormScript {
       if (globalThis.__personalBrowserPasswords) return;
       const doc = crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36)+Date.now();
       const ids = new WeakMap(), fields = new Map(), dirty = new WeakSet(), hints = new Map();
+      let saveEnabled = globalThis.__personalBrowserSaveOffers !== false;
       let hintsEnabled = globalThis.__personalBrowserAppleHints !== false; let serial = 0, timer = null;
       const roots = () => {
         const result=[document]; let budget=3000;
@@ -80,7 +81,41 @@ enum PasswordFormScript {
         Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set.call(el,value);
         el.dispatchEvent(new Event('input',{bubbles:true})); el.dispatchEvent(new Event('change',{bubbles:true}));
       };
-      globalThis.__personalBrowserPasswords={setHints,command:command=>{
+      // Capture only at an actual user submission gesture, never on typing.
+      // Do not hook form prototypes, prevent submission, or send page URLs.
+      let gestureAt=-Infinity;
+      const offer = form => {
+        if(!saveEnabled || window!==window.top || document.visibilityState!=='visible' || !form)return;
+        const list=passwords().filter(pw=>pw.form===form && usable(pw));
+        if(!list.length || list.length>3)return;
+        const fresh=list.filter(pw=>/(^|\s)new-password(\s|$)/i.test(pw.autocomplete || ''));
+        let pw;
+        if(fresh.length) {
+          if(fresh.length>2 || fresh.some(el=>el.value!==fresh[0].value))return;
+          pw=fresh[0];
+        } else {
+          if(list.length!==1 || !isCurrent(list[0]))return;
+          pw=list[0];
+        }
+        const user=username(pw), value=pw.value;
+        if(!value || value.length>16384 || (user && user.value.length>4096))return;
+        refresh();
+        try {window.webkit.messageHandlers.browserPasswords.postMessage({kind:'save',doc,form:ids.get(pw),
+          username:user ? user.value : '',password:value,passwordChange:fresh.length>0});}catch(_){}
+      };
+      document.addEventListener('keydown',e=>{if(e.isTrusted && e.key==='Enter')gestureAt=performance.now();},true);
+      document.addEventListener('click',e=>{
+        if(!e.isTrusted)return;
+        const button=e.composedPath().find(el=>el instanceof HTMLButtonElement || el instanceof HTMLInputElement);
+        if(button && button.form && ((button instanceof HTMLButtonElement && button.type==='submit') ||
+            (button instanceof HTMLInputElement && ['submit','image'].includes(button.type)))) {
+          gestureAt=performance.now(); offer(button.form);
+        }
+      },true);
+      document.addEventListener('submit',e=>{
+        if(e.isTrusted && performance.now()-gestureAt<2000)offer(e.target);
+      },true);
+      globalThis.__personalBrowserPasswords={setHints,setSaveOffers:enabled=>{saveEnabled=!!enabled;},command:command=>{
         if(command.action==='refresh'){refresh();return {ok:true};}
         if(document.visibilityState!=='visible' || command.doc!==doc)return {ok:false};
         const pw=fields.get(command.form); if(!pw || !usable(pw))return {ok:false};
@@ -110,7 +145,7 @@ enum PasswordFormScript {
       }};
       new MutationObserver(changed).observe(document,{subtree:true,childList:true,attributes:true,attributeFilter:['type','autocomplete','disabled','readonly','hidden','style','class']});
       for(const event of ['input','change']) document.addEventListener(event,e=>{if(e.isTrusted && e.target instanceof HTMLInputElement)dirty.add(e.target);changed();},true);
-      document.addEventListener('focusin',changed,true); window.addEventListener('pageshow',refresh);
+      document.addEventListener('focusin',changed,true); document.addEventListener('focusout',changed,true); window.addEventListener('pageshow',refresh);
       document.addEventListener('DOMContentLoaded',refresh); setInterval(refresh,2000); refresh();
     })();
     """#

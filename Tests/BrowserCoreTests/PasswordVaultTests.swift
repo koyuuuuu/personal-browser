@@ -6,6 +6,26 @@ final class PasswordVaultTests: XCTestCase {
     private func record(_ password: String = "not-a-real-secret") throws -> PasswordRecord {
         try PasswordRecord(site: PasswordOrigin("https://example.com/login?a=1"), username: "日本語 user", password: password).validated()
     }
+    func testSaveProposalsPreserveExistingMetadataRequireAccountAndCompareExactBytes() throws {
+        var old = try record("old"); old.title = "Existing title"; old.notes = "Keep notes"
+        var candidate = try record("new")
+        XCTAssertEqual(try PasswordSavePolicy.proposal(candidate, records: [], passwordChange: false), .insert(candidate))
+        var updated = old; updated.password = "new"
+        XCTAssertEqual(try PasswordSavePolicy.proposal(candidate, records: [old], passwordChange: false), .update(updated))
+        XCTAssertEqual(try PasswordSavePolicy.proposal(old, records: [old], passwordChange: false), .unchanged)
+        candidate.username = ""
+        XCTAssertEqual(try PasswordSavePolicy.proposal(candidate, records: [old], passwordChange: true), .update(updated))
+        var second = old; second.id = UUID(); second.username = "second"
+        XCTAssertEqual(try PasswordSavePolicy.proposal(candidate, records: [old, second], passwordChange: true), .chooseAccount)
+        XCTAssertEqual(try PasswordSavePolicy.proposal(candidate, records: [old, second], passwordChange: true, accountID: old.id), .update(updated))
+        var composed = old; composed.password = "\u{00e9}"
+        var decomposed = old; decomposed.password = "e\u{0301}"
+        XCTAssertEqual(try PasswordSavePolicy.proposal(decomposed, records: [composed], passwordChange: false), .update(decomposed))
+        var otherSite = old; otherSite.site = try PasswordOrigin("https://example.com:444")
+        XCTAssertEqual(try PasswordSavePolicy.proposal(old, records: [otherSite], passwordChange: false), .insert(old))
+        candidate.password = ""
+        XCTAssertThrowsError(try PasswordSavePolicy.proposal(candidate, records: [], passwordChange: false))
+    }
     func testAutomaticFillRequiresOneExactAccountVisibleUntouchedFormAndUnlockedSession() throws {
         let value = try record(), site = value.site
         func candidate(_ records: [PasswordRecord] = [], enabled: Bool = true, unlocked: Bool = true, isPrivate: Bool = false, count: Int = 1, main: Bool = true, eligible: Bool = true) -> PasswordRecord? {

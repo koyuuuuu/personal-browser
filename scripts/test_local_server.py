@@ -87,14 +87,26 @@ def main():
                 <button type="button" onclick="document.getElementById('user').value='';document.getElementById('pw').value='';window.fixtureSubmitted=false;document.getElementById('status').textContent='Fields empty'">Reset login form</button>
                 <button type="button" onclick="this.form.innerHTML='&lt;input aria-label=UsernameOnly id=user autocomplete=username&gt;';document.getElementById('status').textContent='Username step empty'">Username-only step</button>
                 </form><p id="status">Not submitted</p><p id="system-status"></p>
+                <button onclick="showCredentialForm(false)">Login form</button>
+                <button onclick="showCredentialForm(true)">Registration form</button>
+                <button onclick="showCredentialForm(true)">Change password form</button>
                 <script>
+                function showCredentialForm(fresh) {
+                  window.fixtureSubmitted=false;
+                  document.querySelector('form').innerHTML='<input aria-label="Fixture username" id="user" name="username" autocomplete="username">'+
+                    (fresh?'<input aria-label="New password" id="new" type="password" autocomplete="new-password"><input aria-label="Confirm password" id="confirm" type="password" autocomplete="new-password">':'<input aria-label="Fixture password" id="pw" type="password" autocomplete="current-password">')+
+                    '<button>Submit credentials</button>';
+                  document.getElementById('status').textContent='Fields empty';
+                }
                 document.addEventListener('focusin',e=>{
-                  if(['user','pw'].includes(e.target.id) && document.getElementById('user').autocomplete==='username' && document.getElementById('pw').autocomplete==='current-password')document.getElementById('system-status').textContent='System field focused; hints ready';
+                  if(['user','pw'].includes(e.target.id) && document.getElementById('user').autocomplete==='username' && document.getElementById('pw')?.autocomplete==='current-password')document.getElementById('system-status').textContent='System field focused; hints ready';
                 });
                 setInterval(()=>{
                   const user=document.getElementById('user').value,pw=document.getElementById('pw')?.value;
                   if(window.fixtureSubmitted)document.getElementById('status').textContent='Submitted';
                   else if(user==='fixture-user' && pw==='fixture-secret')document.getElementById('status').textContent='Fields filled; not submitted';
+                  else if(user==='new-account' && pw==='registered-fixture')document.getElementById('status').textContent='New account filled; not submitted';
+                  else if(user==='new-account' && pw==='updated-fixture')document.getElementById('status').textContent='Updated account filled; not submitted';
                   else if(!document.getElementById('pw') && user==='fixture-user')document.getElementById('status').textContent='Username step filled; not submitted';
                   else if(user==='my-edit')document.getElementById('status').textContent='User edit retained';
                 },200);
@@ -138,7 +150,8 @@ def main():
             elif self.path == '/layout-fixture':
                 data = b'''<!doctype html><meta name="viewport" content="width=device-width,initial-scale=1">
                 <body style="background:white;color:black"><h1>Visible layout fixture</h1>
-                <button onclick="document.getElementById('result').textContent='Visible page responded'">Check visible page</button>
+                <input aria-label="Layout username" autocomplete="username" style="font-size:16px">
+                <button onclick="document.activeElement.blur();document.getElementById('result').textContent='Visible page responded'">Check visible page</button>
                 <p id="result">Ready</p></body>'''
                 mime = 'text/html; charset=utf-8'
             elif self.path == '/scroll-fixture':

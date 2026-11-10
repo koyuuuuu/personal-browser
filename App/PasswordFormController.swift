@@ -16,10 +16,32 @@ struct PasswordFormTarget: Identifiable, Hashable {
     var id: String { tabID.uuidString + documentID + "/" + formID }
 }
 
+struct PasswordSaveOffer: Identifiable {
+    let id = UUID()
+    let tabID: UUID
+    let record: PasswordRecord
+    let passwordChange: Bool
+    let expiresAt = Date().addingTimeInterval(120)
+}
+
 @MainActor
 final class PasswordFormController: ObservableObject {
     static let shared = PasswordFormController()
     @Published private(set) var forms: [PasswordFormTarget] = []
+    @Published private(set) var saveOffer: PasswordSaveOffer?
+    private var observers: [AnyCancellable] = []
+    private init() {
+        for name in [UIApplication.didEnterBackgroundNotification, .passwordVaultDidLock] {
+            observers.append(NotificationCenter.default.publisher(for: name).sink { [weak self] _ in
+                MainActor.assumeIsolated { self?.dismissSaveOffer() }
+            })
+        }
+    }
+    private var interfaceAvailable = true
+    func setInterfaceAvailable(_ value: Bool) {
+        interfaceAvailable = value
+        if !value { dismissSaveOffer() }
+    }
     private var entries: [ObjectIdentifier: Entry] = [:]
     private final class Entry {
         weak var view: WKWebView?
@@ -40,13 +62,15 @@ final class PasswordFormController: ObservableObject {
         let controller=view.configuration.userContentController
         controller.add(PasswordFormHandler(owner: self), contentWorld: .defaultClient, name: "browserPasswords")
         let hints = PasswordVault.shared.improveAppleAutoFill ? "true" : "false"
-        controller.addUserScript(WKUserScript(source: "globalThis.__personalBrowserAppleHints = " + hints + ";\n" + PasswordFormScript.source, injectionTime: .atDocumentStart, forMainFrameOnly: false, in: .defaultClient))
+        let offers = PasswordVault.shared.offerToSave ? "true" : "false"
+        controller.addUserScript(WKUserScript(source: "globalThis.__personalBrowserAppleHints = " + hints + ";\nglobalThis.__personalBrowserSaveOffers = " + offers + ";\n" + PasswordFormScript.source, injectionTime: .atDocumentStart, forMainFrameOnly: false, in: .defaultClient))
     }
     func reset(_ view: WKWebView) {
         guard let entry=entries[ObjectIdentifier(view)] else{return}
         entry.epoch=UUID();entry.automaticAttempts.removeAll();entry.frames.removeAll();entry.targets.removeAll();entry.found(false);publish()
     }
     func detach(_ view: WKWebView) {
+        if let tabID = entries[ObjectIdentifier(view)]?.tabID, saveOffer?.tabID == tabID { dismissSaveOffer() }
         entries.removeValue(forKey:ObjectIdentifier(view))?.found(false)
         view.configuration.userContentController.removeScriptMessageHandler(forName:"browserPasswords",contentWorld:.defaultClient);publish()
     }
@@ -54,8 +78,27 @@ final class PasswordFormController: ObservableObject {
         guard let view=message.webView, let entry=entries[ObjectIdentifier(view)],
               let url=view.url, let top=try? PasswordOrigin(url),
               let frameURL=message.frameInfo.request.url, let frame=try? PasswordOrigin(frameURL), top==frame,
-              let body=message.body as? [String:Any], let doc=body["doc"] as? String, !doc.isEmpty, doc.count<128,
-              let values=body["forms"] as? [[String:Any]], values.count<=16,
+              let body=message.body as? [String:Any], let doc=body["doc"] as? String, !doc.isEmpty, doc.count<128 else{return}
+        if body["kind"] as? String == "save" {
+            guard interfaceAvailable, PasswordVault.shared.offerToSave, !entry.isPrivate, entry.trusted(), message.frameInfo.isMainFrame,
+                  let id = body["form"] as? String,
+                  entry.targets[doc]?.contains(where: { $0.formID == id && $0.isPasswordField }) == true,
+                  let user = body["username"] as? String, let password = body["password"] as? String,
+                  let change = body["passwordChange"] as? Bool,
+                  let record = try? PasswordRecord(site: top, username: user, password: password).validated() else { return }
+            if let current = saveOffer, current.tabID == entry.tabID,
+               current.record.accountKey == record.accountKey, current.record.password.utf8.elementsEqual(record.password.utf8) { return }
+            if PasswordVault.shared.unlocked,
+               (try? PasswordSavePolicy.proposal(record, records: PasswordVault.shared.records, passwordChange: change)) == .unchanged { return }
+            let offer = PasswordSaveOffer(tabID: entry.tabID, record: record, passwordChange: change)
+            saveOffer = offer
+            let id = offer.id
+            DispatchQueue.main.asyncAfter(deadline: .now() + 120) { [weak self] in
+                if self?.saveOffer?.id == id { self?.dismissSaveOffer() }
+            }
+            return
+        }
+        guard let values=body["forms"] as? [[String:Any]], values.count<=16,
               entry.frames[doc] != nil || entry.frames.count<32 else{return}
         entry.frames[doc]=message.frameInfo
         var seen=Set<String>()
@@ -69,24 +112,29 @@ final class PasswordFormController: ObservableObject {
         entry.found(entry.targets.values.contains { !$0.isEmpty });publish()
     }
     private func publish() {
-        // No usernames/passwords/field labels/URLs are collected by this channel.
+        // Passive form metadata never includes field values. Submission offers use
+        // the separate, bounded save branch above and stay only in memory.
         let next=entries.values.flatMap { $0.targets.values.flatMap { $0 } }.sorted { $0.id<$1.id }
         if next != forms { forms=next }
     }
     func targets(for tab: BrowserTab?) -> [PasswordFormTarget] { forms.filter { $0.tabID==tab?.id } }
-    private func checked(_ target: PasswordFormTarget, capture: Bool, systemFocus: Bool = false) throws -> (Entry,WKWebView,WKFrameInfo) {
+    private func checked(_ target: PasswordFormTarget, capture: Bool, systemFocus: Bool = false, management: Bool = false) throws -> (Entry,WKWebView,WKFrameInfo) {
         guard let entry=entries.values.first(where:{$0.tabID==target.tabID}),entry.epoch==target.epoch,
               let view=entry.view, let frame=entry.frames[target.documentID],
               entry.targets[target.documentID]?.contains(where:{$0.id==target.id})==true,
               let url=view.url, let top=try? PasswordOrigin(url),
               let frameURL=frame.request.url, let origin=try? PasswordOrigin(frameURL),top==origin,top==target.site,
-              UIApplication.shared.applicationState == .active, entry.trusted(),
+              (interfaceAvailable || management), UIApplication.shared.applicationState == .active, entry.trusted(),
               systemFocus || !entry.isPrivate || (!capture && PasswordVault.shared.allowPrivateFill) else {throw PasswordVaultError.invalidSite}
+        if !capture && !systemFocus && !management {
+            let focused = entry.targets.values.flatMap { $0 }.filter(\.focused)
+            guard focused.isEmpty || (focused.count == 1 && focused.first?.id == target.id) else { throw PasswordVaultError.invalidSite }
+        }
         return(entry,view,frame)
     }
-    private func command(_ target: PasswordFormTarget, action: String, username: String? = nil, password: String? = nil, automatic: Bool = false) async throws -> [String:Any] {
+    private func command(_ target: PasswordFormTarget, action: String, username: String? = nil, password: String? = nil, automatic: Bool = false, management: Bool = false) async throws -> [String:Any] {
         if action != "focus" { try PasswordVault.shared.requireUnlocked() }
-        let (_,view,frame)=try checked(target,capture:action=="capture",systemFocus:action=="focus")
+        let (_,view,frame)=try checked(target,capture:action=="capture",systemFocus:action=="focus",management:management)
         if action == "focus" { view.becomeFirstResponder() }
         var args:[String:Any] = ["action":action,"doc":target.documentID,"form":target.formID,"automatic":automatic]
         if let username {args["username"]=username}; if let password, target.isPasswordField {args["password"]=password}
@@ -99,12 +147,12 @@ final class PasswordFormController: ObservableObject {
                 continuation.resume(returning:object)
             }
         }
-        _ = try checked(target,capture:action=="capture",systemFocus:action=="focus")
+        _ = try checked(target,capture:action=="capture",systemFocus:action=="focus",management:management)
         return result
     }
-    func fill(_ record: PasswordRecord, into target: PasswordFormTarget) async throws {
+    func fill(_ record: PasswordRecord, into target: PasswordFormTarget, fromManager: Bool = false) async throws {
         guard PasswordVault.shared.unlocked,record.site==target.site,target.currentPassword else {throw PasswordVaultError.locked}
-        _ = try await command(target,action:"fill",username:record.username,password:record.password)
+        _ = try await command(target,action:"fill",username:record.username,password:record.password,management:fromManager)
     }
     func focusForAppleAutoFill(_ target: PasswordFormTarget) async throws {
         _ = try await command(target,action:"focus")
@@ -123,7 +171,8 @@ final class PasswordFormController: ObservableObject {
             for script in scripts {
                 if script.source.hasPrefix("globalThis.__personalBrowserAppleHints = ") {
                     let flag=enabled ? "true" : "false"
-                    content.addUserScript(WKUserScript(source:"globalThis.__personalBrowserAppleHints = " + flag + ";\n" + PasswordFormScript.source,
+                    let offers=PasswordVault.shared.offerToSave ? "true" : "false"
+                    content.addUserScript(WKUserScript(source:"globalThis.__personalBrowserAppleHints = " + flag + ";\nglobalThis.__personalBrowserSaveOffers = " + offers + ";\n" + PasswordFormScript.source,
                         injectionTime:.atDocumentStart,forMainFrameOnly:false,in:.defaultClient))
                 } else { content.addUserScript(script) }
             }
@@ -132,6 +181,34 @@ final class PasswordFormController: ObservableObject {
                 setPasswordAppleHints(view,frame:frame,enabled:enabled)
             }
         }
+    }
+    func dismissSaveOffer() { saveOffer = nil }
+    func keepSaveOffer(for tab: BrowserTab?) {
+        guard let offer = saveOffer else { return }
+        guard let tab, tab.id == offer.tabID, !tab.isPrivate, let url = tab.url,
+              (try? PasswordOrigin(url)) == offer.record.site, Date() < offer.expiresAt else { dismissSaveOffer(); return }
+    }
+    func acceptSaveOffer(_ id: UUID, tab: BrowserTab, accountID: UUID? = nil) throws {
+        keepSaveOffer(for: tab)
+        guard let offer = saveOffer, offer.id == id, tab.passwordPageTrusted else { throw PasswordVaultError.invalidSite }
+        try PasswordVault.shared.requireUnlocked()
+        let proposal = try PasswordSavePolicy.proposal(offer.record, records: PasswordVault.shared.records,
+            passwordChange: offer.passwordChange, accountID: accountID)
+        switch proposal {
+        case .insert(let value), .update(let value): try PasswordVault.shared.save(value)
+        case .unchanged: break
+        case .chooseAccount: throw PasswordVaultError.invalidRecord
+        }
+        dismissSaveOffer()
+    }
+    func setSaveOffers(_ enabled: Bool) {
+        if !enabled { dismissSaveOffer() }
+        for entry in entries.values {
+            guard let view = entry.view else { continue }
+            setPasswordSaveOffers(view, enabled: enabled)
+        }
+        // Rebuild only this module's scripts for future documents too.
+        setAppleHints(PasswordVault.shared.improveAppleAutoFill)
     }
     func fillAutomatically(_ record: PasswordRecord, into target: PasswordFormTarget) async throws {
         guard let entry=entries.values.first(where:{$0.tabID==target.tabID}),
@@ -145,7 +222,7 @@ final class PasswordFormController: ObservableObject {
     func targets(forID tabID: UUID) -> [PasswordFormTarget] { forms.filter { $0.tabID==tabID } }
     func capture(_ target: PasswordFormTarget) async throws -> PasswordRecord {
         guard PasswordVault.shared.unlocked, target.isPasswordField else {throw PasswordVaultError.locked}
-        let result=try await command(target,action:"capture")
+        let result=try await command(target,action:"capture",management:true)
         guard PasswordVault.shared.unlocked,let user=result["username"] as? String,let password=result["password"] as? String else {throw PasswordVaultError.locked}
         return try PasswordRecord(site:target.site,username:user,password:password).validated()
     }

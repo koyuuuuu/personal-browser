@@ -36,6 +36,9 @@ AREAS = {
 PATH_AREAS = {
     "browsing-layout": ["testReleaseBrowsingLayoutAndPageInteraction", "testPasswordVaultImportsLocksAndFillsOnlyOnRequest"],
     "App/PasswordSuggestionBar.swift": ["password-vault"],
+    "App/PasswordSaveBanner.swift": ["password-vault"],
+    "App/PasswordKeyboardObserver.swift": ["browsing-layout"],
+    "Sources/BrowserCore/PasswordSavePolicy.swift": ["password-vault"],
     "App/PasswordVault.swift": ["password-vault"],
     "App/PasswordVaultView.swift": ["password-vault"],
     "App/PasswordImportReader.swift": ["password-vault"],

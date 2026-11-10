@@ -1,10 +1,10 @@
 {
-  "version": "0.12.1",
+  "version": "0.13.0",
   "bundle_id": "local.personalbrowser.app",
   "data_schema": 1,
   "public_repository": "koyuuuuu/personal-browser-distribution",
   "name": "Personal Browser",
   "developer_name": "Personal Browser",
   "description": "自分専用のブラウザ。タブ、履歴、ブックマーク、プライベート閲覧、UIカスタマイズに対応。",
-  "release_notes": "0.12.0で画面が真っ暗になり下部ツールバーが画面外へずれる不具合を修正。検証用UIを配布版のレイアウトから除外し、パスワード候補欄とWeb表示領域の高さを明示的に分配。ブックマーク・履歴・設定・保管庫を維持。"
+  "release_notes": "ログイン欄を選ぶとキーボード直上の1行候補から保管庫のパスワードを直接入力できます。ロック中も認証後に入力し、管理画面への移動は不要。フォーム送信時に新しいパスワードの保存や既存アカウントの更新を自動で提案し、確認して確定できます。Apple標準の候補と既存の暗号化保管庫を維持。"
 }

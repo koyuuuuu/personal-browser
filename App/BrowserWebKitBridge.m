@@ -10,6 +10,13 @@ void PBRunPasswordCommand(WKWebView *view, WKFrameInfo *frame, NSDictionary<NSSt
            completionHandler:completion];
 }
 
+void PBSetPasswordSaveOffers(WKWebView *view, BOOL enabled)
+{
+    NSString *script = enabled ? @"globalThis.__personalBrowserPasswords?.setSaveOffers(true)"
+                               : @"globalThis.__personalBrowserPasswords?.setSaveOffers(false)";
+    [view evaluateJavaScript:script inFrame:nil inContentWorld:WKContentWorld.defaultClientWorld completionHandler:nil];
+}
+
 void PBSetPasswordAppleHints(WKWebView *view, WKFrameInfo *frame, BOOL enabled)
 {
     NSString *script = enabled ? @"globalThis.__personalBrowserPasswords?.setHints(true)"

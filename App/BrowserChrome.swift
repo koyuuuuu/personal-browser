@@ -9,6 +9,8 @@ struct TabBrowserView: View {
     let showSheet: (BrowserSheet) -> Void
     let share: () -> Void
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @ObservedObject private var passwordForms = PasswordFormController.shared
+    @State private var keyboardVisible = false
     @State private var address = ""
     @State private var promptText = ""
     // Only the overlay observes per-frame gesture changes. WebSurface and chrome
@@ -16,11 +18,14 @@ struct TabBrowserView: View {
     @State private var swipe = AddressSwipeController()
     @FocusState private var addressFocused: Bool
 
+    private var editingLogin: Bool {
+        !addressFocused && keyboardVisible && tab.passwordPageTrusted && PasswordVault.shared.showInputButton && passwordForms.targets(for: tab).contains { $0.focused && $0.currentPassword }
+    }
     var body: some View {
         GeometryReader { geometry in
             let landscape = geometry.size.width > geometry.size.height && geometry.size.width > 550
             VStack(spacing: 0) {
-                if store.chromeVisible && (landscape || store.snapshot.settings.toolbarPosition == .top) { chrome(compact: landscape, width: geometry.size.width).zIndex(10) }
+                if !editingLogin && store.chromeVisible && (landscape || store.snapshot.settings.toolbarPosition == .top) { chrome(compact: landscape, width: geometry.size.width).zIndex(10) }
                 if tab.isPrivate && !landscape && store.chromeVisible {
                     Label("プライベート · 履歴とタブを端末に保存しません", systemImage: "hand.raised")
                         .font(.caption).foregroundStyle(.purple).padding(6).frame(maxWidth: .infinity)
@@ -33,11 +38,17 @@ struct TabBrowserView: View {
                     }.padding(8).background(Color.orange.opacity(0.12))
                 }
                 viewport(width: geometry.size.width)
-                if !landscape && store.chromeVisible && store.snapshot.settings.toolbarPosition == .bottom { chrome(compact: false, width: geometry.size.width).zIndex(10) }
+                if !editingLogin && !landscape && store.chromeVisible && store.snapshot.settings.toolbarPosition == .bottom { chrome(compact: false, width: geometry.size.width).zIndex(10) }
+                PasswordSuggestionBar(tab: tab, allowed: passwordActionsAllowed && !addressFocused) { showSheet(.passwords($0)) }
+                    .fixedSize(horizontal: false, vertical: true)
             }
             .frame(width: geometry.size.width, height: geometry.size.height)
             .onAppear { store.setLandscape(landscape) }
             .onChange(of: landscape) { _, value in addressFocused = false; swipe.cancel(); store.setLandscape(value) }
+        }
+        .overlay {
+            PasswordKeyboardObserver { keyboardVisible = $0 }
+                .ignoresSafeArea().allowsHitTesting(false).accessibilityHidden(true)
         }
         .background(Color(uiColor: .systemBackground))
         .onAppear { address = SearchAddress.display(tab.url) }
@@ -99,10 +110,6 @@ struct TabBrowserView: View {
                     }
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
-                // Reserve the bar's actual height inside this viewport. A safe-area
-                // inset here does not constrain the UIKit host's explicit frame.
-                PasswordSuggestionBar(tab: tab, allowed: passwordActionsAllowed && !addressFocused) { showSheet(.passwords($0)) }
-                    .fixedSize(horizontal: false, vertical: true)
             }
             .frame(width: width, height: geometry.size.height)
             .clipped().contentShape(Rectangle())

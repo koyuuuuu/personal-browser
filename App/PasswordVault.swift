@@ -15,8 +15,13 @@ final class PasswordVault: ObservableObject {
     @Published private(set) var showInputButton = UserDefaults.standard.object(forKey: "password-vault.show-input.v1") as? Bool ?? true
     @Published private(set) var allowPrivateFill = UserDefaults.standard.bool(forKey: "password-vault.private-fill.v1")
     @Published private(set) var lockSeconds = UserDefaults.standard.object(forKey: "password-vault.lock-seconds.v1") as? Int ?? 60
+    @Published private(set) var offerToSave = UserDefaults.standard.object(forKey: "password-vault.offer-save.v1") as? Bool ?? true
     @Published private(set) var automaticallyFill = UserDefaults.standard.bool(forKey: "password-vault.auto-fill-unlocked.v1")
     @Published private(set) var improveAppleAutoFill = UserDefaults.standard.object(forKey: "password-vault.apple-hints.v1") as? Bool ?? true
+    func setOfferToSave(_ value: Bool) {
+        offerToSave = value; UserDefaults.standard.set(value, forKey: "password-vault.offer-save.v1")
+        PasswordFormController.shared.setSaveOffers(value)
+    }
     func setAutomaticallyFill(_ value: Bool) {
         automaticallyFill = value; UserDefaults.standard.set(value, forKey: "password-vault.auto-fill-unlocked.v1")
     }
@@ -62,6 +67,7 @@ final class PasswordVault: ObservableObject {
         UserDefaults.standard.set(lockSeconds, forKey: "password-vault.lock-seconds.v1"); if unlocked { armTimer() }
     }
     func lock() {
+        NotificationCenter.default.post(name: .passwordVaultDidLock, object: nil)
         generation = UUID(); timer?.invalidate(); timer = nil; expiresAt = nil
         context?.invalidate(); context = nil; key = nil; keyID = nil; records = []; unlocked = false; revision = UUID()
     }
@@ -208,3 +214,5 @@ final class PasswordVault: ObservableObject {
         return data
     }
 }
+
+extension Notification.Name { static let passwordVaultDidLock = Notification.Name("PersonalBrowser.passwordVaultDidLock") }
