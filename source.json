@@ -12,6 +12,16 @@
       "iconURL": "https://raw.githubusercontent.com/koyuuuuu/personal-browser-distribution/main/icon.png",
       "versions": [
         {
+          "version": "0.13.0",
+          "buildVersion": "80",
+          "date": "2026-11-10T17:36:21.684877+00:00",
+          "localizedDescription": "ログイン欄を選ぶとキーボード直上の1行候補から保管庫のパスワードを直接入力できます。ロック中も認証後に入力し、管理画面への移動は不要。フォーム送信時に新しいパスワードの保存や既存アカウントの更新を自動で提案し、確認して確定できます。Apple標準の候補と既存の暗号化保管庫を維持。",
+          "downloadURL": "https://github.com/koyuuuuu/personal-browser-distribution/releases/download/v0.13.0-build.80/PersonalBrowser.ipa",
+          "size": 5672347,
+          "minOSVersion": "17.0",
+          "sha256": "7a2d8d0ce82410651bae03922fa502cbf64923362681d6b38b9f41c17863d97a"
+        },
+        {
           "version": "0.12.1",
           "buildVersion": "72",
           "date": "2026-11-09T19:10:47.973873+00:00",

@@ -2,6 +2,35 @@
   "releases": [
     {
       "file": "PersonalBrowser.ipa",
+      "sha256": "7a2d8d0ce82410651bae03922fa502cbf64923362681d6b38b9f41c17863d97a",
+      "bundle_id": "local.personalbrowser.app",
+      "version": "0.13.0",
+      "build": "80",
+      "minimum_ios": "17.0",
+      "target_ios": "18.4.1",
+      "architecture": "arm64",
+      "platform": "iOS device",
+      "embedded_profile": false,
+      "signature_resources": false,
+      "installation_verified": false,
+      "source_commit": "4223b5bda211860b200477307305de8b5b92c632",
+      "data_schema": 1,
+      "size": 5672347,
+      "date": "2026-11-10T17:36:21.684877+00:00",
+      "description": "ログイン欄を選ぶとキーボード直上の1行候補から保管庫のパスワードを直接入力できます。ロック中も認証後に入力し、管理画面への移動は不要。フォーム送信時に新しいパスワードの保存や既存アカウントの更新を自動で提案し、確認して確定できます。Apple標準の候補と既存の暗号化保管庫を維持。",
+      "appPermissions": {
+        "entitlements": [],
+        "privacy": {
+          "NSCameraUsageDescription": "閲覧中のWebサイトでカメラを使用するために必要です。",
+          "NSFaceIDUsageDescription": "このブラウザのパスワード保管庫を安全に開くために使用します。",
+          "NSLocalNetworkUsageDescription": "自宅のネットワークにある自作アプリや動画サーバーへ接続するために使用します。",
+          "NSMicrophoneUsageDescription": "閲覧中のWebサイトでマイクを使用するために必要です。"
+        }
+      },
+      "tag": "v0.13.0-build.80"
+    },
+    {
+      "file": "PersonalBrowser.ipa",
       "sha256": "549436452fc986159e4b6ccf13732b8b9a2f80fcc476dac11be36a61c6b749b6",
       "bundle_id": "local.personalbrowser.app",
       "version": "0.12.1",
