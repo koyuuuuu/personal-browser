@@ -144,6 +144,7 @@ final class BrowserUITests: XCTestCase {
         XCTAssertTrue(newAccount.waitForExistence(timeout: 5)); newAccount.tap()
         XCTAssertTrue(app.staticTexts["Updated account filled; not submitted"].waitForExistence(timeout: 5))
         app.buttons["passwordKeyboardDismissButton"].tap()
+        app.buttons["Login form"].tap() // Clear DOM values before testing encrypted lock/read/fill.
         app.buttons["lockPasswordFixtureButton"].tap()
         app.textFields["Fixture username"].tap()
         let unlockFill = app.buttons["unlockAndFillPasswordButton"]
@@ -453,20 +454,21 @@ final class BrowserUITests: XCTestCase {
         }
         checkControls()
         navigate("http://127.0.0.1:18765/layout-fixture")
-        let page = app.webViews.firstMatch
-        let button = page.buttons["Check visible page"]
+        let surface = app.otherElements["webContent"]
+        // WKWebView has nested AX wrappers; query the unique fixture button globally.
+        let button = app.buttons["Check visible page"]
         XCTAssertTrue(button.waitForExistence(timeout: 20))
         XCTAssertTrue(button.isHittable)
-        XCTAssertGreaterThan(page.frame.height, 250)
-        XCTAssertLessThanOrEqual(page.frame.maxY, field.frame.minY)
+        XCTAssertGreaterThan(surface.frame.height, 250)
+        XCTAssertLessThanOrEqual(surface.frame.maxY, field.frame.minY)
         button.tap()
-        XCTAssertTrue(page.staticTexts["Visible page responded"].waitForExistence(timeout: 5))
-        let input = page.textFields["Layout username"]
+        XCTAssertTrue(app.staticTexts["Visible page responded"].waitForExistence(timeout: 5))
+        let input = app.textFields["Layout username"]
         input.tap()
         XCTAssertTrue(app.keyboards.firstMatch.waitForExistence(timeout: 8))
         input.typeText("layout-fixture-user")
-        XCTAssertGreaterThan(page.frame.height, 80)
-        XCTAssertLessThanOrEqual(page.frame.maxY, app.keyboards.firstMatch.frame.minY)
+        XCTAssertGreaterThan(surface.frame.height, 80)
+        XCTAssertLessThanOrEqual(surface.frame.maxY, app.keyboards.firstMatch.frame.minY)
         button.tap()
         settlePresentation()
         checkControls()
@@ -474,7 +476,7 @@ final class BrowserUITests: XCTestCase {
         settlePresentation()
         // Landscape begins with hidden chrome; the page must remain visible.
         XCTAssertTrue(button.isHittable)
-        XCTAssertGreaterThan(page.frame.width, page.frame.height)
+        XCTAssertGreaterThan(surface.frame.width, surface.frame.height)
         button.tap()
         XCUIDevice.shared.orientation = .portrait
         settlePresentation()
