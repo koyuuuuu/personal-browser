@@ -53,7 +53,7 @@ ASCredentialDataManagerも確認したが、公式文書上iOS 26.2以降で、�
 
 既存の暗号化保管庫、鍵、保存形式、バックアップを再利用する。初回だけ既存の登録またはSafari/Braveから書き出したファイルの取り込みを行えば、その後の通常入力は候補バーで完結する。書き出し手順は元アプリ・OS・端末に依存する。Appleの保存先と自動同期したり、他アプリの非公開データを読んだりする機能ではない。
 
-候補表示のためにフォームのパスワード値を常時取得しない。新規保存・更新は利用者のフォーム送信時に自動検出し、ネイティブの提案から確認して確定する。文字入力中は取得せず、利用者の実際の送信操作直前の候補をメモリに最長120秒だけ置く。ログイン成功そのものを断定しない。確認ボタンで暗号化して保存し、同じアカウントはID・メモ等を保ってパスワードだけ更新する。同じ保存内容なら提案しない。新しいパスワードと確認欄が異なる場合は提案しない。プライベート、別オリジン送信、プログラムだけの送信は対象外。バックグラウンド・明示ロック・タブ変更・別サイトへの移動・期限切れで未確定の候補を破棄する。送信検出は標準フォームとsubmitボタンを使うAJAXを対象とし、独自ボタン・閉じたShadow DOM等すべてのサイトの自動検出は保証しない。チャット・GitHubへ実際のパスワードファイルを送る必要はない。
+候補表示のためにフォームのパスワード値を常時取得しない。新規保存・更新は利用者のフォーム送信時に自動検出し、ネイティブの提案から確認して確定する。文字入力中は取得せず、利用者の実際の送信操作直前の候補をメモリに最長120秒だけ置く。ログイン成功そのものを断定しない。確認ボタンで暗号化して保存し、同じアカウントはID・メモ等を保ってパスワードだけ更新する。解除中に同じ保存内容と判定できれば提案しない。ロック中は認証後に比較し、同じなら提案を閉じる。新しいパスワードと確認欄が異なる場合は提案しない。プライベート、別オリジン送信、プログラムだけの送信は対象外。バックグラウンド・明示ロック・タブ変更・別サイトへの移動・期限切れで未確定の候補を破棄する。送信検出は標準フォームとsubmitボタンを使うAJAXを対象とし、独自ボタン・閉じたShadow DOM等すべてのサイトの自動検出は保証しない。チャット・GitHubへ実際のパスワードファイルを送る必要はない。
 
 ## 実装方針
 
@@ -84,3 +84,5 @@ ASCredentialDataManagerも確認したが、公式文書上iOS 26.2以降で、�
 - Apple: [ASCredentialProviderViewController](https://developer.apple.com/documentation/authenticationservices/ascredentialproviderviewcontroller)、[AutoFill Credential Provider Entitlement](https://developer.apple.com/documentation/bundleresources/entitlements/com.apple.developer.authentication-services.autofill-credential-provider) — 自前保管庫をシステムAutoFillへ提供する別方式。
 - Apple: [ASCredentialDataManager](https://developer.apple.com/documentation/authenticationservices/ascredentialdatamanager) — iOS 26.2以降の保存・更新通知API。保存一覧取得APIではない。
 - 現行コード: `App/PasswordSuggestionBar.swift`、`App/PasswordFormController.swift`、`App/PasswordFormScript.swift`、`App/PasswordVault.swift`、`App/BrowserChrome.swift`。現在のAppleボタンはfocusコマンドであり、独自保管庫のアカウントボタンはfillコマンドであることを確認した。
+
+実装・配布完了: 0.13.0 build80、検証ソース `4223b5bda211860b200477307305de8b5b92c632`。[検証記録](validation-0.13.0-2026-11-10.json)、[使い方](changes-0.13.0.ja.md)。

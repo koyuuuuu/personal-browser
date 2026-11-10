@@ -1,0 +1,99 @@
+{
+  "date_utc": "2026-11-10",
+  "version": "0.13.0",
+  "delivery_status": "published",
+  "requested_behavior": [
+    "One-row own-vault credentials immediately above the complete system keyboard UI",
+    "Tap candidate to fill without a manager roundtrip",
+    "Detect user login/signup/password-change submissions and offer encrypted saving or updating"
+  ],
+  "implementation": {
+    "keyboard": "Public UIKeyboardLayoutGuide observes visibility; SwiftUI alone owns keyboard avoidance. Keep mounted WebSurface and preserve layout during authentication inactive state.",
+    "quick_fill": "Focused login target only; generic locked button authenticates then fills one exact account or presents inline candidates. Interaction token invalidates pending fill after tab/modal/lock/background changes.",
+    "save": "Trusted mainframe user submit/submit-control click or Enter followed by submit; visible trusted selected normal tab and same-origin action. No collection on typing; private-page scripts disable save collection. One memory-only proposal with120sec expiry.",
+    "update": "Explicit native Save/Update accepts proposal; exact accountKey/UTF8 comparison; retain existing ID/title/notes and change only password. Ambiguous username-less change requires account selection. Match new-password confirmation; exclude invalid forms.",
+    "apple": "Keep standard iOS QuickType; remove the focus-only Apple button from the own-vault row. No direct enumeration of Apple accounts or authentication bypass.",
+    "storage": "Existing vault encryption/keychain/backup/library formats and bundle identity unchanged. New independent save-offer preference defaults on."
+  },
+  "checks": {
+    "python": 55,
+    "core": 79,
+    "dom": "Chromium real DOM/trusted pointer and keyboard events: typing isolation, programmatic-submit rejection, focus cleanup, matching new-password confirmation, disabled preference, cross-origin form rejection passed",
+    "compatibility_roundtrip": "not applicable; no persistence format changes",
+    "full_ui_suite": "not run; representative password case and Release browsing/keyboard case only",
+    "debug_ui_passed": 1,
+    "debug_ui_case": "testPasswordVaultImportsLocksAndFillsOnlyOnRequest",
+    "debug_ui_duration_seconds": 136.773,
+    "release_ui_passed": 1,
+    "release_ui_case": "testReleaseBrowsingLayoutAndPageInteraction",
+    "release_ui_duration_seconds": 75.904,
+    "native_device_build": "passed",
+    "local_ipa_and_build_info_and_public_feed_hash_match": true,
+    "source_tag_points_to_tested_sha": true,
+    "anonymous_delivery_audit": "passed",
+    "ci_jobs": "check/ios/publish/delivery-audit all success",
+    "debug_password_auth_bypass_in_release": false,
+    "swift_webkit_overlay_dependency": false,
+    "face_id_purpose_present": true
+  },
+  "previous_attempts": [
+    {
+      "runs": [
+        73,
+        74,
+        75
+      ],
+      "result": "superseded before publication while finalizing account display, private-page collection suppression and inactive layout"
+    },
+    {
+      "run": 76,
+      "result": "Core79 passed; native compile failed due to duplicate guard-bound identifier; corrected"
+    },
+    {
+      "run": 77,
+      "result": "Core79 passed; native compile failed due to catch error shadowing view state, with a type-check diagnostic; renamed state and split view builders"
+    },
+    {
+      "run": 78,
+      "result": "Core79/app compile/import/encrypted lock/read/manual fill passed; new placement assertion compared against letter-key AX frame rather than complete keyboard UI. Actual screenshot shows candidate row450..494, system accessory494..538, QuickType538..583 and letter keys583 onward. Corrected assertion to complete keyboard top, and clear fields before checking inline fill; no app condition waived."
+    },
+    {
+      "run": 79,
+      "source_commit": "a3abd8f87139fd38c4c90af520d04dde29968e31",
+      "result": "Core79 and full password UI passed (132.589sec), including inline fill, signup save, password update and locked encrypted read/fill. Release app compiled and rendered its visible page and button with valid geometry; nested first WebView descendant query failed to locate the visible button. Changed to global unique fixture controls and native webContent host geometry. Also clear the DOM before the final encrypted re-read assertion. No application behavior changed."
+    }
+  ],
+  "limitations": [
+    "Physical iPhone FaceID/Apple saved-account/QuickType/device acceptance pending; Debug fixture is not hardware authentication",
+    "Submission observation does not prove server login/signup/password change succeeded; user confirms before persisting",
+    "Custom non-submit controls, closed shadow forms and unsupported site structures may require the existing explicit save flow"
+  ],
+  "preservation": {
+    "bundle_id": "local.personalbrowser.app",
+    "data_schema": 1,
+    "historical_versions": "not overwritten",
+    "legacy_media_logic": "unchanged; BrowserTab diff only splits active/trust checks for password layout"
+  },
+  "build": "80",
+  "source_commit": "4223b5bda211860b200477307305de8b5b92c632",
+  "tag": "v0.13.0-build.80",
+  "ci_run": "https://github.com/koyuuuuu/personal-browser/actions/runs/42863277907",
+  "public_release": "https://github.com/koyuuuuu/personal-browser-distribution/releases/tag/v0.13.0-build.80",
+  "source_url": "https://raw.githubusercontent.com/koyuuuuu/personal-browser-distribution/main/source.json",
+  "ipa": {
+    "file": "PersonalBrowser.ipa",
+    "sha256": "7a2d8d0ce82410651bae03922fa502cbf64923362681d6b38b9f41c17863d97a",
+    "bundle_id": "local.personalbrowser.app",
+    "version": "0.13.0",
+    "build": "80",
+    "minimum_ios": "17.0",
+    "target_ios": "18.4.1",
+    "architecture": "arm64",
+    "platform": "iOS device",
+    "embedded_profile": false,
+    "signature_resources": false,
+    "installation_verified": false,
+    "size": 5672347,
+    "data_schema": 1
+  }
+}
