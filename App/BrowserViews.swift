@@ -144,7 +144,7 @@ struct BrowserRootView: View {
                 if let tab = store.selectedTab { PasswordSaveBanner(tab: tab, allowed: sheet == nil) }
             }.fixedSize(horizontal: false, vertical: true)
         }
-        .onChange(of: store.selectedID) { _, _ in PasswordFormController.shared.keepSaveOffer(for: store.selectedTab) }
+        .onChange(of: store.selectedID) { _, _ in PasswordFormController.shared.cancelPendingInteraction() }
         .tint(store.selectedTab?.isPrivate == true ? .purple : .blue)
         .sheet(item: $sheet) { route in
             sheetContent(route)

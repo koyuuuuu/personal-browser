@@ -33,14 +33,16 @@ final class PasswordFormController: ObservableObject {
     private init() {
         for name in [UIApplication.didEnterBackgroundNotification, .passwordVaultDidLock] {
             observers.append(NotificationCenter.default.publisher(for: name).sink { [weak self] _ in
-                MainActor.assumeIsolated { self?.dismissSaveOffer() }
+                MainActor.assumeIsolated { self?.cancelPendingInteraction() }
             })
         }
     }
+    private(set) var interactionID = UUID()
+    func cancelPendingInteraction() { interactionID = UUID(); dismissSaveOffer() }
     private var interfaceAvailable = true
     func setInterfaceAvailable(_ value: Bool) {
         interfaceAvailable = value
-        if !value { dismissSaveOffer() }
+        if !value { cancelPendingInteraction() }
     }
     private var entries: [ObjectIdentifier: Entry] = [:]
     private final class Entry {
@@ -92,9 +94,9 @@ final class PasswordFormController: ObservableObject {
                (try? PasswordSavePolicy.proposal(record, records: PasswordVault.shared.records, passwordChange: change)) == .unchanged { return }
             let offer = PasswordSaveOffer(tabID: entry.tabID, record: record, passwordChange: change)
             saveOffer = offer
-            let id = offer.id
+            let offerID = offer.id
             DispatchQueue.main.asyncAfter(deadline: .now() + 120) { [weak self] in
-                if self?.saveOffer?.id == id { self?.dismissSaveOffer() }
+                if self?.saveOffer?.id == offerID { self?.dismissSaveOffer() }
             }
             return
         }
@@ -150,7 +152,8 @@ final class PasswordFormController: ObservableObject {
         _ = try checked(target,capture:action=="capture",systemFocus:action=="focus",management:management)
         return result
     }
-    func fill(_ record: PasswordRecord, into target: PasswordFormTarget, fromManager: Bool = false) async throws {
+    func fill(_ record: PasswordRecord, into target: PasswordFormTarget, fromManager: Bool = false, interactionID: UUID? = nil) async throws {
+        if let interactionID, interactionID != self.interactionID { throw PasswordVaultError.invalidSite }
         guard PasswordVault.shared.unlocked,record.site==target.site,target.currentPassword else {throw PasswordVaultError.locked}
         _ = try await command(target,action:"fill",username:record.username,password:record.password,management:fromManager)
     }

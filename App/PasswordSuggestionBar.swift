@@ -16,7 +16,8 @@ struct PasswordSuggestionBar: View {
     private var targets: [PasswordFormTarget] { forms.targets(for: tab).filter(\.currentPassword) }
     private var target: PasswordFormTarget? {
         let focused = targets.filter(\.focused)
-        return busy ? pinned : (focused.count == 1 ? focused.first : nil)
+        if busy { return pinned?.tabID == tab.id ? pinned : nil }
+        return focused.count == 1 ? focused.first : nil
     }
     private var eligible: Bool {
         allowed && phase != .background && vault.showInputButton && tab.passwordOriginTrusted && (!tab.isPrivate || vault.allowPrivateFill)
@@ -46,7 +47,7 @@ struct PasswordSuggestionBar: View {
                             } else {
                                 ForEach(accounts) { record in
                                     Button(record.username.isEmpty ? "ユーザー名なしで入力" : record.username, systemImage: "person.crop.circle") {
-                                        run(target) { try await forms.fill(record, into: target) }
+                                        run(target) { token in try await forms.fill(record, into: target, interactionID: token) }
                                     }.accessibilityIdentifier("inlineSavedPasswordButton")
                                 }
                                 if accounts.isEmpty {
@@ -79,17 +80,18 @@ struct PasswordSuggestionBar: View {
         } message: { Text("ページと保管庫の状態を確認して、入力欄を選び直してください。") }
     }
     private func unlockAndFill(_ target: PasswordFormTarget) {
-        run(target) {
+        run(target) { token in
             try await vault.unlock()
             let values = vault.records.filter { $0.site == target.site }
-            if values.count == 1, let value = values.first { try await forms.fill(value, into: target) }
+            if values.count == 1, let value = values.first { try await forms.fill(value, into: target, interactionID: token) }
         }
     }
-    private func run(_ target: PasswordFormTarget, _ action: @escaping @MainActor () async throws -> Void) {
+    private func run(_ target: PasswordFormTarget, _ action: @escaping @MainActor (UUID) async throws -> Void) {
         guard !busy else { return }; pinned = target; busy = true
+        let token = forms.interactionID
         Task { @MainActor in
             defer { busy = false; pinned = nil }
-            do { try await action() }
+            do { try await action(token) }
             catch { error = true }
         }
     }
