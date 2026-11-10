@@ -62,7 +62,7 @@ final class PasswordFormController: ObservableObject {
         let controller=view.configuration.userContentController
         controller.add(PasswordFormHandler(owner: self), contentWorld: .defaultClient, name: "browserPasswords")
         let hints = PasswordVault.shared.improveAppleAutoFill ? "true" : "false"
-        let offers = PasswordVault.shared.offerToSave ? "true" : "false"
+        let offers = !isPrivate && PasswordVault.shared.offerToSave ? "true" : "false"
         controller.addUserScript(WKUserScript(source: "globalThis.__personalBrowserAppleHints = " + hints + ";\nglobalThis.__personalBrowserSaveOffers = " + offers + ";\n" + PasswordFormScript.source, injectionTime: .atDocumentStart, forMainFrameOnly: false, in: .defaultClient))
     }
     func reset(_ view: WKWebView) {
@@ -171,7 +171,7 @@ final class PasswordFormController: ObservableObject {
             for script in scripts {
                 if script.source.hasPrefix("globalThis.__personalBrowserAppleHints = ") {
                     let flag=enabled ? "true" : "false"
-                    let offers=PasswordVault.shared.offerToSave ? "true" : "false"
+                    let offers = !entry.isPrivate && PasswordVault.shared.offerToSave ? "true" : "false"
                     content.addUserScript(WKUserScript(source:"globalThis.__personalBrowserAppleHints = " + flag + ";\nglobalThis.__personalBrowserSaveOffers = " + offers + ";\n" + PasswordFormScript.source,
                         injectionTime:.atDocumentStart,forMainFrameOnly:false,in:.defaultClient))
                 } else { content.addUserScript(script) }
@@ -205,7 +205,7 @@ final class PasswordFormController: ObservableObject {
         if !enabled { dismissSaveOffer() }
         for entry in entries.values {
             guard let view = entry.view else { continue }
-            setPasswordSaveOffers(view, enabled: enabled)
+            setPasswordSaveOffers(view, enabled: enabled && !entry.isPrivate)
         }
         // Rebuild only this module's scripts for future documents too.
         setAppleHints(PasswordVault.shared.improveAppleAutoFill)
