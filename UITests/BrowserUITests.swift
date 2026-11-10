@@ -81,13 +81,21 @@ final class BrowserUITests: XCTestCase {
         XCTAssertTrue(app.buttons["unlockPasswordVaultButton"].waitForExistence(timeout: 5))
         app.buttons["unlockPasswordVaultButton"].tap()
         app.navigationBars["パスワード"].buttons["閉じる"].tap()
+        app.buttons["Reset login form"].tap()
+        XCTAssertTrue(app.staticTexts["Fields empty"].waitForExistence(timeout: 5))
         let loginUser = app.textFields["Fixture username"]
         loginUser.tap()
         XCTAssertTrue(app.keyboards.firstMatch.waitForExistence(timeout: 8))
         let inline = app.buttons["inlineSavedPasswordButton"]
         XCTAssertTrue(inline.waitForExistence(timeout: 5))
-        XCTAssertLessThanOrEqual(inline.frame.maxY, app.keyboards.firstMatch.frame.minY + 2)
-        XCTAssertGreaterThan(inline.frame.maxY, app.keyboards.firstMatch.frame.minY - 65, "Candidates must be immediately above the keyboard")
+        // Keyboard AX covers the letter keys, excluding WebKit's previous/
+        // next/Done accessory and the system Passwords QuickType row.
+        let accessory = app.toolbars["Toolbar"]
+        let keyboardTop = accessory.exists ? min(accessory.frame.minY, app.keyboards.firstMatch.frame.minY) : app.keyboards.firstMatch.frame.minY
+        XCTAssertEqual(app.buttons["passwordKeyboardDismissButton"].frame.maxY, keyboardTop, accuracy: 2)
+        XCTAssertLessThanOrEqual(inline.frame.maxY, keyboardTop)
+        XCTAssertGreaterThan(inline.frame.maxY, keyboardTop - 44)
+        XCTAssertFalse(app.textFields["addressField"].exists, "Browser chrome must not separate candidates from the keyboard")
         XCTAssertTrue(app.staticTexts["System field focused; hints ready"].waitForExistence(timeout: 8))
         inline.tap()
         XCTAssertTrue(app.staticTexts["Fields filled; not submitted"].waitForExistence(timeout: 5))
