@@ -37,7 +37,7 @@ struct PasswordSaveBanner: View {
                                     }
                                 }.accessibilityIdentifier("passwordUpdateAccountMenu")
                             } else {
-                                Text(offer.record.username.isEmpty ? "ユーザー名なし" : offer.record.username)
+                                Text(displayUsername(offer))
                                     .font(.caption).lineLimit(1)
                                 Button(actionTitle(proposal(offer))) {
                                     do { try forms.acceptSaveOffer(offer.id, tab: tab, accountID: accountID) }
@@ -63,6 +63,14 @@ struct PasswordSaveBanner: View {
             Button("OK", role: .cancel) {}
         } message: { Text("ページと保管庫の状態を確認してください。") }
     }
+    private func displayUsername(_ offer: PasswordSaveOffer) -> String {
+        let username: String
+        switch proposal(offer) {
+        case .update(let value), .insert(let value): username = value.username
+        default: username = offer.record.username
+        }
+        return username.isEmpty ? "ユーザー名なし" : username
+    }
     private func actionTitle(_ proposal: PasswordSavePolicy.Proposal?) -> String {
         switch proposal {
         case .update: "更新"
@@ -77,8 +85,8 @@ struct PasswordSaveBanner: View {
             do {
                 try await vault.unlock()
                 forms.keepSaveOffer(for: tab)
-                guard forms.saveOffer?.id == id else { return }
-                if proposal(forms.saveOffer!) == .unchanged { forms.dismissSaveOffer() }
+                guard let current = forms.saveOffer, current.id == id else { return }
+                if proposal(current) == .unchanged { forms.dismissSaveOffer() }
             } catch { error = true }
         }
     }

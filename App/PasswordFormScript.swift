@@ -85,7 +85,7 @@ enum PasswordFormScript {
       // Do not hook form prototypes, prevent submission, or send page URLs.
       let gestureAt=-Infinity;
       const offer = form => {
-        if(!saveEnabled || window!==window.top || document.visibilityState!=='visible' || !form)return;
+        if(!saveEnabled || window!==window.top || document.visibilityState!=='visible' || !form || form.matches(':invalid'))return;
         const list=passwords().filter(pw=>pw.form===form && usable(pw));
         if(!list.length || list.length>3)return;
         const fresh=list.filter(pw=>/(^|\s)new-password(\s|$)/i.test(pw.autocomplete || ''));
