@@ -196,8 +196,13 @@ final class BrowserTab: NSObject, ObservableObject, Identifiable, WKNavigationDe
     }
 
     var passwordPageTrusted: Bool {
+        UIApplication.shared.applicationState == .active && passwordOriginTrusted
+    }
+    // The layout remains stable during the system authentication overlay.
+    // Credential operations still require passwordPageTrusted (active app).
+    var passwordOriginTrusted: Bool {
         guard let view = liveWebView, !view.isLoading, !pageUnavailable,
-              mayRecoverAutomatically?() == true, UIApplication.shared.applicationState == .active,
+              mayRecoverAutomatically?() == true,
               let url = view.url else { return false }
         #if DEBUG
         if PasswordVault.fixture, url.absoluteString == "http://127.0.0.1:18765/password-vault-fixture" { return true }

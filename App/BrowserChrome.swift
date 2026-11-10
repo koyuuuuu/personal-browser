@@ -19,7 +19,8 @@ struct TabBrowserView: View {
     @FocusState private var addressFocused: Bool
 
     private var editingLogin: Bool {
-        !addressFocused && keyboardVisible && tab.passwordPageTrusted && PasswordVault.shared.showInputButton && passwordForms.targets(for: tab).contains { $0.focused && $0.currentPassword }
+        !addressFocused && keyboardVisible && tab.passwordOriginTrusted && PasswordVault.shared.showInputButton &&
+        (!tab.isPrivate || PasswordVault.shared.allowPrivateFill) && passwordActionsAllowed && passwordForms.targets(for: tab).contains { $0.focused && $0.currentPassword }
     }
     var body: some View {
         GeometryReader { geometry in

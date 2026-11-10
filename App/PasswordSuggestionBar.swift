@@ -19,7 +19,7 @@ struct PasswordSuggestionBar: View {
         return busy ? pinned : (focused.count == 1 ? focused.first : nil)
     }
     private var eligible: Bool {
-        allowed && vault.showInputButton && tab.passwordPageTrusted && (!tab.isPrivate || vault.allowPrivateFill)
+        allowed && phase != .background && vault.showInputButton && tab.passwordOriginTrusted && (!tab.isPrivate || vault.allowPrivateFill)
     }
     private var accounts: [PasswordRecord] {
         guard vault.unlocked, let target else { return [] }
