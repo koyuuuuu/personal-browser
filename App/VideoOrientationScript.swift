@@ -11,8 +11,18 @@ enum VideoOrientationScript {
       const documentID = crypto.randomUUID ? crypto.randomUUID() : Array.from(crypto.getRandomValues(new Uint8Array(16)), x => x.toString(16).padStart(2, '0')).join(''), states = new WeakMap();
       let enabled = __ENABLED__, active = true, timer = null, sequence = 0;
       let current = new Map();
+      const intersection = new IntersectionObserver(entries => {
+        for (const entry of entries) {
+          const s = states.get(entry.target);
+          if (s) s.area = entry.isIntersecting ? entry.intersectionRect.width * entry.intersectionRect.height : 0;
+        }
+        report();
+      });
       function state(video) {
-        if (!states.has(video)) states.set(video, {id: String(++sequence), paused: video.paused && video.currentTime > 0, transition: 0});
+        if (!states.has(video)) {
+          states.set(video, {id: String(++sequence), paused: video.paused && video.currentTime > 0, transition: 0, area: 0});
+          intersection.observe(video);
+        }
         return states.get(video);
       }
       function full(video) { return !!(video.webkitDisplayingFullscreen || video.webkitPresentationMode === 'fullscreen' || document.fullscreenElement === video); }
@@ -25,7 +35,7 @@ enum VideoOrientationScript {
           values.push({id:s.id, width:video.videoWidth, height:video.videoHeight,
             playing:!video.paused && !video.ended, paused:s.paused || video.ended || (video.paused && video.currentTime > 0),
             fullscreen:full(video), pip:video.webkitPresentationMode === 'picture-in-picture',
-            area:css.visibility === 'visible' && css.display !== 'none' && Number(css.opacity) > 0 ? area : 0,
+            area:css.visibility === 'visible' && css.display !== 'none' && Number(css.opacity) > 0 ? Math.min(area, s.area) : 0,
             supported:!!(video.webkitSupportsFullscreen || video.requestFullscreen)});
         }
         return values;
@@ -46,7 +56,7 @@ enum VideoOrientationScript {
           inventory(); const video = current.get(id);
           if (!video || !video.isConnected || full(video) || video.webkitPresentationMode === 'picture-in-picture') return;
           const s = state(video), r = video.getBoundingClientRect();
-          if (s.paused || video.ended || r.width < 40 || r.height < 40 || r.bottom <= 0 || r.top >= innerHeight) return;
+          if (s.paused || video.ended || (video.paused && video.currentTime > 0) || s.area < 6400 || r.width < 40 || r.height < 40 || r.bottom <= 0 || r.top >= innerHeight) return;
           // One attempt per physical tilt. Keep existing playback untouched;
           // a never-started clip may still require the site's own play gesture.
           s.transition = performance.now() + 1500;

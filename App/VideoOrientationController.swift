@@ -132,11 +132,11 @@ final class VideoOrientationController: ObservableObject {
         }
         if original != nil { restore() }
         guard tilt != .portrait, !attempted else { return }
-        // Cross-origin iframe auto-selection is deliberately conservative. Manual
-        // native fullscreen still receives aspect-based orientation in any frame.
+        // Embedded players must already be playing. IntersectionObserver in
+        // each frame accounts for clipping by the top-level viewport.
         let eligible = all.filter { item in
             let v = item.2
-            return item.1.isMainFrame && v["supported"] as? Bool == true && v["pip"] as? Bool != true && v["paused"] as? Bool != true &&
+            return (item.1.isMainFrame || v["playing"] as? Bool == true) && v["supported"] as? Bool == true && v["pip"] as? Bool != true && v["paused"] as? Bool != true &&
                 (v["area"] as? Double ?? 0) >= 6400 && (v["width"] as? Double ?? 0) > 0 && (v["height"] as? Double ?? 0) > 0
         }.sorted { ($0.2["area"] as? Double ?? 0) > ($1.2["area"] as? Double ?? 0) }
         guard let chosen = eligible.first, eligible.count == 1 || (chosen.2["area"] as? Double ?? 0) > (eligible[1].2["area"] as? Double ?? 0) * 2,
@@ -192,12 +192,14 @@ final class VideoOrientationController: ObservableObject {
     #endif
 }
 
+@MainActor
 private final class VideoOrientationHandler: NSObject, WKScriptMessageHandler {
     weak var owner: VideoOrientationController?
     init(owner: VideoOrientationController) { self.owner = owner }
     func userContentController(_ userContentController: WKUserContentController, didReceive message: WKScriptMessage) { owner?.receive(message) }
 }
 
+@MainActor
 struct VideoOrientationSettingsView: View {
     @ObservedObject private var controller = VideoOrientationController.shared
     var body: some View {
