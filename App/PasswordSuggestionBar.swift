@@ -12,7 +12,7 @@ struct PasswordSuggestionBar: View {
     @ScaledMetric private var rowHeight = 44.0
     @State private var busy = false
     @State private var pinned: PasswordFormTarget?
-    @State private var error = false
+    @State private var showError = false
     private var targets: [PasswordFormTarget] { forms.targets(for: tab).filter(\.currentPassword) }
     private var target: PasswordFormTarget? {
         let focused = targets.filter(\.focused)
@@ -75,7 +75,7 @@ struct PasswordSuggestionBar: View {
             do { try await forms.fillAutomatically(record, into: target) }
             catch { /* No automatic authentication, repeated attempts or submit. */ }
         }
-        .alert("入力できませんでした", isPresented: $error) {
+        .alert("入力できませんでした", isPresented: $showError) {
             Button("OK", role: .cancel) {}
         } message: { Text("ページと保管庫の状態を確認して、入力欄を選び直してください。") }
     }
@@ -92,7 +92,7 @@ struct PasswordSuggestionBar: View {
         Task { @MainActor in
             defer { busy = false; pinned = nil }
             do { try await action(token) }
-            catch { error = true }
+            catch { showError = true }
         }
     }
 }
