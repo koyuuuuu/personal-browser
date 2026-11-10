@@ -81,6 +81,9 @@ final class BrowserUITests: XCTestCase {
         app.buttons["videoTiltHorizontal"].tap(); settlePresentation()
         app.buttons["Check video state"].tap()
         XCTAssertTrue(app.staticTexts["Fullscreen count 1; continued true; wide paused true"].exists)
+        // Return the physical-tilt policy to portrait while preparing the
+        // manual-fullscreen case, so playing the tall clip does not auto-enter.
+        app.buttons["videoTiltPortrait"].tap()
         app.buttons["Show tall"].tap()
         XCTAssertTrue(app.staticTexts["Tall ready"].waitForExistence(timeout: 10), "A hidden paused player may defer metadata loading until play on iOS")
         app.buttons["Tall fullscreen"].tap()
