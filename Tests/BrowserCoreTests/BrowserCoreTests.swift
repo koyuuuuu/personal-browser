@@ -100,3 +100,29 @@ final class SnapshotTests: XCTestCase {
         XCTAssertEqual(try Data(contentsOf: file), badData)
     }
 }
+
+final class VideoOrientationTests: XCTestCase {
+    func testAspectAndGravityDoNotConfuseFlatOrDiagonalPhoneWithRotation() {
+        XCTAssertEqual(VideoTilt.gravity(x: -0.95, y: 0.1, z: 0.1), .landscapeRight)
+        XCTAssertEqual(VideoTilt.gravity(x: 0.95, y: 0.1, z: 0.1), .landscapeLeft)
+        XCTAssertEqual(VideoTilt.gravity(x: 0, y: -1, z: 0), .portrait)
+        XCTAssertNil(VideoTilt.gravity(x: 0.1, y: 0.1, z: -0.99))
+        XCTAssertNil(VideoTilt.gravity(x: 0.7, y: -0.7, z: 0))
+        XCTAssertNil(VideoTilt.gravity(x: .nan, y: 0, z: 0))
+        XCTAssertEqual(VideoTilt.forVideo(width: 1920, height: 1080, tilt: .portrait), .landscapeRight)
+        XCTAssertEqual(VideoTilt.forVideo(width: 1080, height: 1920, tilt: .landscapeLeft), .portrait)
+        XCTAssertEqual(VideoTilt.forVideo(width: 1080, height: 1080, tilt: .landscapeLeft), .portrait)
+        XCTAssertNil(VideoTilt.forVideo(width: 0, height: 0, tilt: .portrait))
+    }
+    func testGridWidthsSurviveRepeatedRotationsAndRespectInsets() {
+        for count in 1...4 {
+            for viewport in [390.0, 844, 390, 844, 390] {
+                let insets = viewport > 400 ? 94.0 : 0
+                let width = TabGridMetrics.width(viewport: viewport, horizontalInsets: insets, columns: count)
+                XCTAssertLessThanOrEqual(width * Double(count) + Double(count - 1) * 16 + 32 + insets, viewport)
+                XCTAssertGreaterThan(width, 40)
+            }
+        }
+        XCTAssertEqual(TabGridMetrics.width(viewport: 390, horizontalInsets: 0, columns: 2), 171)
+    }
+}

@@ -1,0 +1,22 @@
+# 動画の全画面と向き（0.14）
+
+設定 → 操作 → 動画の全画面・向き →「動画の自動全画面・向き調整」。初期値はオフ。設定は専用のUserDefaultsキーに保存し、既存ライブラリや保管庫の形式は変えない。
+
+オンの場合、端末を横に傾けた状態が約0.45秒続くと、表示中の十分大きい動画を一度だけ全画面に移す。候補が複数で同程度の大きさなら選ばない。一時停止・終了・PiPの動画は自動再開しない。再生経験のない動画は一度だけ再生を要求するが、サイトやiOSが拒否した場合は通常の再生ボタンが必要。全画面を手で閉じた直後に再表示せず、一度縦向きに戻してから再度横にすると再試行できる。
+
+動画は既存のWKWebView・HTMLVideoElementと標準全画面を使い、再生位置、認証、MSE、DRMなどのために別プレーヤーへURLを取り出して再生し直さない。動画の実寸メタデータを使い、横長は横向き、縦長と正方形は縦向きとする。比率を保ち、トリミングで画面を無理に埋めない。全画面中に端末を縦に戻しても、横長動画は横向きを保つ。終了・機能オフ・タブ切替・ブラウザのシート表示で通常の対応方向と入場前の方向へ戻す。バックグラウンドではセンサーを停止し方向制約を解除する。再生は停止しない。
+
+iOS全体の縦向きロック設定を読み取ったり変更したりしない。CoreMotionの重力値で物理的な傾きを判断し、アプリdelegateの対応方向とiOS16以降の公開requestGeometryUpdate APIを使い、実際の動画全画面中だけ方向を要求する。拒否された同一方向は全画面終了まで再要求しない。OS・標準動画プレーヤーが最終決定するため、iPhone実機での縦向きロック中の受理をSimulator結果から保証しない。非公開orientation設定、クラス置換、再生メソッド上書き、全サイトの自動再生制限解除は行わない。
+
+自動候補選択はメインフレームの通常video要素が対象。iframeの動画はサイトの全画面ボタンから開いた場合の向き調整に対応する。独自プレーヤー、閉じたShadow DOM、独自の疑似全画面、iOSが全画面化を拒むサイトでは手動操作が必要な場合がある。オフ時は動画や傾きの定期監視を行わない。動画URLや傾き履歴は保存・送信しない。
+
+タブ一覧はUICollectionViewFlowLayoutの古い横画面のカード幅が残らないよう、現在のboundsとadjustedContentInsetからprepareごとに指定列数の幅を算出する。幅変更時にlayoutとdelegate metricsを無効化し、一覧の内容が変わらない回転にも対応する。
+
+検証はCoreの重力・比率・繰り返し回転の幅計算、既存タブ一覧テストの繰り返し回転と同一行の複数カード確認、実動画によるネイティブ全画面・画面形状・再生継続・一時停止・オンオフを対象とする。固定HTTP動画と重力注入のUI補助はDEBUGかつ2つの起動引数を満たす場合のみ。実際のネイティブ全画面を使用し、そのイベントと再生時間をページ側でも確認する。ユーザーの実機センサー、Control Centerのロック、任意の動画サイトの動作は別途実機の確認範囲。
+
+公開API資料:
+- https://developer.apple.com/documentation/uikit/uiwindowscene/requestgeometryupdate(_:errorhandler:)
+- https://developer.apple.com/documentation/uikit/uiviewcontroller/supportedinterfaceorientations
+- https://developer.apple.com/documentation/coremotion/cmmotionmanager
+- https://developer.apple.com/documentation/webkit/delivering-video-content-for-safari
+- https://webkit.org/blog/6784/new-video-policies-for-ios/

@@ -17,4 +17,8 @@ void PBApplyAudioMixingPolicy(WKWebView *view, BOOL enabled)
 /// JSON is produced by JSONSerialization, never interpolated from page text.
 void PBRunAudioMixerCommand(WKWebView *view, WKFrameInfo *frame, NSString *json)
     NS_SWIFT_NAME(runAudioMixerCommand(_:frame:json:));
+void PBConfigureVideoOrientation(WKWebView *view, WKFrameInfo * _Nullable frame, BOOL enabled, BOOL active)
+    NS_SWIFT_NAME(configureVideoOrientation(_:frame:enabled:active:));
+void PBEnterVideoFullscreen(WKWebView *view, WKFrameInfo *frame, NSString *document, NSString *video)
+    NS_SWIFT_NAME(enterVideoFullscreen(_:frame:document:video:));
 NS_ASSUME_NONNULL_END

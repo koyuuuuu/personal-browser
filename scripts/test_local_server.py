@@ -11,6 +11,7 @@ import ssl
 import threading
 import subprocess
 import wave
+from pathlib import Path
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 
@@ -50,7 +51,28 @@ def main():
                 threading.Thread(target=child.wait, daemon=True).start()
                 self.send_response(204)
                 self.send_header('Content-Length', '0'); self.end_headers(); return
-            if self.path == '/audio.wav':
+            if self.path in ['/wide.mp4', '/tall.mp4']:
+                data = (Path(__file__).resolve().parents[1] / 'UITests/Fixtures' / self.path[1:]).read_bytes()
+                mime = 'video/mp4'
+            elif self.path == '/video-orientation-fixture':
+                data = b'''<!doctype html><meta name="viewport" content="width=device-width,initial-scale=1">
+                <title>Video orientation fixture</title><style>video{width:100%;height:200px}button{font-size:16px;padding:10px}</style>
+                <video id="wide" src="/wide.mp4" playsinline preload="auto"></video>
+                <video id="tall" src="/tall.mp4" playsinline preload="auto" hidden></video>
+                <button onclick="wide.play()">Play wide</button><button onclick="wide.pause()">Pause wide</button>
+                <button onclick="wide.pause();wide.hidden=true;tall.hidden=false">Show tall</button>
+                <button onclick="tall.play();tall.webkitEnterFullscreen()">Tall fullscreen</button>
+                <button onclick="check()">Check video state</button><p id="result">Video ready</p>
+                <script>
+                let count=0,start=0,advanced=false;
+                for(const v of [wide,tall]){
+                  v.addEventListener('webkitbeginfullscreen',()=>{count++;start=v.currentTime});
+                  v.addEventListener('webkitendfullscreen',()=>{advanced=v.currentTime>start+0.5});
+                }
+                function check(){result.textContent='Fullscreen count '+count+'; continued '+advanced+'; wide paused '+wide.paused}
+                </script>'''
+                mime = 'text/html; charset=utf-8'
+            elif self.path == '/audio.wav':
                 data, mime = audio, 'audio/wav'
             elif self.path in ['/concurrent-audio-a', '/concurrent-audio-b', '/volume-fixture']:
                 title = 'Volume fixture' if self.path == '/volume-fixture' else 'Concurrent A' if self.path.endswith('-a') else 'Concurrent B'
@@ -194,7 +216,7 @@ def main():
                 mime = 'text/html; charset=utf-8'
             total = len(data); code = 200; content_range = None
             requested_range = self.headers.get('Range', '')
-            if self.path == '/audio.wav' and (match := re.fullmatch(r'bytes=(\d+)-(\d*)', requested_range)):
+            if self.path in ['/audio.wav', '/wide.mp4', '/tall.mp4'] and (match := re.fullmatch(r'bytes=(\d+)-(\d*)', requested_range)):
                 start = int(match[1]); end = min(total - 1, int(match[2]) if match[2] else total - 1)
                 if 0 <= start <= end < total:
                     data = data[start:end + 1]; code = 206; content_range = f'bytes {start}-{end}/{total}'

@@ -49,3 +49,16 @@ void PBRunAudioMixerCommand(WKWebView *view, WKFrameInfo *frame, NSString *json)
              inContentWorld:WKContentWorld.defaultClientWorld
           completionHandler:nil];
 }
+
+void PBConfigureVideoOrientation(WKWebView *view, WKFrameInfo *frame, BOOL enabled, BOOL active)
+{
+    [view callAsyncJavaScript:@"globalThis.__personalBrowserVideo?.configure(enabled, active);"
+                   arguments:@{@"enabled": @(enabled), @"active": @(active)}
+                     inFrame:frame inContentWorld:WKContentWorld.defaultClientWorld completionHandler:nil];
+}
+void PBEnterVideoFullscreen(WKWebView *view, WKFrameInfo *frame, NSString *document, NSString *video)
+{
+    [view callAsyncJavaScript:@"globalThis.__personalBrowserVideo?.enter(document, video);"
+                   arguments:@{@"document": document, @"video": video}
+                     inFrame:frame inContentWorld:WKContentWorld.defaultClientWorld completionHandler:nil];
+}

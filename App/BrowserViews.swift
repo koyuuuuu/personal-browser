@@ -35,6 +35,7 @@ struct BrowserRootView: View {
     @State private var exportLink = false
     @Environment(\.dynamicTypeSize) private var systemTextSize
     #if DEBUG
+    @State private var preparedVideoFixture = false
     @State private var preparedAudioFixture = false
     @State private var preparedPasswordFixture = false
     @State private var preparedResilienceFixture = false
@@ -60,10 +61,20 @@ struct BrowserRootView: View {
             }
             #endif
         }
-        .onChange(of: sheet?.id) { _, _ in PasswordFormController.shared.setInterfaceAvailable(sheet == nil) }
+        .onChange(of: sheet?.id) { _, _ in
+            PasswordFormController.shared.setInterfaceAvailable(sheet == nil)
+            VideoOrientationController.shared.context(selected: store.selectedID, allowed: sheet == nil)
+        }
         .onAppear {
             PasswordFormController.shared.setInterfaceAvailable(sheet == nil)
+            VideoOrientationController.shared.context(selected: store.selectedID, allowed: sheet == nil)
             #if DEBUG
+            if VideoOrientationController.fixture && !preparedVideoFixture {
+                preparedVideoFixture = true
+                VideoOrientationController.shared.setEnabled(false)
+                var features = store.features; features.blockAdvertisements = false; store.updateFeatures(features)
+                store.navigate("http://127.0.0.1:18765/video-orientation-fixture")
+            }
             if PasswordVault.fixture && !preparedPasswordFixture {
                 preparedPasswordFixture = true
                 PasswordVault.shared.setAutomaticallyFill(false)
@@ -130,6 +141,15 @@ struct BrowserRootView: View {
                     }.font(.caption).buttonStyle(.borderedProminent).padding(4)
                 }
             }
+        } else if VideoOrientationController.fixture {
+            connectedContent.safeAreaInset(edge: .top, spacing: 0) {
+                HStack {
+                    Button("オン") { VideoOrientationController.shared.setEnabled(true) }.accessibilityIdentifier("videoOn")
+                    Button("オフ") { VideoOrientationController.shared.setEnabled(false) }.accessibilityIdentifier("videoOff")
+                    Button("横") { VideoOrientationController.shared.fixtureTilt(horizontal: true) }.accessibilityIdentifier("videoTiltHorizontal")
+                    Button("縦") { VideoOrientationController.shared.fixtureTilt(horizontal: false) }.accessibilityIdentifier("videoTiltPortrait")
+                }.font(.caption).buttonStyle(.borderedProminent).padding(4)
+            }
         } else { connectedContent }
         #else
         connectedContent
@@ -144,7 +164,10 @@ struct BrowserRootView: View {
                 if let tab = store.selectedTab { PasswordSaveBanner(tab: tab, allowed: sheet == nil) }
             }.fixedSize(horizontal: false, vertical: true)
         }
-        .onChange(of: store.selectedID) { _, _ in PasswordFormController.shared.cancelPendingInteraction() }
+        .onChange(of: store.selectedID) { _, _ in
+            PasswordFormController.shared.cancelPendingInteraction()
+            VideoOrientationController.shared.context(selected: store.selectedID, allowed: sheet == nil)
+        }
         .tint(store.selectedTab?.isPrivate == true ? .purple : .blue)
         .sheet(item: $sheet) { route in
             sheetContent(route)

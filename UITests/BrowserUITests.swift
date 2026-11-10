@@ -11,6 +11,9 @@ final class BrowserUITests: XCTestCase {
         XCUIDevice.shared.orientation = .portrait
         app = XCUIApplication()
         app.launchArguments = ["--ui-testing"]
+        if name.contains("testVideoFullscreenFollowsAspectAndRespectsPauseAndToggle") {
+            app.launchArguments += ["--ui-no-fixture", "--ui-video-orientation-fixture"]
+        }
         if name.contains("testPasswordVaultImportsLocksAndFillsOnlyOnRequest") {
             app.launchArguments += ["--ui-no-fixture", "--ui-password-fixture"]
         }
@@ -35,6 +38,53 @@ final class BrowserUITests: XCTestCase {
             screenshot.lifetime = .keepAlways
             add(screenshot)
         }
+    }
+
+    func testVideoFullscreenFollowsAspectAndRespectsPauseAndToggle() {
+        func waitForShape(landscape: Bool) {
+            let predicate = NSPredicate { _, _ in
+                landscape ? self.app.frame.width > self.app.frame.height : self.app.frame.height > self.app.frame.width
+            }
+            expectation(for: predicate, evaluatedWith: app)
+            waitForExpectations(timeout: 10)
+        }
+        func closeFullscreen() {
+            let close = app.buttons.matching(NSPredicate(format: "label IN %@", ["Done", "完了", "Close", "閉じる"])).firstMatch
+            if !close.waitForExistence(timeout: 3) { app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).tap() }
+            XCTAssertTrue(close.waitForExistence(timeout: 5), "Must be actual native video fullscreen")
+            settlePresentation(); close.tap()
+            XCTAssertTrue(app.buttons["Check video state"].waitForExistence(timeout: 8))
+        }
+        XCTAssertTrue(app.buttons["Play wide"].waitForExistence(timeout: 10))
+        app.buttons["Play wide"].tap()
+        app.buttons["videoTiltHorizontal"].tap()
+        settlePresentation()
+        app.buttons["Check video state"].tap()
+        XCTAssertTrue(app.staticTexts["Fullscreen count 0; continued false; wide paused false"].exists)
+        app.buttons["videoOn"].tap()
+        settlePresentation()
+        app.buttons["videoTiltHorizontal"].tap()
+        waitForShape(landscape: true)
+        closeFullscreen()
+        waitForShape(landscape: false)
+        app.buttons["Check video state"].tap()
+        XCTAssertTrue(app.staticTexts["Fullscreen count 1; continued true; wide paused false"].waitForExistence(timeout: 5))
+        app.buttons["Pause wide"].tap()
+        app.buttons["videoTiltPortrait"].tap(); settlePresentation()
+        app.buttons["videoTiltHorizontal"].tap(); settlePresentation()
+        app.buttons["Check video state"].tap()
+        XCTAssertTrue(app.staticTexts["Fullscreen count 1; continued true; wide paused true"].exists)
+        app.buttons["Show tall"].tap(); settlePresentation()
+        app.buttons["Tall fullscreen"].tap()
+        waitForShape(landscape: false)
+        XCUIDevice.shared.orientation = .landscapeLeft
+        settlePresentation()
+        XCTAssertGreaterThan(app.frame.height, app.frame.width, "Portrait video must stay portrait in real fullscreen")
+        closeFullscreen()
+        XCUIDevice.shared.orientation = .portrait; settlePresentation()
+        app.buttons["videoOff"].tap()
+        app.buttons["Check video state"].tap()
+        XCTAssertTrue(app.staticTexts["Fullscreen count 2; continued true; wide paused true"].exists)
     }
 
     func testPasswordVaultImportsLocksAndFillsOnlyOnRequest() {
@@ -881,6 +931,19 @@ final class BrowserUITests: XCTestCase {
             let tile = app.buttons.matching(NSPredicate(format: "value == 'プレビューなし' AND label CONTAINS '選択中'")).firstMatch
             XCTAssertTrue(tile.waitForExistence(timeout: 5)); tile.swipeLeft()
             XCTAssertTrue(app.navigationBars["タブ \(remaining)"].waitForExistence(timeout: 5))
+        }
+        // A two-column overview must keep two distinct cards on each row
+        // after repeated width changes, even when no diffable IDs change.
+        for orientation in [UIDeviceOrientation.landscapeLeft, .portrait, .landscapeRight, .portrait] {
+            XCUIDevice.shared.orientation = orientation; settlePresentation()
+            let tiles = app.buttons.matching(NSPredicate(format: "value == 'プレビューなし'")).allElementsBoundByIndex.filter { $0.isHittable }
+            XCTAssertGreaterThanOrEqual(tiles.count, 2)
+            let pair = tiles.enumerated().contains { index, first in
+                tiles.dropFirst(index + 1).contains { second in
+                    abs(first.frame.minY - second.frame.minY) < 2 && abs(first.frame.minX - second.frame.minX) > 20
+                }
+            }
+            XCTAssertTrue(pair, "Rotation must not leave a one-card-per-row layout")
         }
         app.buttons["overviewNewTabButton"].tap()
         XCTAssertTrue(app.textFields["addressField"].waitForExistence(timeout: 5))

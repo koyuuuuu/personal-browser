@@ -98,6 +98,11 @@ class VerificationPolicyTests(unittest.TestCase):
         self.assertIn(external, plan(["App/PersonalBrowserApp.swift"])["ui_tests"])
         self.assertNotIn(external, plan(["App/HomePageView.swift"])["ui_tests"])
 
+    def test_video_orientation_hooks_use_video_and_rotation_cases_only(self):
+        result = plan(["App/VideoOrientationController.swift", "App/BrowserViews.swift", "App/BrowserTab.swift", "App/PersonalBrowserApp.swift", "App/SettingsView.swift", "App/BrowserWebKitBridge.m", "App/Info.plist", "App/TabGridView.swift"], tab_changes=["createWebView", "releaseWebView", "webView", "webViewWebContentProcessDidTerminate"])
+        self.assertEqual(set(result["ui_tests"]), set(AREAS["video-orientation"] + AREAS["tabs"]))
+        self.assertFalse(result["compatibility"])
+
     def test_removed_and_overlapping_ui_checks_are_not_in_automatic_policy(self):
         selected = {name for group in AREAS.values() for name in group}
         actual = set(re.findall(r"func (test\w+)\(", (ROOT / "UITests/BrowserUITests.swift").read_text()))

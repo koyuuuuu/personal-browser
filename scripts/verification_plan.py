@@ -10,6 +10,7 @@ ROOT = Path(__file__).resolve().parents[1]
 
 # One representative scenario per behavior, rather than overlapping smoke tests.
 AREAS = {
+    "video-orientation": ["testVideoFullscreenFollowsAspectAndRespectsPauseAndToggle"],
     "browsing-layout": ["testReleaseBrowsingLayoutAndPageInteraction", "testPasswordVaultImportsLocksAndFillsOnlyOnRequest"],
     "password-vault": ["testPasswordVaultImportsLocksAndFillsOnlyOnRequest"],
     "browsing-resilience": ["testLockedViewportChromeAndBoundedRecovery", "testAppPromotionSuppressionPreservesLoginAndCanBeDisabled", "testPortraitForwardScrollHidesBarsAndBottomBounceDoesNotReveal"],
@@ -34,6 +35,9 @@ AREAS = {
     "launch": ["testWebKitRendersAndExecutesOfflinePage"],
 }
 PATH_AREAS = {
+    "App/VideoOrientationController.swift": ["video-orientation"],
+    "App/VideoOrientationScript.swift": ["video-orientation"],
+    "Sources/BrowserCore/VideoOrientationPolicy.swift": ["video-orientation", "tabs"],
     "browsing-layout": ["testReleaseBrowsingLayoutAndPageInteraction", "testPasswordVaultImportsLocksAndFillsOnlyOnRequest"],
     "App/PasswordSuggestionBar.swift": ["password-vault"],
     "App/PasswordSaveBanner.swift": ["password-vault"],
@@ -139,11 +143,14 @@ def changed_methods(before, after):
 def plan(changed, store_changes=(), ui_changes=(), tab_changes=None, pending_app_paths=None, chrome_changes=None):
     changed = set(changed)
     areas = set()
+    video_context = "App/VideoOrientationController.swift" in changed
     password_context = bool(changed & {"App/PasswordVault.swift", "App/PasswordVaultView.swift", "App/PasswordFormController.swift", "App/PasswordFormScript.swift", "App/PasswordSuggestionBar.swift"})
     volume_context = bool(changed & {"App/AudioSourcesController.swift", "App/MediaVolumeScript.swift", "App/AudioSourcesView.swift"})
     resilience_context = bool(changed & {"App/ChromeRecoveryObserver.swift", "App/AppPromotionBlocker.swift", "App/AppPromotionScript.swift", "Sources/BrowserCore/PageRecovery.swift"})
     for path in changed:
-        if password_context and path in {"App/BrowserViews.swift", "App/BrowserWebKitBridge.h", "App/BrowserWebKitBridge.m", "App/SettingsView.swift", "App/FeatureSettingsView.swift", "App/Info.plist"}:
+        if video_context and path in {"App/BrowserViews.swift", "App/PersonalBrowserApp.swift", "App/Info.plist", "App/SettingsView.swift", "App/BrowserWebKitBridge.h", "App/BrowserWebKitBridge.m"}:
+            areas.add("video-orientation")
+        elif password_context and path in {"App/BrowserViews.swift", "App/BrowserWebKitBridge.h", "App/BrowserWebKitBridge.m", "App/SettingsView.swift", "App/FeatureSettingsView.swift", "App/Info.plist"}:
             areas.add("password-vault")
         elif resilience_context and path in {"App/BrowserViews.swift", "App/BrowserWebKitBridge.h", "App/BrowserWebKitBridge.m", "App/FeatureSettingsView.swift"}:
             areas.add("browsing-resilience")
@@ -171,7 +178,9 @@ def plan(changed, store_changes=(), ui_changes=(), tab_changes=None, pending_app
     if "App/BrowserTab.swift" in changed:
         names = set(tab_changes or ())
         resilience_methods = {"preamble", "resolve", "init", "createWebView", "configureBlocking", "load", "capturePreview", "releaseWebView", "dispose", "webView", "show", "webViewWebContentProcessDidTerminate", "cancelPageRecovery", "recoverPageIfNeeded", "retryPage", "updateUIView"}
-        if password_context and tab_changes is not None and names <= {"preamble", "resolve", "createWebView", "releaseWebView", "webView", "webViewWebContentProcessDidTerminate"}:
+        if video_context and tab_changes is not None and names <= {"createWebView", "releaseWebView", "webView", "webViewWebContentProcessDidTerminate"}:
+            areas.add("video-orientation")
+        elif password_context and tab_changes is not None and names <= {"preamble", "resolve", "createWebView", "releaseWebView", "webView", "webViewWebContentProcessDidTerminate"}:
             # Only attach/reset/detach and the read-only trust guard changed.
             areas.add("password-vault")
         elif resilience_context and tab_changes is not None and names <= resilience_methods:
@@ -212,7 +221,7 @@ def plan(changed, store_changes=(), ui_changes=(), tab_changes=None, pending_app
         tests.update(AREAS["launch"])
     # These cases already launch and render a real WKWebView fixture, including
     # when a shared UI helper changes along with the feature under test.
-    if areas & {"selection-search", "audio-mixing", "audio-volume", "browsing-resilience", "password-vault"}:
+    if areas & {"selection-search", "audio-mixing", "audio-volume", "browsing-resilience", "password-vault", "video-orientation"}:
         tests.difference_update(AREAS["launch"])
     return {
         "areas": sorted(areas), "ui_tests": sorted(tests),

@@ -30,7 +30,8 @@ struct TabGridView: UIViewRepresentable {
     let select: (BrowserTab) -> Void
     func makeCoordinator() -> Coordinator { Coordinator(self) }
     func makeUIView(context: Context) -> UICollectionView {
-        let layout = UICollectionViewFlowLayout()
+        let layout = ResponsiveTabGridLayout()
+        layout.columns = columns
         layout.minimumLineSpacing = 16; layout.minimumInteritemSpacing = 16
         layout.sectionInset = UIEdgeInsets(top: 16, left: 16, bottom: 16, right: 16)
         let view = UICollectionView(frame: .zero, collectionViewLayout: layout)
@@ -47,7 +48,6 @@ struct TabGridView: UIViewRepresentable {
         var parent: TabGridView
         var source: UICollectionViewDiffableDataSource<Int, UUID>!
         private var initialScroll = false
-        private var displayedColumns = 0
         private var displayedSelected: UUID?
         init(_ parent: TabGridView) { self.parent = parent }
         func configure(_ view: UICollectionView) {
@@ -70,7 +70,7 @@ struct TabGridView: UIViewRepresentable {
             }
         }
         func update(_ view: UICollectionView) {
-            if displayedColumns != parent.columns { displayedColumns = parent.columns; view.collectionViewLayout.invalidateLayout() }
+            (view.collectionViewLayout as? ResponsiveTabGridLayout)?.columns = parent.columns
             let ids = parent.tabs.map(\.id)
             guard source.snapshot().itemIdentifiers != ids || displayedSelected != parent.store.selectedID else { return }
             var snapshot = NSDiffableDataSourceSnapshot<Int, UUID>(); snapshot.appendSections([0]); snapshot.appendItems(ids)
@@ -90,10 +90,7 @@ struct TabGridView: UIViewRepresentable {
                 }
             }
         }
-        func collectionView(_ collectionView: UICollectionView, layout collectionViewLayout: UICollectionViewLayout, sizeForItemAt indexPath: IndexPath) -> CGSize {
-            let width = floor(max(1, collectionView.bounds.width - 32 - CGFloat(parent.columns - 1) * 16) / CGFloat(parent.columns))
-            return CGSize(width: width, height: min(300, max(64, width * 0.95)) + 44)
-        }
+
     }
     private func tabsUpdated(in view: UICollectionView, coordinator: Coordinator) {
         let allowed = Set(store.tabs.map(\.id))
@@ -230,5 +227,31 @@ final class SwipeTabCell: UICollectionViewCell, UIGestureRecognizerDelegate {
     func commitClose() {
         guard !committed else { return }; committed = true
         onClose?()
+    }
+}
+
+/// Flow layout's cached delegate metrics can retain the landscape item width.
+/// Derive the item size during every width-dependent preparation instead.
+@MainActor
+final class ResponsiveTabGridLayout: UICollectionViewFlowLayout {
+    var columns = 2 { didSet { if columns != oldValue { invalidateLayout() } } }
+    override func prepare() {
+        if let view = collectionView {
+            let insets = view.adjustedContentInset
+            let width = TabGridMetrics.width(viewport: Double(view.bounds.width), horizontalInsets: Double(insets.left + insets.right), columns: columns)
+            itemSize = CGSize(width: width, height: min(300, max(64, width * 0.95)) + 44)
+        }
+        super.prepare()
+    }
+    override func shouldInvalidateLayout(forBoundsChange newBounds: CGRect) -> Bool {
+        newBounds.width != collectionView?.bounds.width || super.shouldInvalidateLayout(forBoundsChange: newBounds)
+    }
+    override func invalidationContext(forBoundsChange newBounds: CGRect) -> UICollectionViewLayoutInvalidationContext {
+        let context = super.invalidationContext(forBoundsChange: newBounds)
+        if newBounds.width != collectionView?.bounds.width, let flow = context as? UICollectionViewFlowLayoutInvalidationContext {
+            flow.invalidateFlowLayoutDelegateMetrics = true
+            flow.invalidateFlowLayoutAttributes = true
+        }
+        return context
     }
 }

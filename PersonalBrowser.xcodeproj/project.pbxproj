@@ -411,6 +411,26 @@
 			"isa" = "PBXBuildFile";
 			"fileRef" = "2CFC0C6B77C472415C669D8B";
 		};
+		"34EC596C40ABDBBDEDA5B1A0" = {
+			"isa" = "PBXFileReference";
+			"lastKnownFileType" = "sourcecode.swift";
+			"path" = "VideoOrientationController.swift";
+			"sourceTree" = "<group>";
+		};
+		"1E3D71D6331E1B997228CAA3" = {
+			"isa" = "PBXBuildFile";
+			"fileRef" = "34EC596C40ABDBBDEDA5B1A0";
+		};
+		"9D4C77EAC9FAEC5FF96C090A" = {
+			"isa" = "PBXFileReference";
+			"lastKnownFileType" = "sourcecode.swift";
+			"path" = "VideoOrientationScript.swift";
+			"sourceTree" = "<group>";
+		};
+		"57A6BE1650C3620C600CEAF3" = {
+			"isa" = "PBXBuildFile";
+			"fileRef" = "9D4C77EAC9FAEC5FF96C090A";
+		};
 		"75B13235D681EFADD9C29A79" = {
 			"isa" = "PBXFileReference";
 			"lastKnownFileType" = "text.plist.xml";
@@ -473,6 +493,8 @@
 				"9D3A59ED9A0F3BFC527ABF4E",
 				"48ABF3013B03F02D15283AAA",
 				"2CFC0C6B77C472415C669D8B",
+				"34EC596C40ABDBBDEDA5B1A0",
+				"9D4C77EAC9FAEC5FF96C090A",
 				"75B13235D681EFADD9C29A79",
 				"9947ED750E47720358343D0F",
 				"3A94BB07224E6FBA2B7113D3",
@@ -710,6 +732,16 @@
 			"isa" = "PBXBuildFile";
 			"fileRef" = "8B4758279FF832AA45C1A5B4";
 		};
+		"70A44C07E374D07B6B7C7B60" = {
+			"isa" = "PBXFileReference";
+			"lastKnownFileType" = "sourcecode.swift";
+			"path" = "VideoOrientationPolicy.swift";
+			"sourceTree" = "<group>";
+		};
+		"1C30146B4F4335A1937FED9A" = {
+			"isa" = "PBXBuildFile";
+			"fileRef" = "70A44C07E374D07B6B7C7B60";
+		};
 		"FDEF37365C2667C79C6FAA8D" = {
 			"isa" = "PBXFileReference";
 			"lastKnownFileType" = "sourcecode.swift";
@@ -746,6 +778,7 @@
 				"E628813F71BAEC231D1462A2",
 				"AA7E92810B33F09EC5B2B8F5",
 				"8B4758279FF832AA45C1A5B4",
+				"70A44C07E374D07B6B7C7B60",
 				"FDEF37365C2667C79C6FAA8D",
 			);
 			"path" = "Sources/BrowserCore";
@@ -855,7 +888,7 @@
 				"INFOPLIST_FILE" = "App/Info.plist";
 				"GENERATE_INFOPLIST_FILE" = "NO";
 				"CURRENT_PROJECT_VERSION" = "1";
-				"MARKETING_VERSION" = "0.13.0";
+				"MARKETING_VERSION" = "0.14.0";
 				"CODE_SIGN_STYLE" = "Automatic";
 				"TARGETED_DEVICE_FAMILY" = "1";
 				"SUPPORTED_PLATFORMS" = "iphoneos iphonesimulator";
@@ -883,7 +916,7 @@
 				"INFOPLIST_FILE" = "App/Info.plist";
 				"GENERATE_INFOPLIST_FILE" = "NO";
 				"CURRENT_PROJECT_VERSION" = "1";
-				"MARKETING_VERSION" = "0.13.0";
+				"MARKETING_VERSION" = "0.14.0";
 				"CODE_SIGN_STYLE" = "Automatic";
 				"TARGETED_DEVICE_FAMILY" = "1";
 				"SUPPORTED_PLATFORMS" = "iphoneos iphonesimulator";
@@ -1005,6 +1038,8 @@
 				"2FDCB63F20D91EA6C97BE6BA",
 				"7D00D18171494CA00E5DD24C",
 				"116295B764339DFF363B4838",
+				"1E3D71D6331E1B997228CAA3",
+				"57A6BE1650C3620C600CEAF3",
 				"797E76956CC87E14595A6CA8",
 				"24503D32E1FAF4AE42A87DBE",
 				"FC310B3C7263977315122B52",
@@ -1028,6 +1063,7 @@
 				"B5847F285D493C8D3DE9C956",
 				"1558999B1A94E1286C4C0D4E",
 				"000BB7D1ED578BD248A461DD",
+				"1C30146B4F4335A1937FED9A",
 				"CC4096ACD932591608FF4B0E",
 			);
 			"runOnlyForDeploymentPostprocessing" = 0;
