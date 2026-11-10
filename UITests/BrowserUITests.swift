@@ -48,10 +48,14 @@ final class BrowserUITests: XCTestCase {
             expectation(for: predicate, evaluatedWith: app)
             waitForExpectations(timeout: 10)
         }
-        func closeFullscreen() {
+        func fullscreenCloseButton() -> XCUIElement {
             let close = app.buttons.matching(NSPredicate(format: "label IN %@", ["Done", "完了", "Close", "閉じる"])).firstMatch
             if !close.waitForExistence(timeout: 3) { app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).tap() }
             XCTAssertTrue(close.waitForExistence(timeout: 5), "Must be actual native video fullscreen")
+            return close
+        }
+        func closeFullscreen() {
+            let close = fullscreenCloseButton()
             settlePresentation(); close.tap()
             XCTAssertTrue(app.buttons["Check video state"].waitForExistence(timeout: 8))
         }
@@ -77,8 +81,10 @@ final class BrowserUITests: XCTestCase {
         app.buttons["videoTiltHorizontal"].tap(); settlePresentation()
         app.buttons["Check video state"].tap()
         XCTAssertTrue(app.staticTexts["Fullscreen count 1; continued true; wide paused true"].exists)
-        app.buttons["Show tall"].tap(); settlePresentation()
+        app.buttons["Show tall"].tap()
+        XCTAssertTrue(app.staticTexts["Tall ready"].waitForExistence(timeout: 10), "A hidden paused player may defer metadata loading until play on iOS")
         app.buttons["Tall fullscreen"].tap()
+        _ = fullscreenCloseButton()
         waitForShape(landscape: false)
         XCUIDevice.shared.orientation = .landscapeLeft
         settlePresentation()

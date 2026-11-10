@@ -60,11 +60,12 @@ def main():
                 <video id="wide" src="/wide.mp4" playsinline preload="auto"></video>
                 <video id="tall" src="/tall.mp4" playsinline preload="auto" hidden></video>
                 <button onclick="wide.play()">Play wide</button><button onclick="wide.pause()">Pause wide</button>
-                <button onclick="wide.pause();wide.hidden=true;tall.hidden=false">Show tall</button>
+                <button onclick="wide.pause();wide.hidden=true;tall.hidden=false;tall.play()">Show tall</button>
                 <button onclick="tall.play();tall.webkitEnterFullscreen()">Tall fullscreen</button>
                 <button onclick="check()">Check video state</button><p id="result">Video ready</p>
                 <script>
                 let count=0,start=0,advanced=false;
+                tall.addEventListener('playing',()=>{result.textContent='Tall ready'});
                 for(const v of [wide,tall]){
                   v.addEventListener('webkitbeginfullscreen',()=>{count++;start=v.currentTime});
                   v.addEventListener('webkitendfullscreen',()=>{advanced=v.currentTime>start+0.5});
