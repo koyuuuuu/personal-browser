@@ -1,0 +1,98 @@
+{
+  "date_utc": "2026-11-11",
+  "version": "0.14.0",
+  "requested_behavior": [
+    "Opt-in landscape-tilt native video fullscreen with continuous playback",
+    "Fullscreen orientation chosen from video aspect, using public app-only geometry requests",
+    "Tab overview retains its configured columns after repeated rotations"
+  ],
+  "checks": {
+    "python": 56,
+    "core": 82,
+    "dom": "Chromium command tests: stale document/off/inactive/explicit pause/offscreen rejected; disabled polling stopped. Native fullscreen methods were instrumented only in this DOM check; actual native coverage is separate. Actual H264 in cross-origin Chromium iframe: 160x90 metadata, real currentTime progression, visible area54000, clipped offscreen area0, actual pause detection passed. Native begin/end DOM latch overrides stale getters, chooses new tall video correctly and excludes PiP; passed.",
+    "compatibility_roundtrip": "not applicable; no persistence format changes",
+    "full_ui_suite": "not run; video case and two tab overview cases only",
+    "native_device_build": "passed",
+    "debug_ui_passed": 3,
+    "ci_jobs": "check/ios/publish/delivery-audit all success",
+    "anonymous_delivery_audit": "passed",
+    "local_ipa_and_build_info_and_public_feed_hash_match": true,
+    "source_tag_points_to_tested_sha": true,
+    "debug_fixture_flags_in_release": false,
+    "strong_swift_webkit_overlay": false,
+    "motion_purpose_present": true,
+    "face_id_purpose_preserved": true,
+    "fixture_mp4_bundled": false,
+    "debug_ui_cases": [
+      {
+        "name": "testOverviewOpensAtLastActiveTab",
+        "seconds": 97.48
+      },
+      {
+        "name": "testSwipeClosingGridReflowsAndRemainsUsableAfterRepeatedDeletions",
+        "seconds": 49.987
+      },
+      {
+        "name": "testVideoFullscreenFollowsAspectAndRespectsPauseAndToggle",
+        "seconds": 70.863
+      }
+    ],
+    "portrait_native_status": "event=fullscreen; full=90x160; mask=2; scene=1; delegate=2; active=true; allowed=true; repair=true; error=none",
+    "portrait_native_interpretation": "Real tall fullscreen confirmed through native controls. After simulated physical landscape rotation one bounded geometry correction returned the scene to portrait with delegate mask portrait and no error; an additional settled shape check, close/fullscreen event count and actual time progression passed."
+  },
+  "device_limits": [
+    "Simulator gravity injection does not verify the actual iPhone motion sensor",
+    "Actual Control Center portrait-lock geometry acceptance requires iPhone verification",
+    "Arbitrary third-party sites, DRM and PiP acceptance not claimed; site/OS can deny fullscreen or playback"
+  ],
+  "preserved": [
+    "Bundle identity and all library/vault formats",
+    "Original WKWebView/HTML video and playback policy, build14 media script/session",
+    "All previous immutable tags/IPAs"
+  ],
+  "previous_attempts": [
+    {
+      "run": 81,
+      "status": "cancelled before publication after core81/app compile; superseded by bounded cross-origin visibility selection"
+    },
+    {
+      "run": 82,
+      "status": "core81/app compile/overview initial selection passed; actual auto fullscreen, landscape geometry and fullscreen playback progress passed; test expected unpaused after native Close, which intentionally paused; clipped-cell isHittable threw during third rotation. Corrected test only, retaining actual geometry/progress and visible two-column assertions."
+    },
+    {
+      "run": 83,
+      "status": "Core81 and both tab overview cases passed, including four rotations/two columns and tab creation. Video passed wide native fullscreen/progress/off/pause. Tall case failed portrait assertion without first proving actual fullscreen; hidden-video loading may defer readiness. Added explicit playing-event readiness and native close-control assertion."
+    },
+    {
+      "run": 84,
+      "status": "superseded before publication; reset tilt to portrait while preparing the newly playing tall manual-fullscreen case so opt-in auto fullscreen does not enter first"
+    },
+    {
+      "run": 85,
+      "status": "Core81 and both tab cases passed. Tall genuine native fullscreen was confirmed; portrait retention still failed, proving readiness-only diagnosis insufficient. Product fix uses authoritative per-video fullscreen events, transition-completion geometry requests, public child-controller invalidation, and one bounded correction, with generic Debug status for native diagnosis."
+    }
+  ],
+  "delivery_status": "published",
+  "build": "86",
+  "source_commit": "db03fd4eae1d3e57890131c2512a21c555c2286e",
+  "tag": "v0.14.0-build.86",
+  "ci_run": "https://github.com/koyuuuuu/personal-browser/actions/runs/42934781979",
+  "public_release": "https://github.com/koyuuuuu/personal-browser-distribution/releases/tag/v0.14.0-build.86",
+  "source_url": "https://raw.githubusercontent.com/koyuuuuu/personal-browser-distribution/main/source.json",
+  "ipa": {
+    "file": "PersonalBrowser.ipa",
+    "sha256": "fbd819a01c45116a3ad15e52788530ed97347c6e33b249b1e149b5abf9ef3414",
+    "bundle_id": "local.personalbrowser.app",
+    "version": "0.14.0",
+    "build": "86",
+    "minimum_ios": "17.0",
+    "target_ios": "18.4.1",
+    "architecture": "arm64",
+    "platform": "iOS device",
+    "embedded_profile": false,
+    "signature_resources": false,
+    "installation_verified": false,
+    "size": 5716100,
+    "data_schema": 1
+  }
+}

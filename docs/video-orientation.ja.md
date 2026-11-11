@@ -20,3 +20,5 @@ iOS全体の縦向きロック設定を読み取ったり変更したりしな�
 - https://developer.apple.com/documentation/coremotion/cmmotionmanager
 - https://developer.apple.com/documentation/webkit/delivering-video-content-for-safari
 - https://webkit.org/blog/6784/new-video-policies-for-ios/
+
+0.14.0 build86でCore82件、動画の実全画面・再生進行・縦向き補正を含むUI1件とタブ一覧UI2件、実機用ビルド、匿名の公開配布確認に成功。縦動画90×160は横に回転させた後に1回の方向補正でportraitへ戻り、追加の安定確認も通った。実機のCoreMotionやControl Centerの縦向きロック中の受理は未確認。[配信・検証記録](validation-0.14.0-2026-11-11.json)。
