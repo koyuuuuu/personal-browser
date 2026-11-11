@@ -91,6 +91,10 @@ final class BrowserUITests: XCTestCase {
         waitForShape(landscape: false)
         XCUIDevice.shared.orientation = .landscapeLeft
         settlePresentation()
+        let status = app.staticTexts["videoOrientationStatus"]
+        if status.exists { print("Video orientation after physical rotation: " + status.label) }
+        waitForShape(landscape: false)
+        settlePresentation()
         XCTAssertGreaterThan(app.frame.height, app.frame.width, "Portrait video must stay portrait in real fullscreen")
         closeFullscreen()
         XCUIDevice.shared.orientation = .portrait; settlePresentation()

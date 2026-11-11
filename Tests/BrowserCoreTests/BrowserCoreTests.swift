@@ -114,6 +114,20 @@ final class VideoOrientationTests: XCTestCase {
         XCTAssertEqual(VideoTilt.forVideo(width: 1080, height: 1080, tilt: .landscapeLeft), .portrait)
         XCTAssertNil(VideoTilt.forVideo(width: 0, height: 0, tilt: .portrait))
     }
+    func testGeometryCorrectionIsBoundedAndDenialStopsRequests() {
+        var policy = VideoOrientationRequestPolicy()
+        XCTAssertTrue(policy.shouldRequest(.portrait, current: .portrait))
+        XCTAssertFalse(policy.shouldRequest(.portrait, current: .portrait))
+        XCTAssertTrue(policy.shouldRequest(.portrait, current: .landscapeRight))
+        XCTAssertFalse(policy.shouldRequest(.portrait, current: .landscapeRight))
+        XCTAssertFalse(policy.shouldRequest(.portrait, current: .landscapeLeft))
+        policy.reset()
+        XCTAssertTrue(policy.shouldRequest(.portrait, current: .portrait))
+        policy.reject()
+        XCTAssertFalse(policy.shouldRequest(.portrait, current: .landscapeRight))
+        XCTAssertTrue(policy.shouldRequest(.landscapeLeft, current: .portrait))
+        XCTAssertFalse(policy.shouldRequest(.landscapeLeft, current: nil))
+    }
     func testGridWidthsSurviveRepeatedRotationsAndRespectInsets() {
         for count in 1...4 {
             for viewport in [390.0, 844, 390, 844, 390] {

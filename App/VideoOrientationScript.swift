@@ -20,12 +20,25 @@ enum VideoOrientationScript {
       });
       function state(video) {
         if (!states.has(video)) {
-          states.set(video, {id: String(++sequence), paused: video.paused && video.currentTime > 0, transition: 0, area: 0});
+          states.set(video, {id: String(++sequence), paused: video.paused && video.currentTime > 0, transition: 0, area: 0, nativeFullscreen: null});
           intersection.observe(video);
+          // Native WebKit getters can lag the actual transition. Keep the
+          // video's own begin/end events authoritative once observed.
+          video.addEventListener('webkitbeginfullscreen', () => { states.get(video).nativeFullscreen = true; report(); });
+          video.addEventListener('webkitendfullscreen', () => { states.get(video).nativeFullscreen = false; report(); });
+          video.addEventListener('webkitpresentationmodechanged', () => {
+            if (video.webkitPresentationMode === 'picture-in-picture') states.get(video).nativeFullscreen = false;
+            report();
+          });
         }
         return states.get(video);
       }
-      function full(video) { return !!(video.webkitDisplayingFullscreen || video.webkitPresentationMode === 'fullscreen' || document.fullscreenElement === video); }
+      function full(video) {
+        if (video.webkitPresentationMode === 'picture-in-picture') return false;
+        const known = states.get(video)?.nativeFullscreen;
+        const element = document.fullscreenElement;
+        return known === true || (known == null && !!(video.webkitDisplayingFullscreen || video.webkitPresentationMode === 'fullscreen')) || !!element?.contains(video);
+      }
       function inventory() {
         const values = []; current = new Map();
         for (const video of Array.from(document.querySelectorAll('video')).slice(0, 16)) {

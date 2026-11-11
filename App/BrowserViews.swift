@@ -143,12 +143,7 @@ struct BrowserRootView: View {
             }
         } else if VideoOrientationController.fixture {
             connectedContent.safeAreaInset(edge: .top, spacing: 0) {
-                HStack {
-                    Button("オン") { VideoOrientationController.shared.setEnabled(true) }.accessibilityIdentifier("videoOn")
-                    Button("オフ") { VideoOrientationController.shared.setEnabled(false) }.accessibilityIdentifier("videoOff")
-                    Button("横") { VideoOrientationController.shared.fixtureTilt(horizontal: true) }.accessibilityIdentifier("videoTiltHorizontal")
-                    Button("縦") { VideoOrientationController.shared.fixtureTilt(horizontal: false) }.accessibilityIdentifier("videoTiltPortrait")
-                }.font(.caption).buttonStyle(.borderedProminent).padding(4)
+                VideoOrientationFixtureControls()
             }
         } else { connectedContent }
         #else

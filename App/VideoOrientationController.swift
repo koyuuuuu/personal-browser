@@ -5,7 +5,7 @@ import CoreMotion
 @MainActor
 final class BrowserOrientationDelegate: NSObject, UIApplicationDelegate {
     func application(_ application: UIApplication, supportedInterfaceOrientationsFor window: UIWindow?) -> UIInterfaceOrientationMask {
-        VideoOrientationController.shared.mask
+        VideoOrientationController.shared.supportedMask()
     }
 }
 
@@ -28,7 +28,27 @@ final class VideoOrientationController: ObservableObject {
     private var original: UIInterfaceOrientation?
     private weak var orientedScene: UIWindowScene?
     private var orientationGeneration = 0
-    private var rejectedMask: UIInterfaceOrientationMask?
+    private var requestPolicy = VideoOrientationRequestPolicy()
+    private var geometryPending = false
+    #if DEBUG
+    @Published private(set) var fixtureStatus = "waiting"
+    private var fixtureFull = "none"
+    private var fixtureDelegateMask: UInt = 0
+    private var fixtureError = "none"
+    #endif
+    func supportedMask() -> UIInterfaceOrientationMask {
+        #if DEBUG
+        if Self.fixture { fixtureDelegateMask = mask.rawValue }
+        #endif
+        return mask
+    }
+    private func trace(_ event: String) {
+        #if DEBUG
+        guard Self.fixture else { return }
+        let value = "event=\(event); full=\(fixtureFull); mask=\(mask.rawValue); scene=\(orientedScene?.interfaceOrientation.rawValue ?? 0); delegate=\(fixtureDelegateMask); active=\(foreground); allowed=\(allowed); repair=\(requestPolicy.repaired); error=\(fixtureError)"
+        if fixtureStatus != value { fixtureStatus = value }
+        #endif
+    }
     private final class Entry {
         weak var view: WKWebView?
         let tabID: UUID
@@ -127,10 +147,18 @@ final class VideoOrientationController: ObservableObject {
            let width = full.2["width"] as? Double, let height = full.2["height"] as? Double,
            let direction = VideoTilt.forVideo(width: width, height: height, tilt: tilt == .portrait ? lastLandscape : tilt) {
             attempted = true
+            #if DEBUG
+            fixtureFull = "\(Int(width))x\(Int(height))"
+            #endif
             orient(direction, scene: view.window?.windowScene)
+            trace("fullscreen")
             return
         }
+        #if DEBUG
+        fixtureFull = "none"
+        #endif
         if original != nil { restore() }
+        trace("inline")
         guard tilt != .portrait, !attempted else { return }
         // Embedded players must already be playing. IntersectionObserver in
         // each frame accounts for clipping by the top-level viewport.
@@ -145,29 +173,72 @@ final class VideoOrientationController: ObservableObject {
         enterVideoFullscreen(view, frame: chosen.1, document: chosen.0, video: id)
     }
     private func orient(_ direction: VideoTilt, scene: UIWindowScene?) {
-        guard let scene else { return }
+        guard let scene else { trace("no-scene"); return }
         let next: UIInterfaceOrientationMask = direction == .portrait ? .portrait : direction == .landscapeLeft ? .landscapeLeft : .landscapeRight
-        guard next != mask, next != rejectedMask else { return }
+        if geometryPending && mask == next { return }
+        let current: VideoTilt? = switch scene.interfaceOrientation {
+        case .portrait: .portrait
+        case .landscapeLeft: .landscapeLeft
+        case .landscapeRight: .landscapeRight
+        default: nil
+        }
+        guard requestPolicy.shouldRequest(direction, current: current) else { return }
         if original == nil { original = scene.interfaceOrientation; orientedScene = scene }
         mask = next; updateControllers(scene)
         orientationGeneration += 1; let generation = orientationGeneration
-        scene.requestGeometryUpdate(.iOS(interfaceOrientations: next)) { [weak self] _ in
+        geometryPending = true
+        // Native video presentation owns a UIKit transition. Wait for it before
+        // requesting scene geometry, including when the requested shape is
+        // already portrait. Never poll geometry requests indefinitely.
+        DispatchQueue.main.async { [weak self, weak scene] in
+            guard let self, let scene, self.orientationGeneration == generation else { return }
+            var top = (scene.windows.first(where: \.isKeyWindow) ?? scene.windows.first)?.rootViewController
+            while let presented = top?.presentedViewController { top = presented }
+            if let coordinator = top?.transitionCoordinator, coordinator.isAnimated {
+                coordinator.animate(alongsideTransition: nil) { [weak self, weak scene] _ in
+                    Task { @MainActor in
+                        guard let self, let scene else { return }
+                        self.applyGeometry(next, scene: scene, generation: generation)
+                    }
+                }
+            } else { self.applyGeometry(next, scene: scene, generation: generation) }
+        }
+    }
+    private func applyGeometry(_ next: UIInterfaceOrientationMask, scene: UIWindowScene, generation: Int) {
+        guard orientationGeneration == generation, enabled, allowed, original != nil else { return }
+        updateControllers(scene); trace("request")
+        scene.requestGeometryUpdate(.iOS(interfaceOrientations: next)) { [weak self] error in
             Task { @MainActor in
                 guard let self, self.orientationGeneration == generation else { return }
                 self.message = "この動画またはiOSが画面方向の変更を許可しませんでした。通常の全画面ボタンもお試しください。"
-                self.rejectedMask = next
+                self.requestPolicy.reject(); self.geometryPending = false
                 self.mask = .allButUpsideDown; self.updateControllers(scene)
+                #if DEBUG
+                self.fixtureError = "\((error as NSError).domain):\((error as NSError).code)"
+                #endif
+                self.trace("denied")
             }
+        }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { [weak self] in
+            guard let self, self.orientationGeneration == generation else { return }
+            self.geometryPending = false; self.trace("settled")
         }
     }
     private func updateControllers(_ scene: UIWindowScene) {
+        var visited = Set<ObjectIdentifier>()
+        func update(_ controller: UIViewController) {
+            guard visited.insert(ObjectIdentifier(controller)).inserted else { return }
+            controller.setNeedsUpdateOfSupportedInterfaceOrientations()
+            controller.children.forEach(update)
+            if let presented = controller.presentedViewController { update(presented) }
+        }
         for window in scene.windows {
-            var controller = window.rootViewController
-            while let current = controller { current.setNeedsUpdateOfSupportedInterfaceOrientations(); controller = current.presentedViewController }
+            if let root = window.rootViewController { update(root) }
         }
     }
     private func restore() {
         orientationGeneration += 1
+        geometryPending = false; requestPolicy.reset()
         mask = .allButUpsideDown
         if let scene = orientedScene {
             updateControllers(scene)
@@ -176,7 +247,8 @@ final class VideoOrientationController: ObservableObject {
                 scene.requestGeometryUpdate(.iOS(interfaceOrientations: target)) { _ in }
             }
         }
-        original = nil; orientedScene = nil; rejectedMask = nil
+        original = nil; orientedScene = nil
+        trace("restore")
     }
     #if DEBUG
     static var fixture: Bool {
@@ -217,3 +289,22 @@ struct VideoOrientationSettingsView: View {
         }.navigationTitle("動画の全画面・向き")
     }
 }
+
+#if DEBUG
+@MainActor
+struct VideoOrientationFixtureControls: View {
+    @ObservedObject private var controller = VideoOrientationController.shared
+    var body: some View {
+        VStack(spacing: 2) {
+            HStack {
+                Button("オン") { controller.setEnabled(true) }.accessibilityIdentifier("videoOn")
+                Button("オフ") { controller.setEnabled(false) }.accessibilityIdentifier("videoOff")
+                Button("横") { controller.fixtureTilt(horizontal: true) }.accessibilityIdentifier("videoTiltHorizontal")
+                Button("縦") { controller.fixtureTilt(horizontal: false) }.accessibilityIdentifier("videoTiltPortrait")
+            }.font(.caption).buttonStyle(.borderedProminent)
+            Text(controller.fixtureStatus).font(.system(size: 7)).lineLimit(1)
+                .accessibilityIdentifier("videoOrientationStatus")
+        }.padding(4)
+    }
+}
+#endif

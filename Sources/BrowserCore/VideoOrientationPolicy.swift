@@ -20,3 +20,23 @@ public enum TabGridMetrics {
         return floor(max(1, viewport - max(0, horizontalInsets) - 32 - Double(count - 1) * 16) / Double(count))
     }
 }
+
+/// A scene may briefly keep its previous geometry during fullscreen changes.
+/// Apply once, allow one correction, and stop on denial until the target changes.
+public struct VideoOrientationRequestPolicy: Sendable {
+    public private(set) var target: VideoTilt?
+    public private(set) var repaired = false
+    public private(set) var rejected = false
+    public init() {}
+    public mutating func shouldRequest(_ target: VideoTilt, current: VideoTilt?) -> Bool {
+        if self.target != target {
+            self.target = target; repaired = false; rejected = false
+            return true
+        }
+        guard !rejected, !repaired, let current, current != target else { return false }
+        repaired = true
+        return true
+    }
+    public mutating func reject() { rejected = true }
+    public mutating func reset() { self = Self() }
+}
