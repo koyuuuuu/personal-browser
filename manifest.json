@@ -2,6 +2,36 @@
   "releases": [
     {
       "file": "PersonalBrowser.ipa",
+      "sha256": "fbd819a01c45116a3ad15e52788530ed97347c6e33b249b1e149b5abf9ef3414",
+      "bundle_id": "local.personalbrowser.app",
+      "version": "0.14.0",
+      "build": "86",
+      "minimum_ios": "17.0",
+      "target_ios": "18.4.1",
+      "architecture": "arm64",
+      "platform": "iOS device",
+      "embedded_profile": false,
+      "signature_resources": false,
+      "installation_verified": false,
+      "source_commit": "db03fd4eae1d3e57890131c2512a21c555c2286e",
+      "data_schema": 1,
+      "size": 5716100,
+      "date": "2026-11-11T01:03:16.084069+00:00",
+      "description": "設定で有効にすると横に傾けたとき動画を自動全画面にし、横長は横向き、縦長・正方形は縦向きで表示します。一時停止を維持し、終了時は通常の向きに戻します。サイトやiOSの制限により手動操作が必要な場合があります。タブ一覧が画面回転後に1列になる不具合も修正。",
+      "appPermissions": {
+        "entitlements": [],
+        "privacy": {
+          "NSCameraUsageDescription": "閲覧中のWebサイトでカメラを使用するために必要です。",
+          "NSFaceIDUsageDescription": "このブラウザのパスワード保管庫を安全に開くために使用します。",
+          "NSLocalNetworkUsageDescription": "自宅のネットワークにある自作アプリや動画サーバーへ接続するために使用します。",
+          "NSMicrophoneUsageDescription": "閲覧中のWebサイトでマイクを使用するために必要です。",
+          "NSMotionUsageDescription": "動画を全画面で表示する際に、端末の傾きに合わせて画面の向きを調整します。"
+        }
+      },
+      "tag": "v0.14.0-build.86"
+    },
+    {
+      "file": "PersonalBrowser.ipa",
       "sha256": "7a2d8d0ce82410651bae03922fa502cbf64923362681d6b38b9f41c17863d97a",
       "bundle_id": "local.personalbrowser.app",
       "version": "0.13.0",
@@ -566,7 +596,8 @@
           "NSCameraUsageDescription": "閲覧中のWebサイトでカメラを使用するために必要です。",
           "NSFaceIDUsageDescription": "このブラウザのパスワード保管庫を安全に開くために使用します。",
           "NSLocalNetworkUsageDescription": "自宅のネットワークにある自作アプリや動画サーバーへ接続するために使用します。",
-          "NSMicrophoneUsageDescription": "閲覧中のWebサイトでマイクを使用するために必要です。"
+          "NSMicrophoneUsageDescription": "閲覧中のWebサイトでマイクを使用するために必要です。",
+          "NSMotionUsageDescription": "動画を全画面で表示する際に、端末の傾きに合わせて画面の向きを調整します。"
         }
       }
     }

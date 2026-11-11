@@ -12,6 +12,16 @@
       "iconURL": "https://raw.githubusercontent.com/koyuuuuu/personal-browser-distribution/main/icon.png",
       "versions": [
         {
+          "version": "0.14.0",
+          "buildVersion": "86",
+          "date": "2026-11-11T01:03:16.084069+00:00",
+          "localizedDescription": "設定で有効にすると横に傾けたとき動画を自動全画面にし、横長は横向き、縦長・正方形は縦向きで表示します。一時停止を維持し、終了時は通常の向きに戻します。サイトやiOSの制限により手動操作が必要な場合があります。タブ一覧が画面回転後に1列になる不具合も修正。",
+          "downloadURL": "https://github.com/koyuuuuu/personal-browser-distribution/releases/download/v0.14.0-build.86/PersonalBrowser.ipa",
+          "size": 5716100,
+          "minOSVersion": "17.0",
+          "sha256": "fbd819a01c45116a3ad15e52788530ed97347c6e33b249b1e149b5abf9ef3414"
+        },
+        {
           "version": "0.13.0",
           "buildVersion": "80",
           "date": "2026-11-10T17:36:21.684877+00:00",
@@ -218,7 +228,8 @@
           "NSCameraUsageDescription": "閲覧中のWebサイトでカメラを使用するために必要です。",
           "NSFaceIDUsageDescription": "このブラウザのパスワード保管庫を安全に開くために使用します。",
           "NSLocalNetworkUsageDescription": "自宅のネットワークにある自作アプリや動画サーバーへ接続するために使用します。",
-          "NSMicrophoneUsageDescription": "閲覧中のWebサイトでマイクを使用するために必要です。"
+          "NSMicrophoneUsageDescription": "閲覧中のWebサイトでマイクを使用するために必要です。",
+          "NSMotionUsageDescription": "動画を全画面で表示する際に、端末の傾きに合わせて画面の向きを調整します。"
         }
       }
     }
