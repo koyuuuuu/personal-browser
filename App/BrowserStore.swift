@@ -164,6 +164,7 @@ final class BrowserStore: ObservableObject {
             return nil
         }
         let tab = BrowserTab(id: id, isPrivate: isPrivate, configuration: configuration)
+        tab.openerTabID = configuration == nil ? nil : openerID
         tab.applyPreferences(features, swipe: snapshot.settings.swipeNavigation)
         tab.applyPresentation(presentation)
         tab.onVisit = { [weak self, weak tab] url, title in
@@ -421,6 +422,7 @@ final class BrowserStore: ObservableObject {
     }
 
     private func beginTabTransition(direction: Int) {
+        guard !overviewPresented else { return }
         tabTransition = TabVisualTransition(direction: direction, outgoingImage: selectedTab?.previewData)
     }
     func setLandscape(_ value: Bool) {
@@ -457,12 +459,13 @@ final class BrowserStore: ObservableObject {
     }
 
     private func trimLiveTabs(limit: Int? = nil) {
-        let allowed = limit ?? features.maximumLiveTabs
+        let allowed = limit.map { max(TabRetentionPolicy.memoryPressureLimit, $0) } ?? TabRetentionPreferences.shared.limit
         var live = tabs.filter(\.isLive)
-        let candidates = live.filter { $0.id != selectedID && !$0.isProtectedForMedia }.sorted {
+        let openers = Set(tabs.compactMap(\.openerTabID))
+        let candidates = live.filter { $0.id != selectedID && $0.canSuspend && !openers.contains($0.id) }.sorted {
             (activationOrder.firstIndex(of: $0.id) ?? -1) < (activationOrder.firstIndex(of: $1.id) ?? -1)
         }
-        for tab in candidates where live.count >= allowed {
+        for tab in candidates where TabRetentionPolicy.needsEviction(liveCount: live.count, limit: allowed) {
             tab.suspend()
             live = tabs.filter(\.isLive)
         }

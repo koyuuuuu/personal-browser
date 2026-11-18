@@ -103,6 +103,15 @@ class VerificationPolicyTests(unittest.TestCase):
         self.assertEqual(set(result["ui_tests"]), set(AREAS["video-orientation"] + AREAS["tabs"]))
         self.assertFalse(result["compatibility"])
 
+    def test_session_canvas_repairs_select_representative_checks_without_storage_roundtrip(self):
+        paths = ["App/TabLiveCanvas.swift", "App/TabOverviewPresentation.swift", "App/PageEditObserver.swift", "App/BrowserRegressionFixtures.swift", "App/BrowserViews.swift", "App/BrowserChrome.swift", "App/BrowserTab.swift", "App/BrowserStore.swift", "App/TabGridView.swift", "App/TabOverview.swift", "App/FeatureSettingsView.swift", "App/Info.plist", "App/PasswordFormController.swift", "App/PasswordFormScript.swift", "App/PasswordSuggestionBar.swift"]
+        result = plan(paths, store_changes={"makeTab", "trimLiveTabs", "beginTabTransition"}, tab_changes={"resolve", "init", "createWebView", "capturePreview", "suspend", "releaseWebView", "webView", "loadInBrowser", "updateUIView", "layoutSubviews", "markEditedInput"}, chrome_changes={"preamble", "viewport"}, ui_changes={"setUpWithError"})
+        expected = set(AREAS["session-navigation"] + AREAS["photo-saving"] + AREAS["live-overview"] + AREAS["browsing-layout"])
+        self.assertEqual(set(result["ui_tests"]), expected)
+        self.assertFalse(result["compatibility"])
+        self.assertNotIn("security", result["areas"])
+        self.assertNotIn("search", result["areas"])
+
     def test_removed_and_overlapping_ui_checks_are_not_in_automatic_policy(self):
         selected = {name for group in AREAS.values() for name in group}
         actual = set(re.findall(r"func (test\w+)\(", (ROOT / "UITests/BrowserUITests.swift").read_text()))

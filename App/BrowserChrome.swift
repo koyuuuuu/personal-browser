@@ -26,9 +26,9 @@ struct TabBrowserView: View {
         GeometryReader { geometry in
             let landscape = geometry.size.width > geometry.size.height && geometry.size.width > 550
             VStack(spacing: 0) {
-                if !editingLogin && store.chromeVisible && (landscape || store.snapshot.settings.toolbarPosition == .top) { chrome(compact: landscape, width: geometry.size.width).zIndex(10) }
+                if !editingLogin && store.chromeVisible && (landscape || store.snapshot.settings.toolbarPosition == .top) { chrome(compact: landscape, width: geometry.size.width).opacity(store.overviewPresented ? 0 : 1).zIndex(10) }
                 if tab.isPrivate && !landscape && store.chromeVisible {
-                    Label("プライベート · 履歴とタブを端末に保存しません", systemImage: "hand.raised")
+                    Label("プライベート · 履歴とタブを端末に保存しません", systemImage: "hand.raised").opacity(store.overviewPresented ? 0 : 1)
                         .font(.caption).foregroundStyle(.purple).padding(6).frame(maxWidth: .infinity)
                 }
                 if let error = tab.errorMessage, store.chromeVisible {
@@ -36,10 +36,10 @@ struct TabBrowserView: View {
                         Text(error).font(.caption).lineLimit(landscape ? 1 : 3)
                         Spacer()
                         Button("閉じる", systemImage: "xmark") { tab.errorMessage = nil }.labelStyle(.iconOnly)
-                    }.padding(8).background(Color.orange.opacity(0.12))
+                    }.padding(8).background(Color.orange.opacity(0.12)).opacity(store.overviewPresented ? 0 : 1)
                 }
                 viewport(width: geometry.size.width)
-                if !editingLogin && !landscape && store.chromeVisible && store.snapshot.settings.toolbarPosition == .bottom { chrome(compact: false, width: geometry.size.width).zIndex(10) }
+                if !editingLogin && !landscape && store.chromeVisible && store.snapshot.settings.toolbarPosition == .bottom { chrome(compact: false, width: geometry.size.width).opacity(store.overviewPresented ? 0 : 1).zIndex(10) }
                 PasswordSuggestionBar(tab: tab, allowed: passwordActionsAllowed && !addressFocused) { showSheet(.passwords($0)) }
                     .fixedSize(horizontal: false, vertical: true)
             }
@@ -51,8 +51,9 @@ struct TabBrowserView: View {
             PasswordKeyboardObserver { keyboardVisible = $0 }
                 .ignoresSafeArea().allowsHitTesting(false).accessibilityHidden(true)
         }
-        .background(Color(uiColor: .systemBackground))
+        .background(store.overviewPresented ? Color.clear : Color(uiColor: .systemBackground))
         .onAppear { address = SearchAddress.display(tab.url) }
+        .onChange(of: store.overviewPresented) { _, showing in if showing { addressFocused = false; swipe.cancel() } }
         .onChange(of: tab.errorMessage) { _, value in if value != nil { store.revealChrome() } }
         .onChange(of: tab.id) { _, _ in address = SearchAddress.display(tab.url); addressFocused = false }
         .onChange(of: tab.url) { _, url in if !addressFocused { address = SearchAddress.display(url) } }
@@ -71,35 +72,36 @@ struct TabBrowserView: View {
             VStack(spacing: 0) {
                 ZStack {
                     WebSurface(store: store).accessibilityIdentifier("webContent").accessibilityHidden(!tab.hasContent)
-                    if !tab.hasContent {
-                        HomePageView(store: store, isPrivate: tab.isPrivate).id(tab.id)
-                            .simultaneousGesture(DragGesture(minimumDistance: 25).onEnded { value in
-                                guard abs(value.translation.height) > abs(value.translation.width) else { return }
-                                if value.translation.height > 25 { store.revealChrome() }
-                                else if value.translation.height < -25 { store.scrollChrome(delta: 40) }
-                            })
-                    }
-                    if !tab.hasContent && !tab.isPrivate && addressFocused && store.searchSuggestions.enabled {
-                        HomeSearchSuggestions(query: address, engine: store.snapshot.settings.searchEngine) { value in
-                            addressFocused = false; store.search(value)
+                    ZStack {
+                        if !tab.hasContent {
+                            HomePageView(store: store, isPrivate: tab.isPrivate).id(tab.id)
+                                .simultaneousGesture(DragGesture(minimumDistance: 25).onEnded { value in
+                                    guard abs(value.translation.height) > abs(value.translation.width) else { return }
+                                    if value.translation.height > 25 { store.revealChrome() }
+                                    else if value.translation.height < -25 { store.scrollChrome(delta: 40) }
+                                })
+                        }
+                        if !tab.hasContent && !tab.isPrivate && addressFocused && store.searchSuggestions.enabled {
+                            HomeSearchSuggestions(query: address, engine: store.snapshot.settings.searchEngine) { value in
+                                addressFocused = false; store.search(value)
+                            }
+                        }
+                        AddressSwipeOverlay(controller: swipe, store: store, width: width, height: geometry.size.height)
+                            .allowsHitTesting(false).accessibilityHidden(true)
+                        if tab.pageUnavailable {
+                            VStack(spacing: 14) {
+                                Image(systemName: "exclamationmark.triangle").font(.largeTitle)
+                                Text("ページを読み込めませんでした").font(.headline)
+                                if tab.canRetryPage {
+                                    Button("再読み込み") { tab.retryPage() }.buttonStyle(.borderedProminent)
+                                        .accessibilityIdentifier("failedPageReloadButton")
+                                }
+                                Button("タブ一覧") { store.revealChrome(); showSheet(.tabs) }.buttonStyle(.bordered)
+                                    .accessibilityIdentifier("failedPageTabsButton")
+                            }.padding().frame(maxWidth: .infinity, maxHeight: .infinity)
+                                .background(Color(uiColor: .systemBackground))
                         }
                     }
-                    AddressSwipeOverlay(controller: swipe, store: store, width: width, height: geometry.size.height)
-                        .allowsHitTesting(false).accessibilityHidden(true)
-                    if tab.pageUnavailable {
-                        VStack(spacing: 14) {
-                            Image(systemName: "exclamationmark.triangle").font(.largeTitle)
-                            Text("ページを読み込めませんでした").font(.headline)
-                            if tab.canRetryPage {
-                                Button("再読み込み") { tab.retryPage() }.buttonStyle(.borderedProminent)
-                                    .accessibilityIdentifier("failedPageReloadButton")
-                            }
-                            Button("タブ一覧") { store.revealChrome(); showSheet(.tabs) }.buttonStyle(.bordered)
-                                .accessibilityIdentifier("failedPageTabsButton")
-                        }.padding().frame(maxWidth: .infinity, maxHeight: .infinity)
-                            .background(Color(uiColor: .systemBackground))
-                    }
-                }
                 .overlay(alignment: .topTrailing) {
                     VStack(alignment: .trailing, spacing: 4) {
                     if tab.hasContent, !tab.selectedText.isEmpty {
@@ -109,6 +111,7 @@ struct TabBrowserView: View {
                             .accessibilityIdentifier("selectedTextSearchButton")
                     }
                     }
+                    }.opacity(store.overviewPresented ? 0 : 1)
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
             }

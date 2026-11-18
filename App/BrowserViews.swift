@@ -29,12 +29,14 @@ enum BrowserSheet: Identifiable {
 struct BrowserRootView: View {
     @EnvironmentObject private var updates: UpdateChecker
     @ObservedObject var store: BrowserStore
+    @ObservedObject private var overview = TabOverviewPresentation.shared
     @State private var sheet: BrowserSheet?
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var linkDocument = LinkFileDocument()
     @State private var exportLink = false
     @Environment(\.dynamicTypeSize) private var systemTextSize
     #if DEBUG
+    @State private var preparedRegressionFixture = false
     @State private var preparedVideoFixture = false
     @State private var preparedAudioFixture = false
     @State private var preparedPasswordFixture = false
@@ -61,14 +63,18 @@ struct BrowserRootView: View {
             }
             #endif
         }
-        .onChange(of: sheet?.id) { _, _ in
-            PasswordFormController.shared.setInterfaceAvailable(sheet == nil)
-            VideoOrientationController.shared.context(selected: store.selectedID, allowed: sheet == nil)
-        }
+        .onChange(of: sheet?.id) { _, _ in updateInterfaceAvailability() }
+        .onChange(of: overview.isPresented) { _, _ in updateInterfaceAvailability() }
         .onAppear {
-            PasswordFormController.shared.setInterfaceAvailable(sheet == nil)
-            VideoOrientationController.shared.context(selected: store.selectedID, allowed: sheet == nil)
+            updateInterfaceAvailability()
             #if DEBUG
+            if let path = BrowserRegressionFixtures.kind, !preparedRegressionFixture {
+                preparedRegressionFixture = true
+                var features = store.features; features.blockAdvertisements = false; store.updateFeatures(features)
+                TabRetentionPreferences.shared.setLimit(TabRetentionPolicy.standardLimit)
+                VideoOrientationController.shared.setEnabled(false)
+                store.navigate("http://127.0.0.1:18765/" + path)
+            }
             if VideoOrientationController.fixture && !preparedVideoFixture {
                 preparedVideoFixture = true
                 VideoOrientationController.shared.setEnabled(false)
@@ -141,6 +147,8 @@ struct BrowserRootView: View {
                     }.font(.caption).buttonStyle(.borderedProminent).padding(4)
                 }
             }
+        } else if BrowserRegressionFixtures.kind == "session-login" {
+            connectedContent.safeAreaInset(edge: .top, spacing: 0) { BrowserRegressionFixtureControls(store: store) }
         } else if VideoOrientationController.fixture {
             connectedContent.safeAreaInset(edge: .top, spacing: 0) {
                 VideoOrientationFixtureControls()
@@ -156,12 +164,12 @@ struct BrowserRootView: View {
         .safeAreaInset(edge: .top, spacing: 0) {
             VStack(spacing: 0) {
                 updateBanner
-                if let tab = store.selectedTab { PasswordSaveBanner(tab: tab, allowed: sheet == nil) }
+                if let tab = store.selectedTab { PasswordSaveBanner(tab: tab, allowed: sheet == nil && !overview.isPresented) }
             }.fixedSize(horizontal: false, vertical: true)
         }
         .onChange(of: store.selectedID) { _, _ in
             PasswordFormController.shared.cancelPendingInteraction()
-            VideoOrientationController.shared.context(selected: store.selectedID, allowed: sheet == nil)
+            VideoOrientationController.shared.context(selected: store.selectedID, allowed: sheet == nil && !overview.isPresented)
         }
         .tint(store.selectedTab?.isPrivate == true ? .purple : .blue)
         .sheet(item: $sheet) { route in
@@ -186,10 +194,33 @@ struct BrowserRootView: View {
         }
     }
 
-    @ViewBuilder private var browsingContent: some View {
-        if let tab = store.selectedTab {
-            TabBrowserView(store: store, tab: tab, passwordActionsAllowed: sheet == nil, showSheet: { sheet = $0 }, share: share)
-        } else { ProgressView("Webサイトデータを消去中…") }
+    private var browsingContent: some View {
+        ZStack {
+            Group {
+                if let tab = store.selectedTab {
+                    TabBrowserView(store: store, tab: tab, passwordActionsAllowed: sheet == nil && !overview.isPresented,
+                        showSheet: present, share: share)
+                } else { ProgressView("Webサイトデータを消去中…") }
+            }
+            .allowsHitTesting(!overview.isPresented)
+            .accessibilityHidden(overview.isPresented)
+            .zIndex(overview.isPresented ? 2 : 0)
+            if overview.isPresented {
+                TabsView(store: store, dismiss: overview.close)
+                    .allowsHitTesting(overview.phase != .closing)
+                    .opacity(overview.phase == .closing ? 0 : 1)
+                    .transition(.opacity).zIndex(1)
+            }
+        }
+    }
+    private func present(_ route: BrowserSheet) {
+        if route.id == "tabs" { overview.open(store) }
+        else { sheet = route }
+    }
+    private func updateInterfaceAvailability() {
+        let available = sheet == nil && !overview.isPresented
+        PasswordFormController.shared.setInterfaceAvailable(available)
+        VideoOrientationController.shared.context(selected: store.selectedID, allowed: available)
     }
     @ViewBuilder private var updateBanner: some View {
         if updates.shouldPresent, let update = updates.available {
@@ -204,7 +235,7 @@ struct BrowserRootView: View {
     @ViewBuilder private func sheetContent(_ route: BrowserSheet) -> some View {
         switch route {
         case .connection(let request): ConnectionPrompt(request: request)
-        case .tabs: TabsView(store: store)
+        case .tabs: EmptyView() // Presented by the in-window canvas, never as a sheet.
         case .bookmarks: LibraryView(store: store, showHistory: false)
         case .history: LibraryView(store: store, showHistory: true)
         case .settings: SettingsView(store: store)

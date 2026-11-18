@@ -34,7 +34,7 @@ struct TabGridView: UIViewRepresentable {
         layout.columns = columns
         layout.minimumLineSpacing = 16; layout.minimumInteritemSpacing = 16
         layout.sectionInset = UIEdgeInsets(top: 16, left: 16, bottom: 16, right: 16)
-        let view = UICollectionView(frame: .zero, collectionViewLayout: layout)
+        let view = TabOverviewCollectionView(frame: .zero, collectionViewLayout: layout)
         view.backgroundColor = .clear; view.alwaysBounceVertical = true
         view.register(SwipeTabCell.self, forCellWithReuseIdentifier: "tab")
         context.coordinator.configure(view)
@@ -52,6 +52,9 @@ struct TabGridView: UIViewRepresentable {
         init(_ parent: TabGridView) { self.parent = parent }
         func configure(_ view: UICollectionView) {
             view.delegate = self
+            (view as? TabOverviewCollectionView)?.onLayout = { [weak self, weak view] in
+                if let self, let view { self.publishGeometry(view) }
+            }
             source = UICollectionViewDiffableDataSource<Int, UUID>(collectionView: view) { [weak self] collection, index, id in
                 guard let self, let tab = self.parent.tabs.first(where: { $0.id == id }),
                       let cell = collection.dequeueReusableCell(withReuseIdentifier: "tab", for: index) as? SwipeTabCell else { return nil }
@@ -62,6 +65,9 @@ struct TabGridView: UIViewRepresentable {
                     // Update the collection now, while the finger is still down.
                     self.parent.store.close(tab)
                     self.parent.tabsUpdated(in: collection, coordinator: self)
+                }
+                cell.onPreviewLayout = { [weak self, weak collection] in
+                    if let self, let collection { self.publishGeometry(collection) }
                 }
                 cell.configure(tab: tab, selected: self.parent.store.selectedID == id, textSize: self.parent.store.presentation.interfaceTextSize) { [weak self, weak tab] in
                     if let self, let tab { self.parent.select(tab) }
@@ -88,7 +94,22 @@ struct TabGridView: UIViewRepresentable {
                 if let id = self.parent.store.selectedID, let index = self.source.indexPath(for: id) {
                     view.scrollToItem(at: index, at: id == ids.last ? .bottom : .centeredVertically, animated: false)
                 }
+                view.layoutIfNeeded(); self.publishGeometry(view)
             }
+        }
+
+        func scrollViewDidScroll(_ scrollView: UIScrollView) {
+            if let collection = scrollView as? UICollectionView { publishGeometry(collection) }
+        }
+        private func publishGeometry(_ view: UICollectionView) {
+            guard initialScroll, view.window != nil else { return }
+            var frames: [UUID: CGRect] = [:]
+            for case let cell as SwipeTabCell in view.visibleCells {
+                guard let id = cell.previewTabID else { continue }
+                let rect = cell.previewFrameInWindow
+                if rect.width > 1 && rect.height > 1 { frames[id] = rect }
+            }
+            TabOverviewPresentation.shared.report(frames: frames, viewport: view.convert(view.bounds, to: nil))
         }
 
     }
@@ -102,6 +123,9 @@ struct TabGridView: UIViewRepresentable {
 @MainActor
 final class SwipeTabCell: UICollectionViewCell, UIGestureRecognizerDelegate {
     var onClose: (() -> Void)?
+    var onPreviewLayout: (() -> Void)?
+    var previewTabID: UUID? { tab?.id }
+    var previewFrameInWindow: CGRect { previewButton.convert(previewButton.bounds, to: nil) }
     private var onSelect: (() -> Void)?
     private var committed = false
     private var observation: AnyCancellable?
@@ -141,7 +165,7 @@ final class SwipeTabCell: UICollectionViewCell, UIGestureRecognizerDelegate {
     }
     required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }
     override func prepareForReuse() {
-        super.prepareForReuse(); observation = nil; tab = nil; onClose = nil; onSelect = nil; resetSwipe()
+        super.prepareForReuse(); observation = nil; tab = nil; onClose = nil; onSelect = nil; onPreviewLayout = nil; resetSwipe()
     }
     func configure(tab: BrowserTab, selected: Bool, textSize: InterfaceTextSize, select: @escaping () -> Void) {
         observation = nil; self.tab = tab; selectedTab = selected; onSelect = select
@@ -168,9 +192,12 @@ final class SwipeTabCell: UICollectionViewCell, UIGestureRecognizerDelegate {
         icon.tintColor = tab.isPrivate ? .systemPurple : .systemBlue
         closeButton.accessibilityIdentifier = "closeTab-" + tab.id.uuidString
         previewImage.image = PreviewImages.shared.image(tab)
-        placeholder.isHidden = previewImage.image != nil
+        let live = TabOverviewPresentation.shared.surface?.hasLivePreview(tab.id) == true
+        previewImage.isHidden = live
+        placeholder.isHidden = live || previewImage.image != nil
+        previewButton.accessibilityHint = live ? "ページをライブ表示中" : "タップしてページを開く"
         placeholder.text = tab.url?.host ?? "新しいタブ"
-        playing.isHidden = !tab.hasActiveMedia
+        playing.isHidden = live || !tab.hasActiveMedia
         previewButton.accessibilityIdentifier = "tabPreview-" + tab.id.uuidString
         previewButton.accessibilityLabel = tab.title + (selectedTab ? "、選択中" : "")
         previewButton.accessibilityValue = tab.previewData == nil ? "プレビューなし" : "プレビューあり"
@@ -193,6 +220,7 @@ final class SwipeTabCell: UICollectionViewCell, UIGestureRecognizerDelegate {
         } else { previewImage.frame = box }
         placeholder.frame = box.insetBy(dx: 10, dy: 10)
         playing.frame = CGRect(x: box.midX - 18, y: box.midY - 18, width: 36, height: 36)
+        onPreviewLayout?()
     }
     func resetSwipe() { committed = false; contentView.transform = .identity; contentView.alpha = 1 }
     override func gestureRecognizerShouldBegin(_ gestureRecognizer: UIGestureRecognizer) -> Bool {
@@ -213,6 +241,7 @@ final class SwipeTabCell: UICollectionViewCell, UIGestureRecognizerDelegate {
         switch gesture.state {
         case .changed:
             contentView.transform = CGAffineTransform(translationX: x, y: 0)
+            onPreviewLayout?()
             if x < -min(80, bounds.width * 0.38) { commitClose() }
         case .ended:
             if x < -25 && gesture.velocity(in: self).x < -650 { commitClose() }
@@ -222,7 +251,7 @@ final class SwipeTabCell: UICollectionViewCell, UIGestureRecognizerDelegate {
         }
     }
     private func restorePosition() {
-        UIView.animate(withDuration: 0.18, delay: 0, options: [.curveEaseOut, .allowUserInteraction, .beginFromCurrentState]) { self.contentView.transform = .identity }
+        UIView.animate(withDuration: 0.18, delay: 0, options: [.curveEaseOut, .allowUserInteraction, .beginFromCurrentState]) { self.contentView.transform = .identity; self.onPreviewLayout?() }
     }
     func commitClose() {
         guard !committed else { return }; committed = true
@@ -254,4 +283,10 @@ final class ResponsiveTabGridLayout: UICollectionViewFlowLayout {
         }
         return context
     }
+}
+
+@MainActor
+private final class TabOverviewCollectionView: UICollectionView {
+    var onLayout: (() -> Void)?
+    override func layoutSubviews() { super.layoutSubviews(); onLayout?() }
 }

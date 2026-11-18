@@ -87,12 +87,17 @@ struct PasswordSuggestionBar: View {
         }
     }
     private func run(_ target: PasswordFormTarget, _ action: @escaping @MainActor (UUID) async throws -> Void) {
-        guard !busy else { return }; pinned = target; busy = true
+        guard !busy else { return }; showError = false; pinned = target; busy = true
         let token = forms.interactionID
         Task { @MainActor in
             defer { busy = false; pinned = nil }
             do { try await action(token) }
-            catch { showError = true }
+            catch is CancellationError { }
+            catch {
+                // Ignore late failures for a page/interaction the user has left.
+                if token == forms.interactionID, phase == .active, allowed,
+                   forms.targets(for: tab).contains(where: { $0.id == target.id }) { showError = true }
+            }
         }
     }
 }

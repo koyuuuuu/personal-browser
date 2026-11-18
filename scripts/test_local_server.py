@@ -11,6 +11,7 @@ import ssl
 import threading
 import subprocess
 import wave
+import zlib
 from pathlib import Path
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
@@ -31,6 +32,10 @@ def main():
         # masquerade as concurrent-playback interruption.
         stream.writeframes(second * 600)
     audio = audio.getvalue()
+    def png_chunk(kind, value):
+        return struct.pack('>I', len(value)) + kind + value + struct.pack('>I', zlib.crc32(kind + value) & 0xffffffff)
+    rows = b''.join(b'\x00' + bytes((20, 80 + y % 140, 210)) * 240 for y in range(160))
+    photo = b'\x89PNG\r\n\x1a\n' + png_chunk(b'IHDR', struct.pack('>IIBBBBB', 240, 160, 8, 2, 0, 0, 0)) + png_chunk(b'IDAT', zlib.compress(rows)) + png_chunk(b'IEND', b'')
 
     class Handler(BaseHTTPRequestHandler):
         protocol_version = 'HTTP/1.1'
@@ -51,7 +56,42 @@ def main():
                 threading.Thread(target=child.wait, daemon=True).start()
                 self.send_response(204)
                 self.send_header('Content-Length', '0'); self.end_headers(); return
-            if self.path in ['/wide.mp4', '/tall.mp4']:
+            if self.path == '/fixture-photo.png':
+                data, mime = photo, 'image/png'
+            elif self.path == '/photo-fixture':
+                data = b'''<!doctype html><meta name="viewport" content="width=device-width,initial-scale=1"><title>Photo fixture</title>
+                <img src="/fixture-photo.png" alt="Fixture photo" style="width:240px;height:160px;display:block;margin:20px">
+                <button onclick="document.getElementById('result').textContent='Photo page still responds'">Check photo page</button><p id="result">Photo ready</p>'''
+                mime = 'text/html; charset=utf-8'
+            elif self.path == '/session-login':
+                data = b'''<!doctype html><meta name="viewport" content="width=device-width,initial-scale=1"><title>Session login</title>
+                <form method="post" action="/session-auth"><input type="hidden" name="fixture" value="login"><button>Log into fixture</button></form>'''
+                mime = 'text/html; charset=utf-8'
+            elif self.path == '/session-home':
+                valid = 'browser_session=fixture' in self.headers.get('Cookie', '')
+                data = ('''<!doctype html><meta name="viewport" content="width=device-width,initial-scale=1"><title>Checkout origin</title>
+                <p>''' + ('Fixture logged in' if valid else 'Missing session') + '''</p>
+                <script>sessionStorage.setItem('fixture-basket','basket-token');</script>
+                <p id="memory">Initial page state</p><button onclick="document.getElementById('memory').textContent='Memory marker retained'">Set memory marker</button>
+                <a href="/session-purchase" target="ticket-purchase" rel="opener">Continue to checkout</a>''').encode()
+                mime = 'text/html; charset=utf-8'
+            elif self.path == '/session-purchase':
+                valid = 'browser_session=fixture' in self.headers.get('Cookie', '')
+                data = ('''<!doctype html><meta name="viewport" content="width=device-width,initial-scale=1"><title>Checkout review</title>
+                <p id="result">Checking checkout</p><script>
+                const contextOK=''' + ('true' if valid else 'false') + ''' && window.opener && window.opener.sessionStorage.getItem('fixture-basket')==='basket-token' && sessionStorage.getItem('fixture-basket')==='basket-token' && window.name==='ticket-purchase';
+                document.getElementById('result').textContent=contextOK?'Checkout context preserved':'Checkout context missing';
+                </script><form method="post" action="/session-confirm"><input type="hidden" name="basket" value="basket-token"><button>Submit test checkout</button></form>''').encode()
+                mime = 'text/html; charset=utf-8'
+            elif self.path == '/overview-media':
+                data = b'''<!doctype html><meta name="viewport" content="width=device-width,initial-scale=1"><title>Live media fixture</title>
+                <style>body{margin:0;background:white;color:black}#clock{font:24px monospace;background:#ffee66;height:36px}video{width:100%;height:190px}button{font-size:16px;padding:8px}</style>
+                <div id="clock">Video time 0.0</div><video id="v" src="/wide.mp4" playsinline preload="auto"></video>
+                <button onclick="v.play()">Play overview video</button><button onclick="check()">Check overview playback</button><p id="result">Video ready</p>
+                <script>let stamp=0;v.addEventListener('timeupdate',()=>{clock.textContent='Video time '+v.currentTime.toFixed(1)});
+                function check(){result.textContent=(!v.paused && v.currentTime>stamp+0.5)?'Playback advanced; page retained':'Waiting for playback';stamp=v.currentTime;}</script>'''
+                mime = 'text/html; charset=utf-8'
+            elif self.path in ['/wide.mp4', '/tall.mp4']:
                 data = (Path(__file__).resolve().parents[1] / 'UITests/Fixtures' / self.path[1:]).read_bytes()
                 mime = 'video/mp4'
             elif self.path == '/video-orientation-fixture':
@@ -110,6 +150,7 @@ def main():
                 <button type="button" onclick="document.getElementById('user').value='';document.getElementById('pw').value='';window.fixtureSubmitted=false;document.getElementById('status').textContent='Fields empty'">Reset login form</button>
                 <button type="button" onclick="this.form.innerHTML='&lt;input aria-label=UsernameOnly id=user autocomplete=username&gt;';document.getElementById('status').textContent='Username step empty'">Username-only step</button>
                 </form><p id="status">Not submitted</p><p id="system-status"></p>
+                <button onclick="window.moveFocusAfterFill=true;const f=document.createElement('form');f.innerHTML='<input id=followup autocomplete=username aria-label=Next-login-field>';document.body.append(f);">Move focus after fill</button>
                 <button onclick="showCredentialForm(false)">Login form</button>
                 <button onclick="showCredentialForm(true)">Registration form</button>
                 <button onclick="showCredentialForm(true)">Change password form</button>
@@ -121,6 +162,7 @@ def main():
                     '<button>Submit credentials</button>';
                   document.getElementById('status').textContent='Fields empty';
                 }
+                document.addEventListener('input',e=>{if(window.moveFocusAfterFill && e.target.id==='pw')document.getElementById('followup').focus();});
                 document.addEventListener('focusin',e=>{
                   if(['user','pw'].includes(e.target.id) && document.getElementById('user').autocomplete==='username' && document.getElementById('pw')?.autocomplete==='current-password')document.getElementById('system-status').textContent='System field focused; hints ready';
                 });
@@ -229,6 +271,15 @@ def main():
 
         def do_POST(self):
             body = self.rfile.read(min(4096, int(self.headers.get('Content-Length', '0')))).decode('utf-8')
+            if self.path == '/session-auth':
+                self.send_response(303); self.send_header('Location', '/session-home')
+                self.send_header('Set-Cookie', 'browser_session=fixture; HttpOnly; SameSite=Lax; Path=/')
+                self.send_header('Content-Length', '0'); self.end_headers(); return
+            if self.path == '/session-confirm':
+                valid = 'browser_session=fixture' in self.headers.get('Cookie', '') and body == 'basket=basket-token'
+                data = ('<!doctype html><meta name="viewport" content="width=device-width,initial-scale=1"><title>Checkout POST</title><p>' + ('Checkout POST and cookie preserved' if valid else 'Checkout data missing') + '</p><button onclick="window.close()">Close checkout window</button>').encode()
+                self.send_response(200); self.send_header('Content-Type', 'text/html; charset=utf-8')
+                self.send_header('Content-Length', str(len(data))); self.end_headers(); self.wfile.write(data); return
             data = ('<!doctype html><meta name="viewport" content="width=device-width,initial-scale=1"><p>POST kept: ' + html.escape(body) + '</p>').encode()
             self.send_response(200); self.send_header('Content-Type', 'text/html; charset=utf-8')
             self.send_header('Content-Length', str(len(data))); self.end_headers(); self.wfile.write(data)

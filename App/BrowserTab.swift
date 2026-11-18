@@ -40,6 +40,14 @@ final class BrowserTab: NSObject, ObservableObject, Identifiable, WKNavigationDe
     }
     var existingWebView: WKWebView? { liveWebView }
     var isLive: Bool { liveWebView != nil }
+    var openerTabID: UUID?
+    private(set) var hasUnsavedInput = false
+    func markEditedInput() { hasUnsavedInput = true }
+    var canSuspend: Bool {
+        !isProtectedForMedia && !snapshotInProgress && !isLoading && !hasUnsavedInput &&
+        dialog == nil && pendingConnection == nil && downloads.isEmpty &&
+        (lastTopLevelRequest.map { BrowserNavigationPolicy.canReplay(method: $0.httpMethod, hasBody: $0.httpBody != nil || $0.httpBodyStream != nil) } ?? true)
+    }
     var isCapturingPreview: Bool { snapshotInProgress }
     var isProtectedForMedia: Bool { hasActiveMedia || isPictureInPicture || hasMixingPlayback }
     @Published private(set) var hasMixingPlayback = false
@@ -143,6 +151,8 @@ final class BrowserTab: NSObject, ObservableObject, Identifiable, WKNavigationDe
         view.onSelection = { [weak self] in self?.selectedText = $0 }
         view.onSearch = { [weak self] in self?.onSearchText?($0) }
         liveWebView = view
+        configuration.userContentController.add(PageEditObserver(tab: self), contentWorld: .defaultClient, name: "browserPageEdited")
+        configuration.userContentController.addUserScript(WKUserScript(source: PageEditObserver.source, injectionTime: .atDocumentStart, forMainFrameOnly: false, in: .defaultClient))
         AudioMixingController.shared.attach(view) { [weak self] value in
             if self?.hasMixingPlayback != value { self?.hasMixingPlayback = value }
         }
@@ -150,7 +160,8 @@ final class BrowserTab: NSObject, ObservableObject, Identifiable, WKNavigationDe
         VideoOrientationController.shared.attach(view, tabID: id)
         PasswordFormController.shared.attach(view, tabID: id, isPrivate: isPrivate,
             trusted: { [weak self] in self?.passwordPageTrusted == true },
-            found: { [weak self] value in if self?.hasPasswordForms != value { self?.hasPasswordForms = value } })
+            found: { [weak self] value in if self?.hasPasswordForms != value { self?.hasPasswordForms = value } },
+            filled: { [weak self] in self?.markEditedInput() })
         AppPromotionBlocker.shared.attach(view, excluded: preferences.blockingExceptions) { [weak self] in self?.documentScrollLocked = $0 }
         view.navigationDelegate = self; view.uiDelegate = self
         view.allowsBackForwardNavigationGestures = swipeNavigation
@@ -263,7 +274,7 @@ final class BrowserTab: NSObject, ObservableObject, Identifiable, WKNavigationDe
 
     func capturePreview() {
         guard !snapshotInProgress, !pageUnavailable, let view = liveWebView, hasContent, !hasActiveMedia, !isPictureInPicture,
-              UIApplication.shared.applicationState == .active, view.window != nil, view.alpha == 1,
+              UIApplication.shared.applicationState == .active, view.window != nil, view.alpha == 1, view.superview?.alpha == 1,
               let capturedURL = url, WebURLPolicy.allows(capturedURL), view.bounds.width > 1, view.bounds.height > 1 else { return }
         snapshotInProgress = true
         let capturedTitle = title
@@ -297,13 +308,14 @@ final class BrowserTab: NSObject, ObservableObject, Identifiable, WKNavigationDe
     func scrollViewDidEndDragging(_ scrollView: UIScrollView, willDecelerate decelerate: Bool) { if !decelerate { capturePreview() } }
 
     func suspend() {
-        guard !isProtectedForMedia, !snapshotInProgress, downloads.isEmpty else { return }
+        guard canSuspend else { return }
         releaseWebView(); isLoading = false; canGoBack = false; canGoForward = false
     }
 
     private func releaseWebView() {
         cancelPageRecovery(resetBudget: false)
         if let view = liveWebView {
+            view.configuration.userContentController.removeScriptMessageHandler(forName: "browserPageEdited", contentWorld: .defaultClient)
             PasswordFormController.shared.detach(view)
             AppPromotionBlocker.shared.detach(view)
             AudioSourcesController.shared.detach(view)
@@ -401,6 +413,7 @@ final class BrowserTab: NSObject, ObservableObject, Identifiable, WKNavigationDe
     }
 
     func webView(_ webView: WKWebView, didStartProvisionalNavigation navigation: WKNavigation!) {
+        hasUnsavedInput = false
         PasswordFormController.shared.reset(webView)
         VideoOrientationController.shared.reset(webView)
         cancelPageRecovery(resetBudget: false)
@@ -551,14 +564,17 @@ final class BrowserTab: NSObject, ObservableObject, Identifiable, WKNavigationDe
             }
             lastTopLevelRequest = navigationAction.request
         }
+        // Let WebKit perform ordinary navigation and create its own auxiliary
+        // browsing contexts. Cancelling/reloading loses opener/sessionStorage,
+        // referrer/initiator context and named-window checkout state.
         if WebURLPolicy.allows(url), topLevel, safeReplay,
-           navigationAction.navigationType == .linkActivated, !navigationAction.shouldPerformDownload {
-            let useApplication = prefersApplication?(url) == true
-            if useApplication { expectedInterruptions[url] = Date().addingTimeInterval(5) }
+           navigationAction.navigationType == .linkActivated, !navigationAction.shouldPerformDownload,
+           prefersApplication?(url) == true {
+            expectedInterruptions[url] = Date().addingTimeInterval(5)
             decisionHandler(.cancel)
-            if useApplication {
-                openRelatedApplication(url, remember: false) { [weak self] in self?.loadInBrowser(navigationAction.request, newWindow: navigationAction.targetFrame == nil) }
-            } else { loadInBrowser(navigationAction.request, newWindow: navigationAction.targetFrame == nil) }
+            openRelatedApplication(url, remember: false) { [weak self] in
+                self?.loadInBrowser(navigationAction.request, newWindow: navigationAction.targetFrame == nil)
+            }
             return
         }
         if ["http", "https", "about", "blob", "data"].contains(scheme) {
@@ -579,7 +595,12 @@ final class BrowserTab: NSObject, ObservableObject, Identifiable, WKNavigationDe
 
     private func loadInBrowser(_ request: URLRequest, newWindow: Bool) {
         guard let url = request.url, WebURLPolicy.allows(url) else { return }
-        if newWindow { if preferences.allowPopups { onOpenLink?(url, isPrivate) }; return }
+        if newWindow {
+            guard preferences.allowPopups, let view = liveWebView,
+                  let configuration = view.configuration.copy() as? WKWebViewConfiguration,
+                  let popup = onPopup?(configuration, isPrivate) else { return }
+            popup.load(request); return
+        }
         guard let view = liveWebView else { load(url); return }
         Task { @MainActor [weak self, weak view] in
             guard let self, let view else { return }
@@ -733,29 +754,5 @@ private final class MediaMessageHandler: NSObject, WKScriptMessageHandler {
 struct WebSurface: UIViewRepresentable {
     @ObservedObject var store: BrowserStore
     func makeUIView(context: Context) -> WebSurfaceView { WebSurfaceView() }
-    func updateUIView(_ host: WebSurfaceView, context: Context) {
-        guard !store.overviewPresented, let selected = store.selectedTab else { return }
-        let kept = store.tabs.filter { $0.id == selected.id || $0.isProtectedForMedia || $0.isCapturingPreview }
-        let views = kept.compactMap { $0.id == selected.id && $0.hasContent ? $0.webView : $0.existingWebView }
-        for view in host.subviews where !views.contains(where: { $0 === view }) { view.removeFromSuperview() }
-        for tab in kept {
-            guard let view = tab.existingWebView else { continue }
-            if view.superview !== host { host.addSubview(view) }
-            view.isUserInteractionEnabled = tab.id == selected.id && tab.hasContent
-            // Do not hide a playing WebView or detach it on backgrounding.
-            view.alpha = (tab.id == selected.id && tab.hasContent) || tab.isCapturingPreview ? 1 : 0.01
-        }
-        if let view = selected.existingWebView { host.bringSubviewToFront(view) }
-        host.chromeRecovery.webView = selected.existingWebView
-        host.chromeRecovery.hidden = { [weak store] in store?.chromeVisible == false }
-        host.chromeRecovery.locked = { [weak selected] in selected?.documentScrollLocked == true }
-        host.chromeRecovery.reveal = { [weak store] in store?.revealChrome() }
-        host.setNeedsLayout()
-    }
-}
-final class WebSurfaceView: UIView {
-    let chromeRecovery = ChromeRecoveryObserver()
-    override init(frame: CGRect) { super.init(frame: frame); chromeRecovery.install(on: self) }
-    required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }
-    override func layoutSubviews() { super.layoutSubviews(); clipsToBounds = true; for view in subviews { view.frame = bounds } }
+    func updateUIView(_ host: WebSurfaceView, context: Context) { host.synchronize(store) }
 }

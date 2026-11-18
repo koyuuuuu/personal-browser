@@ -11,6 +11,9 @@ final class BrowserUITests: XCTestCase {
         XCUIDevice.shared.orientation = .portrait
         app = XCUIApplication()
         app.launchArguments = ["--ui-testing"]
+        if name.contains("testCheckoutContextAndResidentPagesSurviveAuxiliaryWindows") { app.launchArguments += ["--ui-no-fixture", "--ui-session-fixture"] }
+        if name.contains("testSavingWebsitePhotoDoesNotTerminateBrowser") { app.launchArguments += ["--ui-no-fixture", "--ui-photo-fixture"] }
+        if name.contains("testOverviewKeepsLiveVideoAndMorphsCurrentTabIntoGrid") { app.launchArguments += ["--ui-no-fixture", "--ui-overview-media-fixture"] }
         if name.contains("testVideoFullscreenFollowsAspectAndRespectsPauseAndToggle") {
             app.launchArguments += ["--ui-no-fixture", "--ui-video-orientation-fixture"]
         }
@@ -38,6 +41,66 @@ final class BrowserUITests: XCTestCase {
             screenshot.lifetime = .keepAlways
             add(screenshot)
         }
+    }
+
+    func testCheckoutContextAndResidentPagesSurviveAuxiliaryWindows() {
+        XCTAssertTrue(app.buttons["Log into fixture"].waitForExistence(timeout: 15))
+        app.buttons["Log into fixture"].tap()
+        XCTAssertTrue(app.staticTexts["Fixture logged in"].waitForExistence(timeout: 10))
+        app.buttons["Set memory marker"].tap()
+        app.links["Continue to checkout"].tap()
+        XCTAssertTrue(app.staticTexts["Checkout context preserved"].waitForExistence(timeout: 12), "Cookie, opener, inherited sessionStorage and named target must survive")
+        app.buttons["Submit test checkout"].tap()
+        XCTAssertTrue(app.staticTexts["Checkout POST and cookie preserved"].waitForExistence(timeout: 10))
+        app.buttons["Close checkout window"].tap()
+        XCTAssertTrue(app.staticTexts["Memory marker retained"].waitForExistence(timeout: 10))
+        app.buttons["openCachedPagesFixtureButton"].tap()
+        XCTAssertTrue(app.staticTexts["Memory marker retained"].waitForExistence(timeout: 15), "Returning after eight actual live pages must preserve DOM state")
+        tapMenuControl("tabsButton")
+        XCTAssertTrue(app.navigationBars["タブ 9"].waitForExistence(timeout: 8))
+        let origin = app.buttons.matching(NSPredicate(format: "label CONTAINS %@", "Checkout origin")).firstMatch
+        XCTAssertTrue(origin.waitForExistence(timeout: 5)); origin.tap()
+        XCTAssertTrue(app.staticTexts["Memory marker retained"].waitForExistence(timeout: 8))
+    }
+
+    func testSavingWebsitePhotoDoesNotTerminateBrowser() {
+        XCTAssertTrue(app.images["Fixture photo"].waitForExistence(timeout: 15))
+        app.images["Fixture photo"].press(forDuration: 1.2)
+        let save = app.buttons.matching(NSPredicate(format: "label IN %@", ["写真に保存", "画像を保存", "写真に追加", "Save Image", "Add to Photos", "Save to Photos"])).firstMatch
+        XCTAssertTrue(save.waitForExistence(timeout: 8)); save.tap()
+        let springboard = XCUIApplication(bundleIdentifier: "com.apple.springboard")
+        let permission = springboard.alerts.buttons.matching(NSPredicate(format: "(label CONTAINS[c] 'Allow' OR label CONTAINS '許可') AND NOT (label CONTAINS[c] 'Don' OR label CONTAINS 'しない')")).firstMatch
+        if permission.waitForExistence(timeout: 5) { permission.tap() }
+        XCTAssertEqual(app.state, .runningForeground)
+        XCTAssertTrue(app.buttons["Check photo page"].waitForExistence(timeout: 8)); app.buttons["Check photo page"].tap()
+        XCTAssertTrue(app.staticTexts["Photo page still responds"].waitForExistence(timeout: 5))
+    }
+
+    func testOverviewKeepsLiveVideoAndMorphsCurrentTabIntoGrid() {
+        XCTAssertTrue(app.buttons["Play overview video"].waitForExistence(timeout: 15))
+        app.buttons["Play overview video"].tap(); settlePresentation()
+        app.buttons["Check overview playback"].tap()
+        XCTAssertTrue(app.staticTexts["Playback advanced; page retained"].waitForExistence(timeout: 5))
+        tapMenuControl("tabsButton")
+        XCTAssertTrue(app.navigationBars["タブ 1"].waitForExistence(timeout: 8)); settlePresentation()
+        let tile = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH 'tabPreview-' AND label CONTAINS %@", "Live media fixture")).firstMatch
+        XCTAssertTrue(tile.waitForExistence(timeout: 5))
+        let rect = tile.frame
+        XCTAssertLessThan(rect.width, app.frame.width * 0.7, "The current page must become one grid card")
+        func pixels() -> Data? {
+            let image = app.screenshot().image
+            guard let cg = image.cgImage else { return nil }
+            let scale = CGFloat(cg.width) / app.frame.width
+            let crop = CGRect(x: rect.minX * scale, y: rect.minY * scale, width: rect.width * scale, height: rect.height * scale).integral
+            guard let piece = cg.cropping(to: crop), let data = piece.dataProvider?.data else { return nil }
+            return data as Data
+        }
+        let before = pixels(); settlePresentation(); let after = pixels()
+        XCTAssertNotNil(before); XCTAssertNotNil(after)
+        XCTAssertNotEqual(before, after, "Live video/time pixels must change inside the card; a cached snapshot is insufficient")
+        tile.tap()
+        XCTAssertTrue(app.buttons["Check overview playback"].waitForExistence(timeout: 8)); app.buttons["Check overview playback"].tap()
+        XCTAssertTrue(app.staticTexts["Playback advanced; page retained"].exists)
     }
 
     func testVideoFullscreenFollowsAspectAndRespectsPauseAndToggle() {
@@ -218,6 +281,13 @@ final class BrowserUITests: XCTestCase {
         XCTAssertTrue(newAccount.waitForExistence(timeout: 5)); newAccount.tap()
         XCTAssertTrue(app.staticTexts["Updated account filled; not submitted"].waitForExistence(timeout: 5), "Encrypted records must survive lock/unlock and remain directly fillable")
 
+        app.buttons["passwordKeyboardDismissButton"].tap()
+        app.buttons["Login form"].tap()
+        app.buttons["Move focus after fill"].tap()
+        app.textFields["Fixture username"].tap()
+        XCTAssertTrue(newAccount.waitForExistence(timeout: 5)); newAccount.tap()
+        XCTAssertTrue(app.staticTexts["Updated account filled; not submitted"].waitForExistence(timeout: 5))
+        XCTAssertFalse(app.alerts["入力できませんでした"].exists, "Successful fill must survive a site's synchronous focus change")
     }
 
     func testLockedViewportChromeAndBoundedRecovery() {

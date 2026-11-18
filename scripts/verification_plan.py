@@ -10,6 +10,9 @@ ROOT = Path(__file__).resolve().parents[1]
 
 # One representative scenario per behavior, rather than overlapping smoke tests.
 AREAS = {
+    "session-navigation": ["testCheckoutContextAndResidentPagesSurviveAuxiliaryWindows"],
+    "photo-saving": ["testSavingWebsitePhotoDoesNotTerminateBrowser"],
+    "live-overview": ["testOverviewKeepsLiveVideoAndMorphsCurrentTabIntoGrid", "testSwipeClosingGridReflowsAndRemainsUsableAfterRepeatedDeletions", "testOverviewOpensAtLastActiveTab"],
     "video-orientation": ["testVideoFullscreenFollowsAspectAndRespectsPauseAndToggle"],
     "browsing-layout": ["testReleaseBrowsingLayoutAndPageInteraction", "testPasswordVaultImportsLocksAndFillsOnlyOnRequest"],
     "password-vault": ["testPasswordVaultImportsLocksAndFillsOnlyOnRequest"],
@@ -35,6 +38,12 @@ AREAS = {
     "launch": ["testWebKitRendersAndExecutesOfflinePage"],
 }
 PATH_AREAS = {
+    "App/TabLiveCanvas.swift": ["live-overview", "browsing-layout"],
+    "App/TabOverviewPresentation.swift": ["live-overview"],
+    "App/TabRetentionPreferences.swift": ["session-navigation"],
+    "App/PageEditObserver.swift": ["session-navigation"],
+    "App/BrowserRegressionFixtures.swift": ["session-navigation", "photo-saving", "live-overview"],
+    "Sources/BrowserCore/TabRetentionPolicy.swift": ["session-navigation"],
     "App/VideoOrientationController.swift": ["video-orientation"],
     "App/VideoOrientationScript.swift": ["video-orientation"],
     "Sources/BrowserCore/VideoOrientationPolicy.swift": ["video-orientation", "tabs"],
@@ -143,12 +152,19 @@ def changed_methods(before, after):
 def plan(changed, store_changes=(), ui_changes=(), tab_changes=None, pending_app_paths=None, chrome_changes=None):
     changed = set(changed)
     areas = set()
+    session_context = bool(changed & {"App/TabLiveCanvas.swift", "App/TabOverviewPresentation.swift", "App/PageEditObserver.swift", "App/TabRetentionPreferences.swift"})
     video_context = "App/VideoOrientationController.swift" in changed
     password_context = bool(changed & {"App/PasswordVault.swift", "App/PasswordVaultView.swift", "App/PasswordFormController.swift", "App/PasswordFormScript.swift", "App/PasswordSuggestionBar.swift"})
     volume_context = bool(changed & {"App/AudioSourcesController.swift", "App/MediaVolumeScript.swift", "App/AudioSourcesView.swift"})
     resilience_context = bool(changed & {"App/ChromeRecoveryObserver.swift", "App/AppPromotionBlocker.swift", "App/AppPromotionScript.swift", "Sources/BrowserCore/PageRecovery.swift"})
     for path in changed:
-        if video_context and path in {"App/BrowserViews.swift", "App/PersonalBrowserApp.swift", "App/Info.plist", "App/SettingsView.swift", "App/BrowserWebKitBridge.h", "App/BrowserWebKitBridge.m"}:
+        if session_context and path == "App/Info.plist":
+            areas.add("photo-saving")
+        elif session_context and path == "App/BrowserViews.swift":
+            areas.update(["live-overview", "browsing-layout"])
+        elif session_context and path == "App/FeatureSettingsView.swift":
+            areas.add("session-navigation")
+        elif video_context and path in {"App/BrowserViews.swift", "App/PersonalBrowserApp.swift", "App/Info.plist", "App/SettingsView.swift", "App/BrowserWebKitBridge.h", "App/BrowserWebKitBridge.m"}:
             areas.add("video-orientation")
         elif password_context and path in {"App/BrowserViews.swift", "App/BrowserWebKitBridge.h", "App/BrowserWebKitBridge.m", "App/SettingsView.swift", "App/FeatureSettingsView.swift", "App/Info.plist"}:
             areas.add("password-vault")
@@ -163,7 +179,9 @@ def plan(changed, store_changes=(), ui_changes=(), tab_changes=None, pending_app
     selection_context = bool(changed & {"App/SelectedTextWebView.swift", "App/SelectedTextSearch.swift"})
     if "App/BrowserChrome.swift" in changed:
         action_methods = {"disabledAddress", "performAddress", "perform", "actionButton"}
-        if password_context and chrome_changes is not None and set(chrome_changes) <= {"preamble", "viewport", "actionButton"}:
+        if session_context and chrome_changes is not None and set(chrome_changes) <= {"preamble", "viewport"}:
+            areas.update(["live-overview", "browsing-layout"])
+        elif password_context and chrome_changes is not None and set(chrome_changes) <= {"preamble", "viewport", "actionButton"}:
             areas.add("password-vault")
         elif resilience_context and chrome_changes is not None and set(chrome_changes) <= {"preamble", "viewport", "actionButton"}:
             areas.add("browsing-resilience")
@@ -178,7 +196,11 @@ def plan(changed, store_changes=(), ui_changes=(), tab_changes=None, pending_app
     if "App/BrowserTab.swift" in changed:
         names = set(tab_changes or ())
         resilience_methods = {"preamble", "resolve", "init", "createWebView", "configureBlocking", "load", "capturePreview", "releaseWebView", "dispose", "webView", "show", "webViewWebContentProcessDidTerminate", "cancelPageRecovery", "recoverPageIfNeeded", "retryPage", "updateUIView"}
-        if video_context and tab_changes is not None and names <= {"createWebView", "releaseWebView", "webView", "webViewWebContentProcessDidTerminate"}:
+        if session_context and tab_changes is not None and names <= {"preamble", "resolve", "init", "createWebView", "capturePreview", "suspend", "releaseWebView", "webView", "loadInBrowser", "updateUIView", "layoutSubviews", "markEditedInput"}:
+            # Navigation ownership/cache/canvas changed; certificate handling,
+            # process recovery and the build14 media policy are untouched.
+            areas.update(["session-navigation", "live-overview", "browsing-layout"])
+        elif video_context and tab_changes is not None and names <= {"createWebView", "releaseWebView", "webView", "webViewWebContentProcessDidTerminate"}:
             areas.add("video-orientation")
         elif password_context and tab_changes is not None and names <= {"preamble", "resolve", "createWebView", "releaseWebView", "webView", "webViewWebContentProcessDidTerminate"}:
             # Only attach/reset/detach and the read-only trust guard changed.
@@ -198,7 +220,9 @@ def plan(changed, store_changes=(), ui_changes=(), tab_changes=None, pending_app
             if any(name.startswith("scrollView") for name in names): areas.add("chrome")
     store_changes = set(store_changes)
     resilience_store = resilience_context and store_changes <= {"makeTab", "select", "setLandscape", "hideChrome", "scrollChrome", "applicationForegrounded"}
-    if "App/BrowserStore.swift" in changed and resilience_store:
+    if "App/BrowserStore.swift" in changed and session_context and store_changes <= {"makeTab", "trimLiveTabs", "beginTabTransition"}:
+        areas.update(["session-navigation", "live-overview"])
+    elif "App/BrowserStore.swift" in changed and resilience_store:
         areas.add("browsing-resilience")
     elif "App/BrowserStore.swift" in changed:
         if store_changes & {"preamble", "init"}:
@@ -221,7 +245,7 @@ def plan(changed, store_changes=(), ui_changes=(), tab_changes=None, pending_app
         tests.update(AREAS["launch"])
     # These cases already launch and render a real WKWebView fixture, including
     # when a shared UI helper changes along with the feature under test.
-    if areas & {"selection-search", "audio-mixing", "audio-volume", "browsing-resilience", "password-vault", "video-orientation"}:
+    if areas & {"selection-search", "audio-mixing", "audio-volume", "browsing-resilience", "password-vault", "video-orientation", "live-overview", "session-navigation", "photo-saving"}:
         tests.difference_update(AREAS["launch"])
     return {
         "areas": sorted(areas), "ui_tests": sorted(tests),

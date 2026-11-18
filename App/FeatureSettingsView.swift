@@ -5,6 +5,7 @@ import UniformTypeIdentifiers
 @MainActor
 struct FeatureSettingsView: View {
     @ObservedObject var store: BrowserStore
+    @ObservedObject private var retention = TabRetentionPreferences.shared
     @ObservedObject private var blocker = ContentBlocking.shared
     @ObservedObject private var promotions = AppPromotionBlocker.shared
     @State private var imageSelection: PhotosPickerItem?
@@ -50,8 +51,9 @@ struct FeatureSettingsView: View {
             Section("タブと操作") {
                 Toggle("アドレスバーをスワイプしてタブを切り替え", isOn: feature(\.swipeAddressToSwitchTabs))
                 Toggle("タブ追加時のアニメーション", isOn: feature(\.animateNewTabs))
-                Stepper("保持するWebページ数：\(store.features.maximumLiveTabs)", value: feature(\.maximumLiveTabs), in: 2...8)
-                Text("タブは最大500個。非選択・非再生のページは休止し、選択時にURLから再読み込みします。休止したページの入力内容や戻る履歴は復元されません。動画・PiP再生中のページは休止しません。")
+                Stepper("保持するWebページ数：\(retention.limit)", value: Binding(get: { retention.limit }, set: retention.setLimit), in: 8...24)
+                    .accessibilityIdentifier("residentPageLimitStepper")
+                Text("標準で12ページを読み込み済みのまま保持します。動画・PiP、入力中のフォーム、購入処理や別窓が参照する元ページは優先して保持します。端末のメモリ不足やiOSによるWeb処理終了時、上限を超えて休止したページは再読み込みが必要な場合があります。タブは最大500個です。")
                     .font(.footnote).foregroundStyle(.secondary)
             }
             Section("ホーム画面") {

@@ -140,3 +140,14 @@ final class VideoOrientationTests: XCTestCase {
         XCTAssertEqual(TabGridMetrics.width(viewport: 390, horizontalInsets: 0, columns: 2), 171)
     }
 }
+
+final class TabRetentionTests: XCTestCase {
+    func testDefaultKeepsMorePagesAndDoesNotEvictAtTheExactLimit() {
+        XCTAssertEqual(TabRetentionPolicy.standardLimit, 12)
+        XCTAssertFalse(TabRetentionPolicy.needsEviction(liveCount: 12, limit: 12))
+        XCTAssertTrue(TabRetentionPolicy.needsEviction(liveCount: 13, limit: 12))
+        XCTAssertFalse(TabRetentionPolicy.needsEviction(liveCount: 4, limit: TabRetentionPolicy.memoryPressureLimit))
+        XCTAssertEqual(TabRetentionPolicy.normalized(-1), 8)
+        XCTAssertEqual(TabRetentionPolicy.normalized(100), 24)
+    }
+}

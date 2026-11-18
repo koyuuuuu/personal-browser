@@ -51,16 +51,17 @@ final class PasswordFormController: ObservableObject {
         let isPrivate: Bool
         let trusted: () -> Bool
         let found: (Bool) -> Void
+        let filled: () -> Void
         var automaticAttempts = Set<String>()
         var epoch = UUID()
         var frames: [String: WKFrameInfo] = [:]
         var targets: [String: [PasswordFormTarget]] = [:]
-        init(_ view: WKWebView, tabID: UUID, isPrivate: Bool, trusted: @escaping () -> Bool, found: @escaping (Bool) -> Void) {
-            self.view=view; self.tabID=tabID; self.isPrivate=isPrivate; self.trusted=trusted; self.found=found
+        init(_ view: WKWebView, tabID: UUID, isPrivate: Bool, trusted: @escaping () -> Bool, found: @escaping (Bool) -> Void, filled: @escaping () -> Void) {
+            self.view=view; self.tabID=tabID; self.isPrivate=isPrivate; self.trusted=trusted; self.found=found; self.filled=filled
         }
     }
-    func attach(_ view: WKWebView, tabID: UUID, isPrivate: Bool, trusted: @escaping () -> Bool, found: @escaping (Bool) -> Void) {
-        entries[ObjectIdentifier(view)] = Entry(view, tabID: tabID, isPrivate: isPrivate, trusted: trusted, found: found)
+    func attach(_ view: WKWebView, tabID: UUID, isPrivate: Bool, trusted: @escaping () -> Bool, found: @escaping (Bool) -> Void, filled: @escaping () -> Void = {}) {
+        entries[ObjectIdentifier(view)] = Entry(view, tabID: tabID, isPrivate: isPrivate, trusted: trusted, found: found, filled: filled)
         let controller=view.configuration.userContentController
         controller.add(PasswordFormHandler(owner: self), contentWorld: .defaultClient, name: "browserPasswords")
         let hints = PasswordVault.shared.improveAppleAutoFill ? "true" : "false"
@@ -149,11 +150,17 @@ final class PasswordFormController: ObservableObject {
                 continuation.resume(returning:object)
             }
         }
-        _ = try checked(target,capture:action=="capture",systemFocus:action=="focus",management:management)
+        // A successful fill acknowledgement contains no secrets. Site input
+        // handlers may already have moved focus, replaced the form or navigated;
+        // that does not turn a completed fill into a failure. Capture still
+        // requires the full post-operation trust/origin check.
+        if action == "fill" {
+            if let entry = entries.values.first(where: { $0.tabID == target.tabID && $0.epoch == target.epoch }) { entry.filled() }
+        } else { _ = try checked(target,capture:action=="capture",systemFocus:action=="focus",management:management) }
         return result
     }
     func fill(_ record: PasswordRecord, into target: PasswordFormTarget, fromManager: Bool = false, interactionID: UUID? = nil) async throws {
-        if let interactionID, interactionID != self.interactionID { throw PasswordVaultError.invalidSite }
+        if let interactionID, interactionID != self.interactionID { throw CancellationError() }
         guard PasswordVault.shared.unlocked,record.site==target.site,target.currentPassword else {throw PasswordVaultError.locked}
         _ = try await command(target,action:"fill",username:record.username,password:record.password,management:fromManager)
     }

@@ -3,7 +3,7 @@ import SwiftUI
 @MainActor
 struct TabsView: View {
     @ObservedObject var store: BrowserStore
-    @Environment(\.dismiss) private var dismiss
+    let dismiss: () -> Void
     @State private var query = ""
     @State private var confirmClose = false
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -13,8 +13,6 @@ struct TabsView: View {
             TabGridView(store: store, tabs: filtered, columns: store.presentation.tabColumns, reduceMotion: reduceMotion) { tab in
                 store.select(tab); dismiss()
             }
-            .onAppear { store.overviewPresented = true; store.selectedTab?.capturePreview() }
-            .onDisappear { store.overviewPresented = false }
             .background(Color(uiColor: .systemGroupedBackground))
             .searchable(text: $query, prompt: "タブを検索")
             .navigationTitle("タブ \(store.tabs.count)")

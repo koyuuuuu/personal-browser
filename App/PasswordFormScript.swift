@@ -79,7 +79,8 @@ enum PasswordFormScript {
       };
       const set = (el,value) => {
         Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set.call(el,value);
-        el.dispatchEvent(new Event('input',{bubbles:true})); el.dispatchEvent(new Event('change',{bubbles:true}));
+        el.dispatchEvent(new InputEvent('input',{bubbles:true,composed:true,inputType:'insertReplacementText',data:null}));
+        el.dispatchEvent(new Event('change',{bubbles:true,composed:true}));
       };
       // Capture only at an actual user submission gesture, never on typing.
       // Do not hook form prototypes, prevent submission, or send page URLs.
@@ -145,7 +146,7 @@ enum PasswordFormScript {
       }};
       new MutationObserver(changed).observe(document,{subtree:true,childList:true,attributes:true,attributeFilter:['type','autocomplete','disabled','readonly','hidden','style','class']});
       for(const event of ['input','change']) document.addEventListener(event,e=>{if(e.isTrusted && e.target instanceof HTMLInputElement)dirty.add(e.target);changed();},true);
-      document.addEventListener('focusin',changed,true); document.addEventListener('focusout',changed,true); window.addEventListener('pageshow',refresh);
+      document.addEventListener('focusin',refresh,true); document.addEventListener('focusout',changed,true); window.addEventListener('pageshow',refresh);
       document.addEventListener('DOMContentLoaded',refresh); setInterval(refresh,2000); refresh();
     })();
     """#
