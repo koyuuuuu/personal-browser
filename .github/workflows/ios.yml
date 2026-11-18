@@ -64,7 +64,8 @@ jobs:
 
   ios:
     needs: check
-    runs-on: macos-15
+    # Standard public Intel runner; arm64 allocation failed before startup.
+    runs-on: macos-15-intel
     timeout-minutes: 45
     env:
       BROWSER_BUNDLE_ID: local.personalbrowser.app
