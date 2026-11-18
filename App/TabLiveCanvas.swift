@@ -32,30 +32,37 @@ final class WebSurfaceView: UIView {
                 items[tab.id] = item; addSubview(item)
                 item.setViewport(bounds.size)
             }
-            webView.isUserInteractionEnabled = !store.overviewPresented && tab.id == store.selectedID && tab.hasContent
-            webView.accessibilityElementsHidden = store.overviewPresented || tab.id != store.selectedID
+            let interactive = !store.overviewPresented && tab.id == store.selectedID && tab.hasContent
+            let hidden = store.overviewPresented || tab.id != store.selectedID
+            if webView.isUserInteractionEnabled != interactive { webView.isUserInteractionEnabled = interactive }
+            if webView.accessibilityElementsHidden != hidden { webView.accessibilityElementsHidden = hidden }
         }
-        if let selected = store.selectedID, let item = items[selected] { bringSubviewToFront(item) }
+        if let selected = store.selectedID, let item = items[selected], subviews.last !== item { bringSubviewToFront(item) }
         if !store.overviewPresented {
             for (id, item) in items {
                 if item.homeSnapshot { item.removeFromSuperview(); items.removeValue(forKey: id); continue }
-                item.frame = bounds; item.layer.cornerRadius = 0; item.setViewport(bounds.size)
+                if item.frame != bounds { item.frame = bounds }
+                if item.layer.cornerRadius != 0 { item.layer.cornerRadius = 0 }
+                item.setViewport(bounds.size)
                 let capturing = store.tabs.first(where: { $0.id == id })?.isCapturingPreview == true
-                item.alpha = (id == store.selectedID && store.selectedTab?.hasContent == true) || capturing ? 1 : 0.01
+                let alpha: CGFloat = (id == store.selectedID && store.selectedTab?.hasContent == true) || capturing ? 1 : 0.01
+                if item.alpha != alpha { item.alpha = alpha }
             }
-            layer.mask = nil
+            if layer.mask != nil { layer.mask = nil }
         } else { TabOverviewPresentation.shared.synchronize() }
         chromeRecovery.webView = store.overviewPresented ? nil : store.selectedTab?.existingWebView
         chromeRecovery.hidden = { [weak store] in store?.chromeVisible == false }
         chromeRecovery.locked = { [weak store] in store?.selectedTab?.documentScrollLocked == true }
         chromeRecovery.reveal = { [weak store] in store?.revealChrome() }
-        setNeedsLayout()
     }
     override func layoutSubviews() {
         super.layoutSubviews()
         guard !animating, let store else { return }
         if !store.overviewPresented {
-            for item in items.values { item.frame = bounds; item.setViewport(bounds.size) }
+            for item in items.values {
+                if item.frame != bounds { item.frame = bounds }
+                item.setViewport(bounds.size)
+            }
         } else { TabOverviewPresentation.shared.synchronize() }
     }
     func hasLivePreview(_ id: UUID) -> Bool {
@@ -158,6 +165,7 @@ private final class LiveTabCanvasItem: UIView {
     let content: UIView
     let homeSnapshot: Bool
     private var viewport = CGSize.zero
+    private var previewing = false
     init(content: UIView, homeSnapshot: Bool) {
         self.content = content; self.homeSnapshot = homeSnapshot
         super.init(frame: .zero); clipsToBounds = true; isOpaque = false; autoresizesSubviews = false
@@ -166,11 +174,17 @@ private final class LiveTabCanvasItem: UIView {
     required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }
     func setViewport(_ size: CGSize) {
         guard size.width > 0, size.height > 0 else { return }
+        let center = CGPoint(x: size.width / 2, y: size.height / 2)
+        // Metadata/preview updates must not reset an unchanged WK viewport or
+        // interrupt UIKit's ongoing link/image context-menu presentation.
+        guard viewport != size || previewing else { return }
+        previewing = false
         viewport = size; content.transform = .identity
-        content.bounds = CGRect(origin: .zero, size: size); content.center = CGPoint(x: size.width / 2, y: size.height / 2)
+        content.bounds = CGRect(origin: .zero, size: size); content.center = center
     }
     func fitPreview() {
         guard viewport.width > 0, viewport.height > 0 else { return }
+        previewing = true
         let scale = bounds.width / viewport.width
         content.transform = CGAffineTransform(scaleX: scale, y: scale)
         content.center = CGPoint(x: bounds.width / 2, y: viewport.height * scale / 2)

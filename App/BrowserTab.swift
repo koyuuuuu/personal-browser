@@ -646,6 +646,9 @@ final class BrowserTab: NSObject, ObservableObject, Identifiable, WKNavigationDe
         if BrowserRegressionFixtures.kind == "photo-fixture" { BrowserRegressionFixtures.photoMenuStatus = "Photo link menu requested" }
         #endif
         guard let link = elementInfo.linkURL, WebURLPolicy.allows(link) else { completionHandler(nil); return }
+        #if DEBUG
+        if BrowserRegressionFixtures.kind == "photo-fixture" { BrowserRegressionFixtures.photoMenuStatus = "Photo menu configured" }
+        #endif
         let menu = UIContextMenuConfiguration(identifier: nil, previewProvider: nil) { [weak self] suggested in
             guard let self else { return nil }
             #if DEBUG
