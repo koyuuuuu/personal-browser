@@ -642,15 +642,8 @@ final class BrowserTab: NSObject, ObservableObject, Identifiable, WKNavigationDe
 
     func webView(_ webView: WKWebView, contextMenuConfigurationForElement elementInfo: WKContextMenuElementInfo,
                  completionHandler: @escaping (UIContextMenuConfiguration?) -> Void) {
-        guard let link = elementInfo.linkURL, WebURLPolicy.allows(link) else {
-            // nil suppresses WebKit's image menu and falls back to selection.
-            // Keep its system Save Image action and photo permission handling.
-            completionHandler(UIContextMenuConfiguration(identifier: nil, previewProvider: nil) { suggested in
-                UIMenu(children: suggested)
-            })
-            return
-        }
-        let menu = UIContextMenuConfiguration(identifier: nil, previewProvider: nil) { [weak self] _ in
+        guard let link = elementInfo.linkURL, WebURLPolicy.allows(link) else { completionHandler(nil); return }
+        let menu = UIContextMenuConfiguration(identifier: nil, previewProvider: nil) { [weak self] suggested in
             guard let self else { return nil }
             let applications = ExternalApplication.allCases.filter { self.preferences.externalApplications.contains($0.rawValue) }.map { app in
                 UIAction(title: app.label, image: UIImage(systemName: "arrow.up.forward.app")) { [weak self] _ in
@@ -684,7 +677,9 @@ final class BrowserTab: NSObject, ObservableObject, Identifiable, WKNavigationDe
             for name in ["メモ", "ChatGPT", "Claude", "その他のアプリ"] {
                 appActions.append(UIAction(title: name + "（共有から選択）", image: UIImage(systemName: "square.and.arrow.up")) { [weak self] _ in self?.onShareLink?(link) })
             }
-            return UIMenu(children: [
+            // Linked images include WebKit's system image-save action here.
+            // Preserve those actions alongside the browser's link commands.
+            return UIMenu(children: suggested + [
                 UIAction(title: "このタブで開く", image: UIImage(systemName: "arrow.up.right")) { [weak self] _ in self?.onPreferBrowser?(link); self?.load(link) },
                 UIAction(title: "新しいタブで開く", image: UIImage(systemName: "plus.square")) { [weak self] _ in self?.onPreferBrowser?(link); self?.onOpenLink?(link, self?.isPrivate ?? false) },
                 UIAction(title: "リンクをコピー", image: UIImage(systemName: "doc.on.doc")) { _ in UIPasteboard.general.url = link },

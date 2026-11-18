@@ -67,8 +67,8 @@ final class BrowserUITests: XCTestCase {
 
     func testSavingWebsitePhotoDoesNotTerminateBrowser() {
         XCTAssertTrue(app.images["Fixture photo"].waitForExistence(timeout: 15))
-        app.images["Fixture photo"].press(forDuration: 1.2)
-        let save = app.buttons.matching(NSPredicate(format: "label IN %@", ["写真に保存", "画像を保存", "写真に追加", "Save Image", "Add to Photos", "Save to Photos"])).firstMatch
+        app.images["Fixture photo"].coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).press(forDuration: 1.0)
+        let save = app.buttons.matching(NSPredicate(format: "(label CONTAINS '写真' OR label CONTAINS '画像') AND (label CONTAINS '保存' OR label CONTAINS '追加') OR label IN %@", ["Save Image", "Add to Photos", "Save to Photos"])).firstMatch
         XCTAssertTrue(save.waitForExistence(timeout: 8)); save.tap()
         let springboard = XCUIApplication(bundleIdentifier: "com.apple.springboard")
         let permission = springboard.alerts.buttons.matching(NSPredicate(format: "(label CONTAINS[c] 'Allow' OR label CONTAINS '許可') AND NOT (label CONTAINS[c] 'Don' OR label CONTAINS 'しない')")).firstMatch
