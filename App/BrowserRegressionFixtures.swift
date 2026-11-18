@@ -4,6 +4,7 @@ import WebKit
 
 @MainActor
 enum BrowserRegressionFixtures {
+    static var photoMenuStatus = "Photo menu not requested"
     static var kind: String? {
         let args = ProcessInfo.processInfo.arguments
         guard args.contains("--ui-testing") else { return nil }
@@ -27,11 +28,18 @@ enum BrowserRegressionFixtures {
 @MainActor
 struct BrowserRegressionFixtureControls: View {
     @ObservedObject var store: BrowserStore
+    @State private var showPhotoStatus = false
     var body: some View {
         if BrowserRegressionFixtures.kind == "session-login" {
             Button("読み込み済み8ページを開く") { BrowserRegressionFixtures.openCachedPages(store) }
                 .accessibilityIdentifier("openCachedPagesFixtureButton")
                 .font(.caption).buttonStyle(.borderedProminent).padding(4)
+        } else if BrowserRegressionFixtures.kind == "photo-fixture" {
+            VStack {
+                Button("写真メニューの診断") { showPhotoStatus = true }
+                    .accessibilityIdentifier("photoMenuProbeButton")
+                if showPhotoStatus { Text(BrowserRegressionFixtures.photoMenuStatus).font(.caption) }
+            }.font(.caption).padding(4)
         }
     }
 }

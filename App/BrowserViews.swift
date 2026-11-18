@@ -147,7 +147,7 @@ struct BrowserRootView: View {
                     }.font(.caption).buttonStyle(.borderedProminent).padding(4)
                 }
             }
-        } else if BrowserRegressionFixtures.kind == "session-login" {
+        } else if ["session-login", "photo-fixture"].contains(BrowserRegressionFixtures.kind ?? "") {
             connectedContent.safeAreaInset(edge: .top, spacing: 0) { BrowserRegressionFixtureControls(store: store) }
         } else if VideoOrientationController.fixture {
             connectedContent.safeAreaInset(edge: .top, spacing: 0) {

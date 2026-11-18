@@ -66,10 +66,15 @@ final class BrowserUITests: XCTestCase {
     }
 
     func testSavingWebsitePhotoDoesNotTerminateBrowser() {
+        XCTAssertTrue(app.staticTexts["Photo ready"].waitForExistence(timeout: 20))
         XCTAssertTrue(app.images["Fixture photo"].waitForExistence(timeout: 15))
-        app.images["Fixture photo"].coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).press(forDuration: 1.0)
+        settlePresentation()
+        let frame = app.images["Fixture photo"].frame
+        app.coordinate(withNormalizedOffset: .zero).withOffset(CGVector(dx: frame.midX - app.frame.minX, dy: frame.midY - app.frame.minY)).press(forDuration: 3)
         let save = app.buttons.matching(NSPredicate(format: "(label CONTAINS '写真' OR label CONTAINS '画像') AND (label CONTAINS '保存' OR label CONTAINS '追加') OR label IN %@", ["Save Image", "Add to Photos", "Save to Photos"])).firstMatch
-        XCTAssertTrue(save.waitForExistence(timeout: 8)); save.tap()
+        let hasSave = save.waitForExistence(timeout: 12)
+        if !hasSave { tapMenuControl("photoMenuProbeButton"); print("Photo menu diagnostic: \(app.debugDescription)") }
+        XCTAssertTrue(hasSave); save.tap()
         let springboard = XCUIApplication(bundleIdentifier: "com.apple.springboard")
         let permission = springboard.alerts.buttons.matching(NSPredicate(format: "(label CONTAINS[c] 'Allow' OR label CONTAINS '許可') AND NOT (label CONTAINS[c] 'Don' OR label CONTAINS 'しない')")).firstMatch
         if permission.waitForExistence(timeout: 5) { permission.tap() }
@@ -212,7 +217,8 @@ final class BrowserUITests: XCTestCase {
         XCTAssertTrue(app.buttons["unlockPasswordVaultButton"].waitForExistence(timeout: 5))
         app.buttons["unlockPasswordVaultButton"].tap()
         app.navigationBars["パスワード"].buttons["閉じる"].tap()
-        app.buttons["Reset login form"].tap()
+        settlePresentation()
+        tapMenuControl("Reset login form")
         XCTAssertTrue(app.staticTexts["Fields empty"].waitForExistence(timeout: 5))
         let loginUser = app.textFields["Fixture username"]
         loginUser.tap()
