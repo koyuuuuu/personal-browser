@@ -50,9 +50,11 @@ final class BrowserUITests: XCTestCase {
         app.buttons["Set memory marker"].tap()
         app.links["Continue to checkout"].tap()
         XCTAssertTrue(app.staticTexts["Checkout context preserved"].waitForExistence(timeout: 12), "Cookie, opener, inherited sessionStorage and named target must survive")
-        app.buttons["Submit test checkout"].tap()
+        // Related WebViews can have a valid visible frame but no AX hit point.
+        // Use a real centre touch and require the server-side POST result.
+        tapMenuControl("Submit test checkout")
         XCTAssertTrue(app.staticTexts["Checkout POST and cookie preserved"].waitForExistence(timeout: 10))
-        app.buttons["Close checkout window"].tap()
+        tapMenuControl("Close checkout window")
         XCTAssertTrue(app.staticTexts["Memory marker retained"].waitForExistence(timeout: 10))
         app.buttons["openCachedPagesFixtureButton"].tap()
         XCTAssertTrue(app.staticTexts["Memory marker retained"].waitForExistence(timeout: 15), "Returning after eight actual live pages must preserve DOM state")
@@ -1037,7 +1039,7 @@ final class BrowserUITests: XCTestCase {
             }
             XCTAssertTrue(pair, "Rotation must not leave a one-card-per-row layout")
         }
-        app.buttons["overviewNewTabButton"].tap()
+        tapMenuControl("overviewNewTabButton")
         XCTAssertTrue(app.textFields["addressField"].waitForExistence(timeout: 5))
         tapMenuControl("tabsButton")
         XCTAssertTrue(app.navigationBars["タブ 17"].waitForExistence(timeout: 5))

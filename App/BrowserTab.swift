@@ -642,7 +642,14 @@ final class BrowserTab: NSObject, ObservableObject, Identifiable, WKNavigationDe
 
     func webView(_ webView: WKWebView, contextMenuConfigurationForElement elementInfo: WKContextMenuElementInfo,
                  completionHandler: @escaping (UIContextMenuConfiguration?) -> Void) {
-        guard let link = elementInfo.linkURL, WebURLPolicy.allows(link) else { completionHandler(nil); return }
+        guard let link = elementInfo.linkURL, WebURLPolicy.allows(link) else {
+            // nil suppresses WebKit's image menu and falls back to selection.
+            // Keep its system Save Image action and photo permission handling.
+            completionHandler(UIContextMenuConfiguration(identifier: nil, previewProvider: nil) { suggested in
+                UIMenu(children: suggested)
+            })
+            return
+        }
         let menu = UIContextMenuConfiguration(identifier: nil, previewProvider: nil) { [weak self] _ in
             guard let self else { return nil }
             let applications = ExternalApplication.allCases.filter { self.preferences.externalApplications.contains($0.rawValue) }.map { app in
