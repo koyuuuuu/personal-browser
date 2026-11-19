@@ -12,6 +12,16 @@
       "iconURL": "https://raw.githubusercontent.com/koyuuuuu/personal-browser-distribution/main/icon.png",
       "versions": [
         {
+          "version": "0.15.0",
+          "buildVersion": "96",
+          "date": "2026-11-19T14:06:03.937616+00:00",
+          "localizedDescription": "写真保存時のクラッシュと、購入画面の別窓・セッションを壊す遷移を修正。パスワード入力成功後に出る誤ったエラーを抑制。ページ保持を標準12ページへ増やし、入力中・購入処理中・再生中のページを優先。タブ一覧を現在のページがカードへ縮小する表示に変更し、一覧内でも実際の動画再生を維持します。",
+          "downloadURL": "https://github.com/koyuuuuu/personal-browser-distribution/releases/download/v0.15.0-build.96/PersonalBrowser.ipa",
+          "size": 5764841,
+          "minOSVersion": "17.0",
+          "sha256": "68475609e60e5a80165fa9e8ef2d1f244ca07627c9158ddbbb50a4dd2af463f8"
+        },
+        {
           "version": "0.14.0",
           "buildVersion": "86",
           "date": "2026-11-11T01:03:16.084069+00:00",
@@ -229,7 +239,9 @@
           "NSFaceIDUsageDescription": "このブラウザのパスワード保管庫を安全に開くために使用します。",
           "NSLocalNetworkUsageDescription": "自宅のネットワークにある自作アプリや動画サーバーへ接続するために使用します。",
           "NSMicrophoneUsageDescription": "閲覧中のWebサイトでマイクを使用するために必要です。",
-          "NSMotionUsageDescription": "動画を全画面で表示する際に、端末の傾きに合わせて画面の向きを調整します。"
+          "NSMotionUsageDescription": "動画を全画面で表示する際に、端末の傾きに合わせて画面の向きを調整します。",
+          "NSPhotoLibraryAddUsageDescription": "Webページの画像を写真ライブラリに保存するために使用します。",
+          "NSPhotoLibraryUsageDescription": "Webページから選んだ画像を写真に保存するために使用します。"
         }
       }
     }

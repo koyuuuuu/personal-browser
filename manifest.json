@@ -2,6 +2,38 @@
   "releases": [
     {
       "file": "PersonalBrowser.ipa",
+      "sha256": "68475609e60e5a80165fa9e8ef2d1f244ca07627c9158ddbbb50a4dd2af463f8",
+      "bundle_id": "local.personalbrowser.app",
+      "version": "0.15.0",
+      "build": "96",
+      "minimum_ios": "17.0",
+      "target_ios": "18.4.1",
+      "architecture": "arm64",
+      "platform": "iOS device",
+      "embedded_profile": false,
+      "signature_resources": false,
+      "installation_verified": false,
+      "source_commit": "9e8f50c7e491e7bdd459e9d0f167b34d372eed19",
+      "data_schema": 1,
+      "size": 5764841,
+      "date": "2026-11-19T14:06:03.937616+00:00",
+      "description": "写真保存時のクラッシュと、購入画面の別窓・セッションを壊す遷移を修正。パスワード入力成功後に出る誤ったエラーを抑制。ページ保持を標準12ページへ増やし、入力中・購入処理中・再生中のページを優先。タブ一覧を現在のページがカードへ縮小する表示に変更し、一覧内でも実際の動画再生を維持します。",
+      "appPermissions": {
+        "entitlements": [],
+        "privacy": {
+          "NSCameraUsageDescription": "閲覧中のWebサイトでカメラを使用するために必要です。",
+          "NSFaceIDUsageDescription": "このブラウザのパスワード保管庫を安全に開くために使用します。",
+          "NSLocalNetworkUsageDescription": "自宅のネットワークにある自作アプリや動画サーバーへ接続するために使用します。",
+          "NSMicrophoneUsageDescription": "閲覧中のWebサイトでマイクを使用するために必要です。",
+          "NSMotionUsageDescription": "動画を全画面で表示する際に、端末の傾きに合わせて画面の向きを調整します。",
+          "NSPhotoLibraryAddUsageDescription": "Webページの画像を写真ライブラリに保存するために使用します。",
+          "NSPhotoLibraryUsageDescription": "Webページから選んだ画像を写真に保存するために使用します。"
+        }
+      },
+      "tag": "v0.15.0-build.96"
+    },
+    {
+      "file": "PersonalBrowser.ipa",
       "sha256": "fbd819a01c45116a3ad15e52788530ed97347c6e33b249b1e149b5abf9ef3414",
       "bundle_id": "local.personalbrowser.app",
       "version": "0.14.0",
@@ -597,7 +629,9 @@
           "NSFaceIDUsageDescription": "このブラウザのパスワード保管庫を安全に開くために使用します。",
           "NSLocalNetworkUsageDescription": "自宅のネットワークにある自作アプリや動画サーバーへ接続するために使用します。",
           "NSMicrophoneUsageDescription": "閲覧中のWebサイトでマイクを使用するために必要です。",
-          "NSMotionUsageDescription": "動画を全画面で表示する際に、端末の傾きに合わせて画面の向きを調整します。"
+          "NSMotionUsageDescription": "動画を全画面で表示する際に、端末の傾きに合わせて画面の向きを調整します。",
+          "NSPhotoLibraryAddUsageDescription": "Webページの画像を写真ライブラリに保存するために使用します。",
+          "NSPhotoLibraryUsageDescription": "Webページから選んだ画像を写真に保存するために使用します。"
         }
       }
     }
