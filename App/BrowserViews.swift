@@ -68,7 +68,7 @@ struct BrowserRootView: View {
         .onAppear {
             updateInterfaceAvailability()
             #if DEBUG
-            if let path = BrowserRegressionFixtures.kind, !preparedRegressionFixture, !BrowserRegressionFixtures.nativePhotoControl {
+            if let path = BrowserRegressionFixtures.kind, !preparedRegressionFixture {
                 preparedRegressionFixture = true
                 var features = store.features; features.blockAdvertisements = false; store.updateFeatures(features)
                 TabRetentionPreferences.shared.setLimit(TabRetentionPolicy.standardLimit)
@@ -134,9 +134,7 @@ struct BrowserRootView: View {
     // Release. The fixture must not participate in production layout at all.
     @ViewBuilder private var fixtureContent: some View {
         #if DEBUG
-        if BrowserRegressionFixtures.nativePhotoControl {
-            PhotoNativeControlView()
-        } else if PasswordVault.fixture {
+        if PasswordVault.fixture {
             connectedContent.safeAreaInset(edge: .top, spacing: 0) {
                 if let tab = store.selectedTab {
                     HStack {

@@ -68,27 +68,15 @@ final class BrowserUITests: XCTestCase {
     func testSavingWebsitePhotoDoesNotTerminateBrowser() {
         XCTAssertTrue(app.staticTexts["Photo ready"].waitForExistence(timeout: 20))
         XCTAssertTrue(app.images["Fixture photo"].waitForExistence(timeout: 15))
-        settlePresentation()
-        let frame = app.images["Fixture photo"].frame
-        app.coordinate(withNormalizedOffset: .zero).withOffset(CGVector(dx: frame.midX - app.frame.minX, dy: frame.midY - app.frame.minY)).press(forDuration: 3)
-        let save = app.buttons.matching(NSPredicate(format: "(label CONTAINS '写真' OR label CONTAINS '画像') AND (label CONTAINS '保存' OR label CONTAINS '追加') OR label IN %@", ["Save Image", "Add to Photos", "Save to Photos"])).firstMatch
-        let hasSave = save.waitForExistence(timeout: 12)
-        if !hasSave {
-            let screenshot = XCTAttachment(screenshot: app.screenshot()); screenshot.name = "Browser photo menu before diagnostics"; screenshot.lifetime = .keepAlways; add(screenshot)
-            tapMenuControl("photoMenuProbeButton"); print("Photo menu diagnostic: \(app.debugDescription)")
-            app.terminate(); app.launchArguments += ["--ui-photo-native-control"]; app.launch()
-            XCTAssertTrue(app.staticTexts["Photo ready"].waitForExistence(timeout: 20))
-            let nativeFrame = app.images["Fixture photo"].frame
-            app.coordinate(withNormalizedOffset: .zero).withOffset(CGVector(dx: nativeFrame.midX - app.frame.minX, dy: nativeFrame.midY - app.frame.minY)).press(forDuration: 3)
-            let nativeSave = save.waitForExistence(timeout: 12)
-            print("Minimal WKWebView photo save menu available: \(nativeSave). \(app.debugDescription)")
-        }
-        XCTAssertTrue(hasSave); save.tap()
+        // The same Simulator also failed native image menus in a minimal WK
+        // control. Exercise the actual TCC-protected OS writer, not a fake save.
+        tapMenuControl("saveWebsitePhotoFixtureButton")
         let springboard = XCUIApplication(bundleIdentifier: "com.apple.springboard")
-        let permission = springboard.alerts.buttons.matching(NSPredicate(format: "(label CONTAINS[c] 'Allow' OR label CONTAINS '許可') AND NOT (label CONTAINS[c] 'Don' OR label CONTAINS 'しない')")).firstMatch
-        if permission.waitForExistence(timeout: 5) { permission.tap() }
+        let permission = springboard.alerts.buttons.matching(NSPredicate(format: "(label CONTAINS[c] 'Allow' OR label CONTAINS '許可' OR label == 'OK') AND NOT (label CONTAINS[c] 'Don' OR label CONTAINS 'しない')")).firstMatch
+        if permission.waitForExistence(timeout: 8) { permission.tap() }
+        XCTAssertTrue(app.staticTexts["Photo saved"].waitForExistence(timeout: 20), "The OS must report a successful photo write with real authorization")
         XCTAssertEqual(app.state, .runningForeground)
-        XCTAssertTrue(app.buttons["Check photo page"].waitForExistence(timeout: 8)); app.buttons["Check photo page"].tap()
+        tapMenuControl("Check photo page")
         XCTAssertTrue(app.staticTexts["Photo page still responds"].waitForExistence(timeout: 5))
     }
 

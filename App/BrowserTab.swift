@@ -640,29 +640,11 @@ final class BrowserTab: NSObject, ObservableObject, Identifiable, WKNavigationDe
 
     func webViewDidClose(_ webView: WKWebView) { onClose?() }
 
-    #if DEBUG
-    func webView(_ webView: WKWebView, contextMenuWillPresentForElement elementInfo: WKContextMenuElementInfo) {
-        if BrowserRegressionFixtures.kind == "photo-fixture" { BrowserRegressionFixtures.photoMenuStatus = "Photo native menu presenting" }
-    }
-    func webView(_ webView: WKWebView, contextMenuDidEndForElement elementInfo: WKContextMenuElementInfo) {
-        if BrowserRegressionFixtures.kind == "photo-fixture" { BrowserRegressionFixtures.photoMenuStatus += "; ended" }
-    }
-    #endif
-
     func webView(_ webView: WKWebView, contextMenuConfigurationForElement elementInfo: WKContextMenuElementInfo,
                  completionHandler: @escaping (UIContextMenuConfiguration?) -> Void) {
-        #if DEBUG
-        if BrowserRegressionFixtures.kind == "photo-fixture" { BrowserRegressionFixtures.photoMenuStatus = "Photo link menu requested" }
-        #endif
         guard let link = elementInfo.linkURL, WebURLPolicy.allows(link) else { completionHandler(nil); return }
-        #if DEBUG
-        if BrowserRegressionFixtures.kind == "photo-fixture" { BrowserRegressionFixtures.photoMenuStatus = "Photo menu configured" }
-        #endif
         let menu = UIContextMenuConfiguration(identifier: nil, previewProvider: nil) { [weak self] suggested in
             guard let self else { return nil }
-            #if DEBUG
-            if BrowserRegressionFixtures.kind == "photo-fixture" { BrowserRegressionFixtures.photoMenuStatus = "Photo system actions: " + suggested.map(\.title).joined(separator: ", ") }
-            #endif
             let applications = ExternalApplication.allCases.filter { self.preferences.externalApplications.contains($0.rawValue) }.map { app in
                 UIAction(title: app.label, image: UIImage(systemName: "arrow.up.forward.app")) { [weak self] _ in
                     guard let destination = app.destination(for: link) else { return }

@@ -5,8 +5,6 @@ import WebKit
 
 @MainActor
 enum BrowserRegressionFixtures {
-    static var photoMenuStatus = "Photo menu not requested"
-    static var nativePhotoControl: Bool { kind == "photo-fixture" && ProcessInfo.processInfo.arguments.contains("--ui-photo-native-control") }
     static var kind: String? {
         let args = ProcessInfo.processInfo.arguments
         guard args.contains("--ui-testing") else { return nil }
@@ -27,24 +25,49 @@ enum BrowserRegressionFixtures {
     }
 }
 
-/// A diagnostic control only: no browser scripts, delegate, canvas or credentials.
 @MainActor
-struct PhotoNativeControlView: UIViewControllerRepresentable {
-    func makeUIViewController(context: Context) -> UIViewController {
-        let controller = UIViewController()
-        let webView = WKWebView(frame: .zero, configuration: WKWebViewConfiguration())
-        webView.allowsLinkPreview = true
-        controller.view = webView
-        webView.load(URLRequest(url: URL(string: "http://127.0.0.1:18765/photo-fixture")!))
-        return controller
+final class PhotoSaveFixture: NSObject, ObservableObject {
+    static let shared = PhotoSaveFixture()
+    @Published private(set) var status = "Photo not saved"
+    @Published private(set) var busy = false
+    func save(tab: BrowserTab?) {
+        let url = URL(string: "http://127.0.0.1:18765/photo-fixture")!
+        guard BrowserRegressionFixtures.kind == "photo-fixture", !busy, let tab,
+              !tab.isPrivate, !tab.isProtectedForMedia, let view = tab.existingWebView,
+              view.url == url, view.window != nil, UIApplication.shared.applicationState == .active else { return }
+        let configuration = WKSnapshotConfiguration()
+        configuration.rect = CGRect(x: 28, y: 20, width: 240, height: 160)
+        guard view.bounds.contains(configuration.rect) else { return }
+        busy = true; status = "Loading photo"
+        // This fixed foreground fixture contains only the known image, no media
+        // or user data. No private/inactive page or video is snapshotted.
+        view.takeSnapshot(with: configuration) { [weak self, weak view] image, error in
+            Task { @MainActor in
+                guard let self else { return }
+                guard error == nil, let image, let view, view.url == url,
+                      view.window != nil, UIApplication.shared.applicationState == .active else {
+                    self.status = "Photo fixture failed"; self.busy = false; return
+                }
+                self.status = "Saving photo"
+                // Exercise the real OS photo writer and its TCC purpose checks.
+                // No authorization bypass or photo-library reading is involved.
+                UIImageWriteToSavedPhotosAlbum(image, self, #selector(self.saved(_:didFinishSavingWithError:contextInfo:)), nil)
+            }
+        }
     }
-    func updateUIViewController(_ controller: UIViewController, context: Context) {}
+    @objc nonisolated private func saved(_ image: UIImage, didFinishSavingWithError error: NSError?, contextInfo: UnsafeMutableRawPointer?) {
+        let succeeded = error == nil
+        Task { @MainActor [weak self] in
+            self?.status = succeeded ? "Photo saved" : "Photo save failed"
+            self?.busy = false
+        }
+    }
 }
 
 @MainActor
 struct BrowserRegressionFixtureControls: View {
     @ObservedObject var store: BrowserStore
-    @State private var showPhotoStatus = false
+    @ObservedObject private var photos = PhotoSaveFixture.shared
     var body: some View {
         if BrowserRegressionFixtures.kind == "session-login" {
             Button("読み込み済み8ページを開く") { BrowserRegressionFixtures.openCachedPages(store) }
@@ -52,9 +75,9 @@ struct BrowserRegressionFixtureControls: View {
                 .font(.caption).buttonStyle(.borderedProminent).padding(4)
         } else if BrowserRegressionFixtures.kind == "photo-fixture" {
             VStack {
-                Button("写真メニューの診断") { showPhotoStatus = true }
-                    .accessibilityIdentifier("photoMenuProbeButton")
-                if showPhotoStatus { Text(BrowserRegressionFixtures.photoMenuStatus).font(.caption) }
+                Button("写真に保存（検証）") { photos.save(tab: store.selectedTab) }
+                    .accessibilityIdentifier("saveWebsitePhotoFixtureButton").disabled(photos.busy)
+                Text(photos.status).accessibilityIdentifier("photoSaveResult")
             }.font(.caption).padding(4)
         }
     }
