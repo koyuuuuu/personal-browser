@@ -73,7 +73,16 @@ final class BrowserUITests: XCTestCase {
         app.coordinate(withNormalizedOffset: .zero).withOffset(CGVector(dx: frame.midX - app.frame.minX, dy: frame.midY - app.frame.minY)).press(forDuration: 3)
         let save = app.buttons.matching(NSPredicate(format: "(label CONTAINS '写真' OR label CONTAINS '画像') AND (label CONTAINS '保存' OR label CONTAINS '追加') OR label IN %@", ["Save Image", "Add to Photos", "Save to Photos"])).firstMatch
         let hasSave = save.waitForExistence(timeout: 12)
-        if !hasSave { tapMenuControl("photoMenuProbeButton"); print("Photo menu diagnostic: \(app.debugDescription)") }
+        if !hasSave {
+            let screenshot = XCTAttachment(screenshot: app.screenshot()); screenshot.name = "Browser photo menu before diagnostics"; screenshot.lifetime = .keepAlways; add(screenshot)
+            tapMenuControl("photoMenuProbeButton"); print("Photo menu diagnostic: \(app.debugDescription)")
+            app.terminate(); app.launchArguments += ["--ui-photo-native-control"]; app.launch()
+            XCTAssertTrue(app.staticTexts["Photo ready"].waitForExistence(timeout: 20))
+            let nativeFrame = app.images["Fixture photo"].frame
+            app.coordinate(withNormalizedOffset: .zero).withOffset(CGVector(dx: nativeFrame.midX - app.frame.minX, dy: nativeFrame.midY - app.frame.minY)).press(forDuration: 3)
+            let nativeSave = save.waitForExistence(timeout: 12)
+            print("Minimal WKWebView photo save menu available: \(nativeSave). \(app.debugDescription)")
+        }
         XCTAssertTrue(hasSave); save.tap()
         let springboard = XCUIApplication(bundleIdentifier: "com.apple.springboard")
         let permission = springboard.alerts.buttons.matching(NSPredicate(format: "(label CONTAINS[c] 'Allow' OR label CONTAINS '許可') AND NOT (label CONTAINS[c] 'Don' OR label CONTAINS 'しない')")).firstMatch

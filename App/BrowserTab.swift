@@ -771,8 +771,8 @@ private final class MediaMessageHandler: NSObject, WKScriptMessageHandler {
 
 /// The surface stays mounted while chrome, tabs, home, and scene phase change.
 /// Media WebViews remain attached to the window so PiP keeps its render surface.
-struct WebSurface: UIViewRepresentable {
+struct WebSurface: UIViewControllerRepresentable {
     @ObservedObject var store: BrowserStore
-    func makeUIView(context: Context) -> WebSurfaceView { WebSurfaceView() }
-    func updateUIView(_ host: WebSurfaceView, context: Context) { host.synchronize(store) }
+    func makeUIViewController(context: Context) -> WebSurfaceController { WebSurfaceController() }
+    func updateUIViewController(_ controller: WebSurfaceController, context: Context) { controller.surface.synchronize(store) }
 }

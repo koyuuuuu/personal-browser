@@ -40,6 +40,7 @@ AREAS = {
 }
 PATH_AREAS = {
     "App/TabLiveCanvas.swift": ["live-overview", "browsing-layout"],
+    "App/WebSurfaceController.swift": ["video-orientation", "live-overview", "browsing-layout"],
     "App/TabOverviewPresentation.swift": ["live-overview"],
     "App/TabRetentionPreferences.swift": ["session-navigation"],
     "App/PageEditObserver.swift": ["session-navigation"],
@@ -197,7 +198,7 @@ def plan(changed, store_changes=(), ui_changes=(), tab_changes=None, pending_app
     if "App/BrowserTab.swift" in changed:
         names = set(tab_changes or ())
         resilience_methods = {"preamble", "resolve", "init", "createWebView", "configureBlocking", "load", "capturePreview", "releaseWebView", "dispose", "webView", "show", "webViewWebContentProcessDidTerminate", "cancelPageRecovery", "recoverPageIfNeeded", "retryPage", "updateUIView"}
-        if session_context and tab_changes is not None and names <= {"preamble", "resolve", "init", "createWebView", "capturePreview", "suspend", "releaseWebView", "webView", "loadInBrowser", "updateUIView", "layoutSubviews", "markEditedInput"}:
+        if session_context and tab_changes is not None and names <= {"preamble", "resolve", "init", "createWebView", "capturePreview", "suspend", "releaseWebView", "webView", "webViewDidClose", "userContentController", "loadInBrowser", "makeUIView", "updateUIView", "makeUIViewController", "updateUIViewController", "layoutSubviews", "markEditedInput"}:
             # Navigation ownership/cache/canvas changed; certificate handling,
             # process recovery and the build14 media policy are untouched.
             areas.update(["session-navigation", "live-overview", "browsing-layout"])

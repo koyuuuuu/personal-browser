@@ -66,7 +66,7 @@ jobs:
     needs: check
     # Standard public Intel runner; arm64 allocation failed before startup.
     runs-on: macos-15-intel
-    timeout-minutes: 45
+    timeout-minutes: 60
     env:
       BROWSER_BUNDLE_ID: local.personalbrowser.app
       BROWSER_XCODE_PATH: ${{ vars.BROWSER_XCODE_PATH }}

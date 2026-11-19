@@ -1,10 +1,12 @@
 #if DEBUG
 import SwiftUI
+import UIKit
 import WebKit
 
 @MainActor
 enum BrowserRegressionFixtures {
     static var photoMenuStatus = "Photo menu not requested"
+    static var nativePhotoControl: Bool { kind == "photo-fixture" && ProcessInfo.processInfo.arguments.contains("--ui-photo-native-control") }
     static var kind: String? {
         let args = ProcessInfo.processInfo.arguments
         guard args.contains("--ui-testing") else { return nil }
@@ -23,6 +25,20 @@ enum BrowserRegressionFixtures {
         }
         store.select(original)
     }
+}
+
+/// A diagnostic control only: no browser scripts, delegate, canvas or credentials.
+@MainActor
+struct PhotoNativeControlView: UIViewControllerRepresentable {
+    func makeUIViewController(context: Context) -> UIViewController {
+        let controller = UIViewController()
+        let webView = WKWebView(frame: .zero, configuration: WKWebViewConfiguration())
+        webView.allowsLinkPreview = true
+        controller.view = webView
+        webView.load(URLRequest(url: URL(string: "http://127.0.0.1:18765/photo-fixture")!))
+        return controller
+    }
+    func updateUIViewController(_ controller: UIViewController, context: Context) {}
 }
 
 @MainActor

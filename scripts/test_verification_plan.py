@@ -5,6 +5,13 @@ from verification_plan import AREAS, ROOT, changed_methods, plan
 
 
 class VerificationPolicyTests(unittest.TestCase):
+    def test_canvas_controller_checks_media_and_browsing_without_unchanged_tls_handlers(self):
+        result = plan(["App/WebSurfaceController.swift", "App/TabLiveCanvas.swift", "App/BrowserTab.swift"],
+                      tab_changes={"makeUIView", "updateUIView", "makeUIViewController", "updateUIViewController", "webViewDidClose", "userContentController"})
+        expected = set(AREAS["video-orientation"] + AREAS["live-overview"] + AREAS["browsing-layout"] + AREAS["session-navigation"])
+        self.assertEqual(set(result["ui_tests"]), expected)
+        self.assertFalse(result["compatibility"])
+
     def test_chrome_recovery_observer_runs_gestures_without_unrelated_promotion_checks(self):
         result = plan(["App/ChromeRecoveryObserver.swift"])
         self.assertEqual(result["ui_tests"], sorted(AREAS["chrome-recovery"]))
