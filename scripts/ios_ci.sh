@@ -41,6 +41,7 @@ trap cleanup EXIT
 if [[ -n "${UI_TESTS:-}" ]]; then
     IFS=',' read -r -a ui_names <<< "$UI_TESTS"
     ui_selection=()
+    photo_selection=()
     release_layout=0
     for name in "${ui_names[@]}"; do
         if [[ ! "$name" =~ ^test[A-Za-z0-9_]+$ ]]; then
@@ -49,6 +50,8 @@ if [[ -n "${UI_TESTS:-}" ]]; then
         fi
         if [[ "$name" == "testReleaseBrowsingLayoutAndPageInteraction" ]]; then
             release_layout=1
+        elif [[ "$name" == "testSavingWebsitePhotoDoesNotTerminateBrowser" ]]; then
+            photo_selection+=("-only-testing:PersonalBrowserUITests/BrowserUITests/$name")
         else
             ui_selection+=("-only-testing:PersonalBrowserUITests/BrowserUITests/$name")
         fi
@@ -77,9 +80,11 @@ CERT_CONFIG
     done
     curl --silent --fail http://127.0.0.1:18765/health >/dev/null
 
-    if [[ ${#ui_selection[@]} -gt 0 ]]; then
+    run_debug_ui() {
+    local phase="$1"
+    shift
     xcodebuild test \
-        "${ui_selection[@]}" \
+        "$@" \
         -project PersonalBrowser.xcodeproj \
         -scheme PersonalBrowser \
         -configuration Debug \
@@ -87,12 +92,20 @@ CERT_CONFIG
         -parallel-testing-enabled NO \
         ONLY_ACTIVE_ARCH=YES \
         -derivedDataPath build/simulator \
-        -resultBundlePath "build/UI-${GITHUB_RUN_ID:-local}-${GITHUB_RUN_ATTEMPT:-1}.xcresult" \
+        -resultBundlePath "build/UI-${phase}${GITHUB_RUN_ID:-local}-${GITHUB_RUN_ATTEMPT:-1}.xcresult" \
         "${signing[@]}" \
         "BROWSER_BUNDLE_ID=${bundle_id}" \
         "CURRENT_PROJECT_VERSION=${build_number}" \
         COMPILER_INDEX_STORE_ENABLE=NO \
-        2>&1 | tee build/ui-tests.log
+        2>&1 | tee "build/ui-${phase}tests.log"
+    }
+    # Check the unresolved photo flow first, without rerunning it in the group.
+    # Once it passes, every other selected case and the device build still run.
+    if [[ ${#photo_selection[@]} -gt 0 ]]; then
+        run_debug_ui "Photo-" "${photo_selection[@]}"
+    fi
+    if [[ ${#ui_selection[@]} -gt 0 ]]; then
+        run_debug_ui "" "${ui_selection[@]}"
     fi
     if [[ "$release_layout" == "1" ]]; then
         xcodebuild test \

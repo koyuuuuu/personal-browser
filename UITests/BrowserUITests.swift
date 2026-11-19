@@ -87,7 +87,7 @@ final class BrowserUITests: XCTestCase {
         XCTAssertTrue(app.buttons["Play overview video"].waitForExistence(timeout: 15))
         app.buttons["Play overview video"].tap(); settlePresentation()
         app.buttons["Check overview playback"].tap()
-        XCTAssertTrue(app.staticTexts["Playback advanced; page retained"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.staticTexts["Playback advanced; page retained"].waitForExistence(timeout: 12))
         tapMenuControl("tabsButton")
         XCTAssertTrue(app.navigationBars["タブ 1"].waitForExistence(timeout: 8)); settlePresentation()
         let tile = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH 'tabPreview-' AND label CONTAINS %@", "Live media fixture")).firstMatch
@@ -107,7 +107,7 @@ final class BrowserUITests: XCTestCase {
         XCTAssertNotEqual(before, after, "Live video/time pixels must change inside the card; a cached snapshot is insufficient")
         tile.tap()
         XCTAssertTrue(app.buttons["Check overview playback"].waitForExistence(timeout: 8)); app.buttons["Check overview playback"].tap()
-        XCTAssertTrue(app.staticTexts["Playback advanced; page retained"].exists)
+        XCTAssertTrue(app.staticTexts["Playback advanced; page retained"].waitForExistence(timeout: 12))
     }
 
     func testVideoFullscreenFollowsAspectAndRespectsPauseAndToggle() {

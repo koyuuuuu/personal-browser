@@ -17,6 +17,7 @@ AREAS = {
     "browsing-layout": ["testReleaseBrowsingLayoutAndPageInteraction", "testPasswordVaultImportsLocksAndFillsOnlyOnRequest"],
     "password-vault": ["testPasswordVaultImportsLocksAndFillsOnlyOnRequest"],
     "browsing-resilience": ["testLockedViewportChromeAndBoundedRecovery", "testAppPromotionSuppressionPreservesLoginAndCanBeDisabled", "testPortraitForwardScrollHidesBarsAndBottomBounceDoesNotReveal"],
+    "chrome-recovery": ["testLockedViewportChromeAndBoundedRecovery", "testPortraitForwardScrollHidesBarsAndBottomBounceDoesNotReveal"],
     "audio-volume": ["testPerSourceVolumeAndMuteUseIndependentRealPlayers"],
     "audio-mixing": ["testConcurrentAudioPreferenceAndRealPlayersAcrossTabs"],
     "selection-search": ["testSelectedTextSearchOpensAnAdjacentNewTab"],
@@ -60,7 +61,7 @@ PATH_AREAS = {
     "Sources/BrowserCore/PasswordVaultModels.swift": ["password-vault"],
     "Sources/BrowserCore/PasswordCryptography.swift": ["password-vault"],
 
-    "App/ChromeRecoveryObserver.swift": ["browsing-resilience"],
+    "App/ChromeRecoveryObserver.swift": ["chrome-recovery"],
     "App/AppPromotionBlocker.swift": ["browsing-resilience"],
     "App/AppPromotionScript.swift": ["browsing-resilience"],
     "Sources/BrowserCore/PageRecovery.swift": ["browsing-resilience"],
@@ -245,7 +246,7 @@ def plan(changed, store_changes=(), ui_changes=(), tab_changes=None, pending_app
         tests.update(AREAS["launch"])
     # These cases already launch and render a real WKWebView fixture, including
     # when a shared UI helper changes along with the feature under test.
-    if areas & {"selection-search", "audio-mixing", "audio-volume", "browsing-resilience", "password-vault", "video-orientation", "live-overview", "session-navigation", "photo-saving"}:
+    if areas & {"selection-search", "audio-mixing", "audio-volume", "browsing-resilience", "chrome-recovery", "password-vault", "video-orientation", "live-overview", "session-navigation", "photo-saving"}:
         tests.difference_update(AREAS["launch"])
     return {
         "areas": sorted(areas), "ui_tests": sorted(tests),

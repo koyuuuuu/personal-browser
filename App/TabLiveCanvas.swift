@@ -54,6 +54,7 @@ final class WebSurfaceView: UIView {
         chromeRecovery.hidden = { [weak store] in store?.chromeVisible == false }
         chromeRecovery.locked = { [weak store] in store?.selectedTab?.documentScrollLocked == true }
         chromeRecovery.reveal = { [weak store] in store?.revealChrome() }
+        chromeRecovery.updateEnabled()
     }
     override func layoutSubviews() {
         super.layoutSubviews()

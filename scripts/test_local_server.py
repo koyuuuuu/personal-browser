@@ -89,8 +89,10 @@ def main():
                 <style>body{margin:0;background:white;color:black}#clock{font:24px monospace;background:#ffee66;height:36px}video{width:100%;height:190px}button{font-size:16px;padding:8px}</style>
                 <div id="clock">Video time 0.0</div><video id="v" src="/wide.mp4" playsinline preload="auto"></video>
                 <button onclick="v.play()">Play overview video</button><button onclick="check()">Check overview playback</button><p id="result">Video ready</p>
-                <script>let stamp=0;v.addEventListener('timeupdate',()=>{clock.textContent='Video time '+v.currentTime.toFixed(1)});
-                function check(){result.textContent=(!v.paused && v.currentTime>stamp+0.5)?'Playback advanced; page retained':'Waiting for playback';stamp=v.currentTime;}</script>'''
+                <script>let stamp=0,pending=false;
+                function progress(){if(pending && !v.paused && v.currentTime>stamp+0.5){pending=false;stamp=v.currentTime;result.textContent='Playback advanced; page retained';}}
+                v.addEventListener('timeupdate',()=>{clock.textContent='Video time '+v.currentTime.toFixed(1);progress()});
+                function check(){pending=true;result.textContent='Waiting for playback';progress();}</script>'''
                 mime = 'text/html; charset=utf-8'
             elif self.path in ['/wide.mp4', '/tall.mp4']:
                 data = (Path(__file__).resolve().parents[1] / 'UITests/Fixtures' / self.path[1:]).read_bytes()

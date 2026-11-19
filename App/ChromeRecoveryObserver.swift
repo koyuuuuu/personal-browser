@@ -22,10 +22,17 @@ final class ChromeRecoveryObserver: NSObject, UIGestureRecognizerDelegate {
         value.minimumNumberOfTouches = 1; value.maximumNumberOfTouches = 1
         value.cancelsTouchesInView = false
         value.delaysTouchesBegan = false; value.delaysTouchesEnded = false
+        value.isEnabled = false
         value.delegate = self
         return value
     }()
     func install(on host: UIView) { host.addGestureRecognizer(pan) }
+    func updateEnabled() {
+        // This escape gesture is needed only while the browser bars are hidden.
+        // A possible ancestor pan must not hold up WebKit's normal long press.
+        let needed = webView != nil && hidden?() == true
+        if pan.isEnabled != needed { pan.isEnabled = needed }
+    }
     func gestureRecognizer(_ gestureRecognizer: UIGestureRecognizer, shouldRecognizeSimultaneouslyWith otherGestureRecognizer: UIGestureRecognizer) -> Bool { true }
     func gestureRecognizerShouldBegin(_ gestureRecognizer: UIGestureRecognizer) -> Bool {
         let velocity = pan.velocity(in: pan.view)
