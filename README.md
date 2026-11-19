@@ -2,7 +2,7 @@
 
 iPhone 12 / iOS 18.4.1向けの個人用ブラウザ。SwiftUIとWKWebViewで新規実装し、Windowsで編集、クラウドmacOSでビルド、SideStoreで実機へ導入・再署名する。
 
-**最新配信版は0.14.0 build 86。設定で切り替える動画の自動全画面・向き調整を追加し、回転後のタブ一覧が1列になる不具合を修正。** [リリース](https://github.com/koyuuuuu/personal-browser-distribution/releases/tag/v0.14.0-build.86)、[配信記録](docs/validation-0.14.0-2026-11-11.json)。本体ソースは[koyuuuuu/personal-browser](https://github.com/koyuuuuu/personal-browser)で公開し、標準の公開リポジトリ用Actionsランナーを利用する。有料ランナーや課金設定は追加していない。
+**最新配信版は0.15.0 build 96。写真保存・購入遷移・ログイン入力後の誤警告を修正し、ページ保持を増加。タブ一覧へ現在のページが縮小して移り、一覧内でも動画再生を継続。** [リリース](https://github.com/koyuuuuu/personal-browser-distribution/releases/tag/v0.15.0-build.96)、[配信記録](docs/validation-0.15.0-2026-11-19.json)、[変更点と検証範囲](docs/changes-0.15.0.ja.md)。本体ソースは[koyuuuuu/personal-browser](https://github.com/koyuuuuu/personal-browser)で公開し、標準の公開リポジトリ用Actionsランナーを利用する。有料ランナーや課金設定は追加していない。
 
 [v0.1.0の保存済みリリース](https://github.com/koyuuuuu/personal-browser/releases/tag/v0.1.0)から、初期版のビルド元とIPA保管先を参照できる。初期IPAは`ipa-archive`ブランチ、新版はGitHub Releasesに保存し、Actionsの1日保持期限が過ぎても取得できる。arm64実機用、最低iOS 17.0。SideStoreで個人用に署名して導入する。現在は本体リポジトリ全体が公開されている。
 
@@ -28,7 +28,7 @@ python3 scripts/inspect_ipa.py browser.ipa --target-ios 18.4.1 --unsigned
 
 Swiftファイルを追加・削除したら`python3 scripts/generate_project.py`でプロジェクトを再生成する。Windowsでは`py -3`を利用でき、CoreのSwiftテストはWSL等のSwift環境かCIで実行する。
 
-mainへのアプリ・テスト・ビルド・配信コードのpushで、Linux検査、標準`macos-15`でのCoreテスト、未署名IPA生成・検査を自動実行する。UIテストは変更した機能の代表ケースのみ、旧版とのデータ互換性検査は保存処理等を変更した場合のみ実行する。アプリ本体やリリース設定の変更時はRelease保存・SideStoreソース更新も行う。検証設定だけの変更では同じアプリを再配信しない。[検証の実行条件](docs/verification-policy.ja.md)。文書のみの変更はビルドしない。手動実行も可能だがpushと重複して起動しない。Actions成果物は1日保持し、配布版のIPAはReleaseへ残す。macOSとXcodeがある場合は`bash scripts/ios_ci.sh`でも実行できる。
+mainへのアプリ・テスト・ビルド・配信コードのpushで、Linux検査、標準`macos-15-intel`でのCoreテスト、未署名IPA生成・検査を自動実行する。UIテストは変更した機能の代表ケースのみ、旧版とのデータ互換性検査は保存処理等を変更した場合のみ実行する。アプリ本体やリリース設定の変更時はRelease保存・SideStoreソース更新も行う。検証設定だけの変更では同じアプリを再配信しない。[検証の実行条件](docs/verification-policy.ja.md)。文書のみの変更はビルドしない。手動実行も可能だがpushと重複して起動しない。Actions成果物は1日保持し、配布版のIPAはReleaseへ残す。macOSとXcodeがある場合は`bash scripts/ios_ci.sh`でも実行できる。
 
 アプリ本体に第三者のブラウザソースや外部パッケージを組み込んでいない。0.2.0ではCore 19件（LinuxとmacOS）、Simulator UI 5件、Python検査30件、新旧版を往復するデータ互換性検査に成功。アカウントの課金設定変更やAppleの署名操作は行っていない。
 

@@ -1,0 +1,180 @@
+{
+  "date_utc": "2026-11-19",
+  "version": "0.15.0",
+  "build": "96",
+  "requested_behavior": [
+    "Fix photo-save crash and preserve the system image-save menu",
+    "Preserve checkout cookies, opener, named window, inherited sessionStorage and POST navigation",
+    "Avoid stale focus/form errors after acknowledged keyboard-row credential filling",
+    "Retain 12 live pages by default, configurable from 8 to 24, protecting edited/media/checkout pages",
+    "Show actual continuing video inside the tab overview",
+    "Morph the current page into its overview card without a modal sheet"
+  ],
+  "checks": {
+    "python": 59,
+    "core": 83,
+    "native_device_build": "passed",
+    "debug_ui_passed": 9,
+    "release_ui_passed": 1,
+    "ci_jobs": "check/ios/publish/delivery-audit all success",
+    "compatibility_roundtrip": "not applicable; independent UserDefaults only; no library/vault/legacy-format change",
+    "full_ui_suite": "not run; ten selected cases, including native video orientation after UIKit presentation owner change; photo first, no duplicate",
+    "dom": "Controlled Chromium fixture verified HTTPOnly/SameSite login cookie, named popup/opener/inherited sessionStorage and POST. Actual password script acknowledged fill after synchronous site focus replacement; passive form metadata excluded credential values. Trusted input edit observer sent boolean only; synthetic input ignored.",
+    "debug_ui_cases": [
+      {
+        "name": "testSavingWebsitePhotoDoesNotTerminateBrowser",
+        "seconds": 58.02
+      },
+      {
+        "name": "testCheckoutContextAndResidentPagesSurviveAuxiliaryWindows",
+        "seconds": 64.433
+      },
+      {
+        "name": "testLockedViewportChromeAndBoundedRecovery",
+        "seconds": 129.969
+      },
+      {
+        "name": "testOverviewKeepsLiveVideoAndMorphsCurrentTabIntoGrid",
+        "seconds": 40.425
+      },
+      {
+        "name": "testOverviewOpensAtLastActiveTab",
+        "seconds": 31.275
+      },
+      {
+        "name": "testPasswordVaultImportsLocksAndFillsOnlyOnRequest",
+        "seconds": 208.556
+      },
+      {
+        "name": "testPortraitForwardScrollHidesBarsAndBottomBounceDoesNotReveal",
+        "seconds": 48.033
+      },
+      {
+        "name": "testSwipeClosingGridReflowsAndRemainsUsableAfterRepeatedDeletions",
+        "seconds": 72.227
+      },
+      {
+        "name": "testVideoFullscreenFollowsAspectAndRespectsPauseAndToggle",
+        "seconds": 80.984
+      }
+    ],
+    "release_ui_cases": [
+      {
+        "name": "testReleaseBrowsingLayoutAndPageInteraction",
+        "seconds": 108.853
+      }
+    ],
+    "anonymous_delivery_audit": "passed",
+    "local_ipa_and_build_info_and_public_feed_hash_match": true,
+    "source_tag_points_to_tested_sha": true,
+    "debug_fixture_flags_in_release": false,
+    "strong_swift_webkit_overlay": false,
+    "photo_add_and_legacy_purposes_present": true,
+    "motion_faceid_audio_preserved": true,
+    "fixture_mp4_bundled": false,
+    "photo_save": "Real UIImageWriteToSavedPhotosAlbum completion reported success; app stayed foreground and controlled photo page still responded. Debug-only fixed foreground image snapshot, no auth bypass, no photo-library read; this was not a WebKit image-menu test.",
+    "checkout": "Actual WebKit cookie login, named popup, opener, inherited sessionStorage, POST, close and DOM marker after eight other resident pages passed.",
+    "live_overview": "Actual WK page card narrowed into grid, card video/time pixels changed, real video currentTime advanced before and after return; no media snapshot or forced resume.",
+    "portrait_native_status": "event=fullscreen; full=90x160; mask=2; scene=1; delegate=2; active=true; allowed=true; repair=true; error=none",
+    "media_baseline_sha256": "8233d9cc7ff0b82e3aa24f9ad97543226dd5c9124dfd80ce1d73ab3de5b91edc"
+  },
+  "device_limits": [
+    "Actual eplus membership/checkout/payment was not performed; controlled WebKit session fixture only",
+    "Actual iPhone Photos authorization/save and perceived animation quality require device observation",
+    "iOS memory pressure or WebKit content-process termination can still reload pages; live DOM is not persisted across app termination",
+    "Actual Face ID and Apple QuickType credentials remain device-only checks",
+    "Native image-menu interaction could not be completed in either the browser or a minimal WKWebView on this Simulator. Photo validation directly exercises the real TCC-protected UIKit writer using the fixed foreground fixture image, requires OS save success and page survival; it does not verify the full WK menu gesture on the user device."
+  ],
+  "preserved": [
+    "Bundle local.personalbrowser.app, browser.json schema1, latest library/history/settings and all vault formats",
+    "Existing WebKit data store and each retained WKWebView/player identity",
+    "Build14 media update/script/audio policy byte-identical",
+    "All prior immutable release tags and IPA assets"
+  ],
+  "previous_attempts": [
+    {
+      "build": 87,
+      "run": 44322309168,
+      "source_commit": "52c78b4023b3896089825b71a7143c7a5817b5cd",
+      "status": "Core83 and three Debug UI cases passed: live overview/video27.490s, overview selection20.932s, password focus-move130.943s. Checkout validated cookie/opener/named target/inherited storage but XCTest could not hit the visible submit button; rotated overview plus had the same AX failure. Photo long-press selected the image ; initial nil-delegate diagnosis was disproved in89. Test correction uses physical-centre touches with required POST/close/DOM/new-tab outcomes; no assertions removed. Release UI/device build/publication did not run."
+    },
+    {
+      "build": 88,
+      "run": 44326599413,
+      "source_commit": "fc9ed130ee79f6254690cb93fecbcb9a9e75363b",
+      "status": "Python57 passed; macos-15 arm64 hosted runner was never acquired, no iOS job steps executed. GitHub terminated the job after15min, reporting hosted runner acquisition failure and arm64 capacity constraints. Switched to standard public macos-15-intel; no paid larger runner and same tests/device arm64 target."
+    },
+    {
+      "build": 89,
+      "run": 44329681556,
+      "source_commit": "e41290a58ace462474afbb177644e817ef08647c",
+      "status": "Core83 and five Debug cases passed: actual checkout POST/close/8-page DOM retention116.875s, live-card video84.529s, overview selection41.084s, password354.452s, grid122.014s. Photo still selected a plain image; no save action executed. Rejected the nil-return-only diagnosis after reviewing public WebKit implementation: public delegate invoked for links; plain images use WebKit own handling. Reverted ineffective non-link change, retained suggested standard image-save actions for linked images; fixture uses explicit callout, disables selection, physical-centre press and localization-tolerant save label. Actual Save/permission/page-survival assertions retained. Release/device/publication skipped."
+    },
+    {
+      "build": 90,
+      "run": 44336359709,
+      "source_commit": "14ea02f9035ac3a26a6b37b4636d56205b86ef27",
+      "status": "Core83, checkout122.928s, live overview60.851s, initial overview47.788s and grid98.483s passed. Password failed pre-existing Reset-after-manager-close at step216, before inline scenario; settling dismissal and physical Reset touch retain Fields-empty assertion. Photo press navigated to PNG, never reached Save. Wait for actual image.decode and send absolute-coordinate3sec native press. Debug-only explicit probe records public delegate/suggested action stages, no SwiftUI updates during gesture; shown only on requested diagnosis after failure. Release/device/publication skipped."
+    },
+    {
+      "build": 91,
+      "run": 44342707887,
+      "source_commit": "9c732ce9ba0d7b8b3c8ad0d40bbc43c430f8992b",
+      "status": "Core83, checkout114.417s, live overview54.745s, initial overview119.691s, password331.917s and grid68.973s passed. Photo probe reported public link-menu request, but no action provider invocation; Save not reached. Prevent unchanged UIKit frame/viewport/interaction/alpha writes and repeated front reordering on metadata/preview updates. Only genuine geometry changes or restoration of a canvas-owned preview transform reset WK viewport. Preserve native temporary transforms during ordinary state refreshes. Release/device/publication skipped."
+    },
+    {
+      "build": 92,
+      "run": 44349208521,
+      "source_commit": "468aebdc3170c3cb6404bb342e0c6f100df8b8d7",
+      "status": "Core83, checkout156.906s, overview selection53.492s, password263.985s and grid185.016s passed. Photo configured the public menu but action provider never ran; unchanged-layout guards alone insufficient. Restrict escape pan to bars-hidden state, verify locked-page escape and ordinary scrolling. Video failed before overview despite screenshot showing real video at16s; one-shot fixture checked before0.5s advance and never updated its result. Await actual timeupdate progress, no forced playback/resume. Photo-first CI preserves every selected case and device/publication gates. Release/device/publication skipped."
+    },
+    {
+      "build": 93,
+      "run": 44523007131,
+      "source_commit": "8075af579e6c795d8b858584608aeff92e730495",
+      "status": "Core83 passed; first photo case stopped at configured custom linked-image menu, action provider never invoked, no Save executed. Restricting recovery pan alone did not establish solution. Test reported system photo-save crash with plain decoded image instead of making separate custom link-menu UI a prerequisite. Same absolute3sec press, actual Save, authorization, foreground and page-survival assertions retained. Debug public will-present/did-end lifecycle probe records standard image-menu stages. Remaining UI/Release/device/publication not run."
+    },
+    {
+      "build": 94,
+      "run": 44524915974,
+      "source_commit": "cb36b36c0648a3572fd09254b48ed5e20c6aff6b",
+      "status": "Core83 passed. Standard plain-image photo menu also failed before will-present, so the problem is not confined to the custom linked-image menu. Keep native menu/save assertion. Use persistent UIViewControllerRepresentable owner for existing canvas/WKViews, plus failure-only minimal controller-owned WKWebView with no browser scripts/delegate/canvas as a diagnostic control. Original browser assertion still fails if only control works. Add existing native video orientation case for changed presentation owner. Other UI/Release/device/publication did not run."
+    },
+    {
+      "build": 95,
+      "run": 44528770854,
+      "source_commit": "378d316272fae662a5e42eaf7d1459e1bf82f300",
+      "status": "Core83 passed. Both browser and minimal controller-owned WKWebView failed the same plain-image menu interaction, with ready image and valid visible frame in the control. Do not infer app-only menu defect. Replace the menu gate with direct real UIImageWriteToSavedPhotosAlbum test of the missing-purpose TCC crash, actual system authorization and successful OS completion, foreground app and continued WebKit page interaction. Fixed controlled foreground photo rect only, no media/private snapshot, no library read or fake save. Remove experimental menu/control probes; document WK menu/device boundary. Remaining UI/Release/device/publication not run."
+    },
+    {
+      "build": 96,
+      "attempt": 1,
+      "run": 44532891437,
+      "source_commit": "9e8f50c7e491e7bdd459e9d0f167b34d372eed19",
+      "status": "App compile and Core83 passed; UITests-Runner exited with signal kill before any test execution (early unexpected exit, operation never finished bootstrapping). No photo assertion ran. Rerun only failed job and dependent publish/audit with unchanged source, reusing successful check job."
+    }
+  ],
+  "delivery_status": "published",
+  "source_commit": "9e8f50c7e491e7bdd459e9d0f167b34d372eed19",
+  "tag": "v0.15.0-build.96",
+  "ci_run": "https://github.com/koyuuuuu/personal-browser/actions/runs/44532891437",
+  "public_release": "https://github.com/koyuuuuu/personal-browser-distribution/releases/tag/v0.15.0-build.96",
+  "source_url": "https://raw.githubusercontent.com/koyuuuuu/personal-browser-distribution/main/source.json",
+  "ci_run_attempt": 2,
+  "ipa": {
+    "file": "PersonalBrowser.ipa",
+    "sha256": "68475609e60e5a80165fa9e8ef2d1f244ca07627c9158ddbbb50a4dd2af463f8",
+    "bundle_id": "local.personalbrowser.app",
+    "version": "0.15.0",
+    "build": "96",
+    "minimum_ios": "17.0",
+    "target_ios": "18.4.1",
+    "architecture": "arm64",
+    "platform": "iOS device",
+    "embedded_profile": false,
+    "signature_resources": false,
+    "installation_verified": false,
+    "size": 5764841,
+    "data_schema": 1
+  }
+}
