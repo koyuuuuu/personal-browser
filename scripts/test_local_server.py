@@ -60,7 +60,7 @@ def main():
                 data, mime = photo, 'image/png'
             elif self.path == '/photo-fixture':
                 data = b'''<!doctype html><meta name="viewport" content="width=device-width,initial-scale=1"><title>Photo fixture</title>
-                <a href="/fixture-photo.png"><img src="/fixture-photo.png" alt="Fixture photo" style="width:240px;height:160px;display:block;margin:20px;-webkit-user-select:none;-webkit-touch-callout:default"></a>
+                <img src="/fixture-photo.png" alt="Fixture photo" style="width:240px;height:160px;display:block;margin:20px;-webkit-user-select:none;-webkit-touch-callout:default">
                 <button onclick="document.getElementById('result').textContent='Photo page still responds'">Check photo page</button><p id="result">Preparing photo</p>
                 <script>document.querySelector('img').decode().then(()=>document.getElementById('result').textContent='Photo ready');</script>'''
                 mime = 'text/html; charset=utf-8'

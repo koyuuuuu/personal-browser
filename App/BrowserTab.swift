@@ -640,6 +640,15 @@ final class BrowserTab: NSObject, ObservableObject, Identifiable, WKNavigationDe
 
     func webViewDidClose(_ webView: WKWebView) { onClose?() }
 
+    #if DEBUG
+    func webView(_ webView: WKWebView, contextMenuWillPresentForElement elementInfo: WKContextMenuElementInfo) {
+        if BrowserRegressionFixtures.kind == "photo-fixture" { BrowserRegressionFixtures.photoMenuStatus = "Photo native menu presenting" }
+    }
+    func webView(_ webView: WKWebView, contextMenuDidEndForElement elementInfo: WKContextMenuElementInfo) {
+        if BrowserRegressionFixtures.kind == "photo-fixture" { BrowserRegressionFixtures.photoMenuStatus += "; ended" }
+    }
+    #endif
+
     func webView(_ webView: WKWebView, contextMenuConfigurationForElement elementInfo: WKContextMenuElementInfo,
                  completionHandler: @escaping (UIContextMenuConfiguration?) -> Void) {
         #if DEBUG
