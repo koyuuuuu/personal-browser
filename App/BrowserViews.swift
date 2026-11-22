@@ -39,6 +39,7 @@ struct BrowserRootView: View {
     @State private var preparedRegressionFixture = false
     @State private var preparedVideoFixture = false
     @State private var preparedAudioFixture = false
+    @State private var preparedPlaybackFixture = false
     @State private var preparedPasswordFixture = false
     @State private var preparedResilienceFixture = false
     private var resilienceFixture: Bool {
@@ -92,6 +93,12 @@ struct BrowserRootView: View {
                 preparedAudioFixture = true
                 AudioMixingController.shared.setEnabled(true)
                 store.navigate("http://127.0.0.1:18765/volume-fixture")
+            }
+            if let path = BackgroundAudioController.fixturePath, !preparedPlaybackFixture {
+                preparedPlaybackFixture = true
+                var features = store.features; features.blockAdvertisements = false; store.updateFeatures(features)
+                VideoOrientationController.shared.setEnabled(false)
+                store.navigate("http://127.0.0.1:18765/" + path)
             }
             if resilienceFixture && !preparedResilienceFixture {
                 preparedResilienceFixture = true

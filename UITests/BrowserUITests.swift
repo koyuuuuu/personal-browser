@@ -12,6 +12,7 @@ final class BrowserUITests: XCTestCase {
         app = XCUIApplication()
         app.launchArguments = ["--ui-testing"]
         if name.contains("testBackgroundVideoAudioContinuesAcrossHomeAndRespectsPause") { app.launchArguments += ["--ui-no-fixture", "--ui-background-audio-fixture"] }
+        if name.contains("testConcurrentAudioPreferenceAndRealPlayersAcrossTabs") { app.launchArguments += ["--ui-no-fixture", "--ui-concurrent-audio-fixture"] }
         if name.contains("testCheckoutContextAndResidentPagesSurviveAuxiliaryWindows") { app.launchArguments += ["--ui-no-fixture", "--ui-session-fixture"] }
         if name.contains("testSavingWebsitePhotoDoesNotTerminateBrowser") { app.launchArguments += ["--ui-no-fixture", "--ui-photo-fixture"] }
         if name.contains("testOverviewKeepsLiveVideoAndMorphsCurrentTabIntoGrid") { app.launchArguments += ["--ui-no-fixture", "--ui-overview-media-fixture"] }
@@ -434,13 +435,11 @@ final class BrowserUITests: XCTestCase {
         if toggle.value as? String != "1" { toggle.coordinate(withNormalizedOffset: CGVector(dx: 0.9, dy: 0.5)).tap() }
         XCTAssertEqual(toggle.value as? String, "1")
         closeAudioSettings()
-        navigate("http://127.0.0.1:18765/background-audio")
-        // The first normal navigation can still be compiling the bundled
-        // content rules. Run100's actual HTTP request arrived just after the
-        // old 15s deadline; require readiness, not a fixed startup assumption.
+        // The controlled page loads through the normal store at startup with
+        // unrelated filter compilation disabled by BOTH Debug fixture flags.
         XCTAssertTrue(app.staticTexts["Embedded video ready"].waitForExistence(timeout: 60))
         pressVideoControl(play: true)
-        XCTAssertTrue(app.staticTexts["Embedded video playing"].waitForExistence(timeout: 8))
+        XCTAssertTrue(app.staticTexts["Embedded video playing"].waitForExistence(timeout: 15))
         // Allow one real metadata sample, then use the actual OS Home action.
         // Compare the original player's media clock with time spent hidden,
         // not just foreground progress after activation or a synthetic flag.

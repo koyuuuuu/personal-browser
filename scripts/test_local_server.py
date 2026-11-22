@@ -98,11 +98,11 @@ def main():
                 mime = 'text/html; charset=utf-8'
             elif self.path == '/background-audio':
                 data = b'''<!doctype html><html><head><meta name="viewport" content="width=device-width,initial-scale=1"><title>Background audio fixture</title>
-                <style>body{margin:0}#frame-state{height:32px;line-height:32px;margin:0;font:16px sans-serif}</style></head><body>
-                <p id="frame-state">Loading embedded video</p><iframe id="embedded" title="Background video frame" src="http://127.0.0.1:18767/background-audio-frame" allow="autoplay" style="border:0;display:block;width:100%;height:440px"></iframe>
+                <style>body{margin:0}#header{height:32px;font:14px/16px sans-serif}</style></head><body>
+                <div id="header"><div id="frame-ready">Loading embedded video</div><div id="frame-state">Waiting for playback</div></div><iframe id="embedded" title="Background video frame" src="http://127.0.0.1:18767/background-audio-frame" allow="autoplay" style="border:0;display:block;width:100%;height:440px"></iframe>
                 <script>window.addEventListener('message',e=>{
-                  if(e.origin==='http://127.0.0.1:18767' && e.source===embedded.contentWindow && e.data?.fixture==='background-video')
-                    document.getElementById('frame-state').textContent='Embedded '+e.data.state;
+                  if(e.origin==='http://127.0.0.1:18767' && e.source===document.getElementById('embedded').contentWindow && e.data?.fixture==='background-video')
+                    document.getElementById(e.data.state==='video ready'?'frame-ready':'frame-state').textContent='Embedded '+e.data.state;
                 });</script></body></html>'''
                 mime = 'text/html; charset=utf-8'
             elif self.path == '/background-audio-frame':
@@ -112,11 +112,15 @@ def main():
                 <div id="controls"><button onclick="v.play()">Play background video</button><button onclick="v.pause()">Pause background video</button></div>
                 <p id="state">Background frame ready</p><p id="result">No background sample</p>
                 <script>
-                const original=v;let hidden=null,everPiP=false;
+                const original=v;let hidden=null,everPiP=false,lastState='';
                 v.addEventListener('webkitpresentationmodechanged',()=>{everPiP ||= v.webkitPresentationMode==='picture-in-picture';});
                 const relay=value=>parent.postMessage({fixture:'background-video',state:value},'http://127.0.0.1:18765');
-                function state(){document.getElementById('state').textContent=v.paused?'Video paused':'Video playing';relay(v.paused?'video paused':'video playing');}
-                v.addEventListener('play',state);v.addEventListener('pause',state);
+                function state(){
+                  const current=v.paused?'video paused':v.readyState>=2 && v.currentTime>=0.5?'video playing':'video buffering';
+                  if(current===lastState)return;lastState=current;
+                  document.getElementById('state').textContent=current;relay(current);
+                }
+                for(const event of ['play','playing','pause','timeupdate'])v.addEventListener(event,state);
                 document.addEventListener('visibilitychange',event=>{
                   if(!event.isTrusted)return;
                   if(document.hidden){hidden={time:v.currentTime,wall:Date.now(),paused:v.paused};return;}

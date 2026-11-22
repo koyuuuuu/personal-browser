@@ -19,10 +19,18 @@ final class BackgroundAudioController: ObservableObject {
     private var session: Session?
     private var backgroundTask: UIBackgroundTaskIdentifier = .invalid
     private var remoteTargets: [(MPRemoteCommand, Any)] = []
+    #if DEBUG
+    static var fixturePath: String? {
+        let args = ProcessInfo.processInfo.arguments
+        guard args.contains("--ui-testing") else { return nil }
+        if args.contains("--ui-background-audio-fixture") { return "background-audio" }
+        if args.contains("--ui-concurrent-audio-fixture") { return "concurrent-audio-a" }
+        return nil
+    }
+    #endif
     private func trace(_ value: String) {
         #if DEBUG
-        let args = ProcessInfo.processInfo.arguments
-        if args.contains("--ui-testing") && args.contains("--ui-background-audio-fixture") { print("Background audio: " + value) }
+        if Self.fixturePath == "background-audio" { print("Background audio: " + value) }
         #endif
     }
 
