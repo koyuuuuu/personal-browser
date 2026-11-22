@@ -42,13 +42,13 @@ final class BackgroundAudioController: ObservableObject {
         let center = NotificationCenter.default
         center.publisher(for: UIApplication.willResignActiveNotification).sink { [weak self] _ in self?.leaving() }.store(in: &observations)
         center.publisher(for: UIApplication.didBecomeActiveNotification).sink { [weak self] _ in self?.returned() }.store(in: &observations)
-        center.publisher(for: AVAudioSession.interruptionNotification).sink { [weak self] note in
+        center.publisher(for: AVAudioSession.interruptionNotification).receive(on: DispatchQueue.main).sink { [weak self] note in
             if (note.userInfo?[AVAudioSessionInterruptionTypeKey] as? UInt) == AVAudioSession.InterruptionType.began.rawValue { self?.cancel() }
         }.store(in: &observations)
-        center.publisher(for: AVAudioSession.routeChangeNotification).sink { [weak self] note in
+        center.publisher(for: AVAudioSession.routeChangeNotification).receive(on: DispatchQueue.main).sink { [weak self] note in
             if (note.userInfo?[AVAudioSessionRouteChangeReasonKey] as? UInt) == AVAudioSession.RouteChangeReason.oldDeviceUnavailable.rawValue { self?.cancel() }
         }.store(in: &observations)
-        center.publisher(for: AVAudioSession.mediaServicesWereResetNotification).sink { [weak self] _ in self?.cancel() }.store(in: &observations)
+        center.publisher(for: AVAudioSession.mediaServicesWereResetNotification).receive(on: DispatchQueue.main).sink { [weak self] _ in self?.cancel() }.store(in: &observations)
     }
     func attach(_ view: WKWebView, tabID: UUID) {
         entries[ObjectIdentifier(view)] = Entry(view, tabID: tabID)
