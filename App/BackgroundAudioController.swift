@@ -19,6 +19,12 @@ final class BackgroundAudioController: ObservableObject {
     private var session: Session?
     private var backgroundTask: UIBackgroundTaskIdentifier = .invalid
     private var remoteTargets: [(MPRemoteCommand, Any)] = []
+    private func trace(_ value: String) {
+        #if DEBUG
+        let args = ProcessInfo.processInfo.arguments
+        if args.contains("--ui-testing") && args.contains("--ui-background-audio-fixture") { print("Background audio: " + value) }
+        #endif
+    }
 
     private final class Entry {
         weak var view: WKWebView?
@@ -102,6 +108,7 @@ final class BackgroundAudioController: ObservableObject {
             }
         }
         configureViews()
+        trace("leaving; candidates=\(candidates.count)")
         guard let candidate = candidates.max(by: { $0.4 < $1.4 }), let view = entries[candidate.0]?.view else { return }
         let audio = AVAudioSession.sharedInstance()
         guard audio.category != .record, audio.category != .playAndRecord else { return }
@@ -112,6 +119,7 @@ final class BackgroundAudioController: ObservableObject {
         let token = UUID().uuidString
         session = Session(viewID: candidate.0, document: candidate.1, frame: candidate.2.info, token: token)
         recovery.arm(token: token, now: now)
+        trace("armed")
         // The top document owns audioSession.type, including iframe players.
         setBackgroundAudioPolicy(view, enabled: true)
         armBackgroundAudio(view, frame: candidate.2.info, document: candidate.1, video: candidate.3, token: token)
@@ -164,17 +172,21 @@ final class BackgroundAudioController: ObservableObject {
         if event == "ready" {
             configureBackgroundAudio(view, frame: message.frameInfo, enabled: enabled && entry.tabID == selected, foreground: foreground)
         } else if event == "inventory", foreground {
+            let videos = Array((value["videos"] as? [[String: Any]] ?? []).prefix(32))
+            if entry.frames[document]?.videos.count != videos.count { trace("frame videos=\(videos.count)") }
             if entry.frames[document] == nil, entry.frames.count >= 64,
                let oldest = entry.frames.min(by: { $0.value.updated < $1.value.updated })?.key {
                 entry.frames.removeValue(forKey: oldest)
             }
-            entry.frames[document] = Frame(info: message.frameInfo, videos: Array((value["videos"] as? [[String: Any]] ?? []).prefix(32)), updated: ProcessInfo.processInfo.systemUptime)
+            entry.frames[document] = Frame(info: message.frameInfo, videos: videos, updated: ProcessInfo.processInfo.systemUptime)
         } else if let session, session.viewID == ObjectIdentifier(view), session.document == document,
                   value["token"] as? String == session.token {
-            if event == "cancel" { recovery.cancel() }
-            if event == "recover", enabled,
-               recovery.consume(token: session.token, now: ProcessInfo.processInfo.systemUptime, background: !foreground && UIApplication.shared.applicationState != .active) {
-                commandBackgroundAudio(view, frame: session.frame, document: document, token: session.token, action: "recover")
+            if event == "cancel" { recovery.cancel(); trace("cancelled") }
+            if event == "rejected" { trace("play rejected") }
+            if event == "recover" {
+                let allowed = enabled && recovery.consume(token: session.token, now: ProcessInfo.processInfo.systemUptime, background: !foreground && UIApplication.shared.applicationState != .active)
+                trace("recover allowed=\(allowed)")
+                if allowed { commandBackgroundAudio(view, frame: session.frame, document: document, token: session.token, action: "recover") }
             }
         }
     }

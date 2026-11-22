@@ -41,6 +41,8 @@ def main():
         protocol_version = 'HTTP/1.1'
 
         def do_GET(self):
+            if self.path in ['/background-audio', '/background-audio-frame', '/background-audio.mp4']:
+                print('Background fixture request: ' + self.path, flush=True)
             external_cases = {
                 '/test-open-cold': 'mybrowser://open?url=http%3A%2F%2F127.0.0.1%3A18765%2Fexternal-cold%3Fa%3D1%26b%3D2',
                 '/test-open-warm': 'mybrowser://open?url=http%3A%2F%2F127.0.0.1%3A18765%2Fexternal-warm',
@@ -95,19 +97,25 @@ def main():
                 function check(){pending=true;result.textContent='Waiting for playback';progress();}</script>'''
                 mime = 'text/html; charset=utf-8'
             elif self.path == '/background-audio':
-                data = b'''<!doctype html><meta name="viewport" content="width=device-width,initial-scale=1"><title>Background audio fixture</title>
-                <iframe title="Background video frame" src="http://127.0.0.1:18767/background-audio-frame" allow="autoplay" style="border:0;width:100%;height:440px"></iframe>'''
+                data = b'''<!doctype html><html><head><meta name="viewport" content="width=device-width,initial-scale=1"><title>Background audio fixture</title>
+                <style>body{margin:0}#frame-state{height:32px;line-height:32px;margin:0;font:16px sans-serif}</style></head><body>
+                <p id="frame-state">Loading embedded video</p><iframe id="embedded" title="Background video frame" src="http://127.0.0.1:18767/background-audio-frame" allow="autoplay" style="border:0;display:block;width:100%;height:440px"></iframe>
+                <script>window.addEventListener('message',e=>{
+                  if(e.origin==='http://127.0.0.1:18767' && e.source===embedded.contentWindow && e.data?.fixture==='background-video')
+                    document.getElementById('frame-state').textContent='Embedded '+e.data.state;
+                });</script></body></html>'''
                 mime = 'text/html; charset=utf-8'
             elif self.path == '/background-audio-frame':
-                data = b'''<!doctype html><meta name="viewport" content="width=device-width,initial-scale=1"><title>Background frame</title>
-                <style>body{margin:0}video{width:100%;height:180px}button{font-size:16px;padding:10px}</style>
+                data = b'''<!doctype html><html><head><meta name="viewport" content="width=device-width,initial-scale=1"><title>Background frame</title>
+                <style>body{margin:0}video{display:block;width:100%;height:180px}#controls{display:flex}button{width:50%;height:64px;font-size:16px;padding:4px}</style></head><body>
                 <video id="v" src="/background-audio.mp4" playsinline disablepictureinpicture preload="auto"></video>
-                <button onclick="v.play()">Play background video</button><button onclick="v.pause()">Pause background video</button>
+                <div id="controls"><button onclick="v.play()">Play background video</button><button onclick="v.pause()">Pause background video</button></div>
                 <p id="state">Background frame ready</p><p id="result">No background sample</p>
                 <script>
                 const original=v;let hidden=null,everPiP=false;
                 v.addEventListener('webkitpresentationmodechanged',()=>{everPiP ||= v.webkitPresentationMode==='picture-in-picture';});
-                function state(){document.getElementById('state').textContent=v.paused?'Video paused':'Video playing';}
+                const relay=value=>parent.postMessage({fixture:'background-video',state:value},'http://127.0.0.1:18765');
+                function state(){document.getElementById('state').textContent=v.paused?'Video paused':'Video playing';relay(v.paused?'video paused':'video playing');}
                 v.addEventListener('play',state);v.addEventListener('pause',state);
                 document.addEventListener('visibilitychange',()=>{
                   if(document.hidden){hidden={time:v.currentTime,wall:Date.now(),paused:v.paused};return;}
@@ -117,9 +125,9 @@ def main():
                   result.textContent=good && !v.paused && delta>=elapsed*0.7?'Background video advanced without PiP':
                     good && v.paused && delta<0.75?'Background video remained paused':
                     'Background failed '+delta.toFixed(2)+'/'+elapsed.toFixed(2)+' paused='+v.paused+' pip='+everPiP;
-                  hidden=null;state();
+                  hidden=null;state();relay(result.textContent);
                 });
-                </script>'''
+                relay('video ready');</script></body></html>'''
                 mime = 'text/html; charset=utf-8'
             elif self.path in ['/wide.mp4', '/tall.mp4', '/background-audio.mp4']:
                 data = (Path(__file__).resolve().parents[1] / 'UITests/Fixtures' / self.path[1:]).read_bytes()

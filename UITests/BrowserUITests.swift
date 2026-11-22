@@ -11,7 +11,7 @@ final class BrowserUITests: XCTestCase {
         XCUIDevice.shared.orientation = .portrait
         app = XCUIApplication()
         app.launchArguments = ["--ui-testing"]
-        if name.contains("testBackgroundVideoAudioContinuesAcrossHomeAndRespectsPause") { app.launchArguments += ["--ui-no-fixture"] }
+        if name.contains("testBackgroundVideoAudioContinuesAcrossHomeAndRespectsPause") { app.launchArguments += ["--ui-no-fixture", "--ui-background-audio-fixture"] }
         if name.contains("testCheckoutContextAndResidentPagesSurviveAuxiliaryWindows") { app.launchArguments += ["--ui-no-fixture", "--ui-session-fixture"] }
         if name.contains("testSavingWebsitePhotoDoesNotTerminateBrowser") { app.launchArguments += ["--ui-no-fixture", "--ui-photo-fixture"] }
         if name.contains("testOverviewKeepsLiveVideoAndMorphsCurrentTabIntoGrid") { app.launchArguments += ["--ui-no-fixture", "--ui-overview-media-fixture"] }
@@ -409,6 +409,17 @@ final class BrowserUITests: XCTestCase {
             app.navigationBars["音声・バックグラウンド再生"].buttons["設定"].tap()
             tapMenuControl("閉じる")
         }
+        func pressVideoControl(play: Bool) {
+            let label = play ? "Play background video" : "Pause background video"
+            if app.buttons[label].exists { tapMenuControl(label); return }
+            // Cross-origin frame AX can omit descendants. Send an actual touch
+            // to the fixed fixture's button: 32pt status +180pt video +32pt
+            // button centre. Success still requires real frame media state.
+            let host = app.otherElements["webContent"]
+            XCTAssertGreaterThan(host.frame.height, 300)
+            host.coordinate(withNormalizedOffset: CGVector(dx: play ? 0.25 : 0.75, dy: 0))
+                .withOffset(CGVector(dx: 0, dy: 244)).tap()
+        }
         audioSettings()
         let toggle = app.switches["backgroundAudioToggle"]
         XCTAssertTrue(toggle.waitForExistence(timeout: 5))
@@ -416,25 +427,29 @@ final class BrowserUITests: XCTestCase {
         XCTAssertEqual(toggle.value as? String, "1")
         closeAudioSettings()
         navigate("http://127.0.0.1:18765/background-audio")
-        XCTAssertTrue(app.staticTexts["Background frame ready"].waitForExistence(timeout: 15))
-        tapMenuControl("Play background video")
-        XCTAssertTrue(app.staticTexts["Video playing"].waitForExistence(timeout: 8))
+        XCTAssertTrue(app.staticTexts["Embedded video ready"].waitForExistence(timeout: 15))
+        pressVideoControl(play: true)
+        XCTAssertTrue(app.staticTexts["Embedded video playing"].waitForExistence(timeout: 8))
         // Allow one real metadata sample, then use the actual OS Home action.
         // Compare the original player's media clock with time spent hidden,
         // not just foreground progress after activation or a synthetic flag.
         settlePresentation()
         XCUIDevice.shared.press(.home)
-        XCTAssertTrue(app.wait(for: .runningBackground, timeout: 8))
+        XCTAssertEqual(XCTWaiter.wait(for: [XCTNSPredicateExpectation(predicate: NSPredicate { _, _ in
+            [XCUIApplication.State.runningBackground, .runningBackgroundSuspended].contains(self.app.state)
+        }, object: nil)], timeout: 8), .completed)
         Thread.sleep(forTimeInterval: 12)
         app.activate()
-        XCTAssertTrue(app.staticTexts["Background video advanced without PiP"].waitForExistence(timeout: 10))
-        tapMenuControl("Pause background video")
-        XCTAssertTrue(app.staticTexts["Video paused"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.staticTexts["Embedded Background video advanced without PiP"].waitForExistence(timeout: 10))
+        pressVideoControl(play: false)
+        XCTAssertTrue(app.staticTexts["Embedded video paused"].waitForExistence(timeout: 5))
         XCUIDevice.shared.press(.home)
-        XCTAssertTrue(app.wait(for: .runningBackground, timeout: 8))
+        XCTAssertEqual(XCTWaiter.wait(for: [XCTNSPredicateExpectation(predicate: NSPredicate { _, _ in
+            [XCUIApplication.State.runningBackground, .runningBackgroundSuspended].contains(self.app.state)
+        }, object: nil)], timeout: 8), .completed)
         Thread.sleep(forTimeInterval: 8)
         app.activate()
-        XCTAssertTrue(app.staticTexts["Background video remained paused"].waitForExistence(timeout: 8))
+        XCTAssertTrue(app.staticTexts["Embedded Background video remained paused"].waitForExistence(timeout: 8))
         audioSettings()
         toggle.coordinate(withNormalizedOffset: CGVector(dx: 0.9, dy: 0.5)).tap()
         XCTAssertEqual(toggle.value as? String, "0")

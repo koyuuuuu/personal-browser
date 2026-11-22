@@ -83,7 +83,7 @@ enum BackgroundAudioScript {
           } else if (action !== 'play') return;
           // Explicit remote Play is permitted. Recovery is bounded by both
           // the native transition budget and this exact document/player token.
-          if (v.paused) v.play().catch(() => { cancel(); });
+          if (v.paused) v.play().catch(() => { send({event:'rejected',token:t.token}); cancel(); });
         },
         stop() { cancel(); target = null; audioPolicy(false); }
       };
