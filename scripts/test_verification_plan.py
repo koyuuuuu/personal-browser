@@ -5,6 +5,12 @@ from verification_plan import AREAS, ROOT, changed_methods, plan
 
 
 class VerificationPolicyTests(unittest.TestCase):
+    def test_background_ui_only_fix_keeps_mixing_interaction_in_the_pending_release_gate(self):
+        result = plan(["UITests/BrowserUITests.swift"], ui_changes={AREAS["background-audio"][0]},
+                      pending_app_paths={"App/BackgroundAudioController.swift"})
+        self.assertEqual(result["ui_tests"], sorted(AREAS["background-audio"]))
+        self.assertTrue(result["publish"])
+
     def test_background_audio_checks_real_home_transition_without_unchanged_storage_and_tls(self):
         result = plan(["App/BackgroundAudioController.swift", "App/BackgroundAudioScript.swift", "App/BrowserViews.swift", "App/BrowserTab.swift", "App/BrowserWebKitBridge.h", "App/BrowserWebKitBridge.m", "App/SettingsView.swift", "App/AudioMixingSettingsView.swift", "UITests/BrowserUITests.swift"],
                       tab_changes={"createWebView", "releaseWebView", "webView", "webViewWebContentProcessDidTerminate"}, ui_changes={"setUpWithError"})

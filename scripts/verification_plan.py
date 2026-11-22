@@ -251,6 +251,8 @@ def plan(changed, store_changes=(), ui_changes=(), tab_changes=None, pending_app
             if re.search(r"ExternalURL", name): areas.add("external-links")
             if re.search(r"^navigate$|^open$|LinkPreference", name): areas.add("links")
             if re.search(r"Search|^search$", name): areas.add("search")
+    if AREAS["background-audio"][0] in ui_changes:
+        areas.add("background-audio")
     tests = {test for area in areas for test in AREAS[area]}
     allowed = {test for group in AREAS.values() for test in group}
     tests.update(set(ui_changes) & allowed)

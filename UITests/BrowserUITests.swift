@@ -405,12 +405,16 @@ final class BrowserUITests: XCTestCase {
         func audioSettings() {
             tapMenuControl("menuButton"); tapMenuControl("設定"); tapMenuControl("audioMixingSettingsLink")
         }
+        func closeAudioSettings() {
+            app.navigationBars["音声・バックグラウンド再生"].buttons["設定"].tap()
+            tapMenuControl("閉じる")
+        }
         audioSettings()
         let toggle = app.switches["backgroundAudioToggle"]
         XCTAssertTrue(toggle.waitForExistence(timeout: 5))
         if toggle.value as? String != "1" { toggle.coordinate(withNormalizedOffset: CGVector(dx: 0.9, dy: 0.5)).tap() }
         XCTAssertEqual(toggle.value as? String, "1")
-        tapMenuControl("閉じる")
+        closeAudioSettings()
         navigate("http://127.0.0.1:18765/background-audio")
         XCTAssertTrue(app.staticTexts["Background frame ready"].waitForExistence(timeout: 15))
         tapMenuControl("Play background video")
@@ -434,7 +438,7 @@ final class BrowserUITests: XCTestCase {
         audioSettings()
         toggle.coordinate(withNormalizedOffset: CGVector(dx: 0.9, dy: 0.5)).tap()
         XCTAssertEqual(toggle.value as? String, "0")
-        tapMenuControl("閉じる")
+        closeAudioSettings()
         relaunchPreservingData()
         audioSettings(); XCTAssertEqual(toggle.value as? String, "0")
     }
