@@ -2,6 +2,38 @@
   "releases": [
     {
       "file": "PersonalBrowser.ipa",
+      "sha256": "afa7c4a57480574634ae3d1e836a20a05999475e5e08a2a3612ee3fa1dee2b0f",
+      "bundle_id": "local.personalbrowser.app",
+      "version": "0.16.0",
+      "build": "103",
+      "minimum_ios": "17.0",
+      "target_ios": "18.4.1",
+      "architecture": "arm64",
+      "platform": "iOS device",
+      "embedded_profile": false,
+      "signature_resources": false,
+      "installation_verified": false,
+      "source_commit": "33bbde3a37e999567d6b5f02a0d07bc73ce5030c",
+      "data_schema": 1,
+      "size": 5798877,
+      "date": "2026-11-22T10:26:46.177373+00:00",
+      "description": "ホーム画面へ戻る際に、再生していた動画の音声継続を準備。WebKitの移行時停止からの復帰は1回に限定し、手動停止・通話・イヤホン切断を尊重します。設定の「音声・バックグラウンド再生」で切り替え可能。元のプレーヤーとログイン状態を維持し、動画URLの抽出や別プレーヤーへの置換は行いません。サイトやiOSの制約で継続できない場合があります。",
+      "appPermissions": {
+        "entitlements": [],
+        "privacy": {
+          "NSCameraUsageDescription": "閲覧中のWebサイトでカメラを使用するために必要です。",
+          "NSFaceIDUsageDescription": "このブラウザのパスワード保管庫を安全に開くために使用します。",
+          "NSLocalNetworkUsageDescription": "自宅のネットワークにある自作アプリや動画サーバーへ接続するために使用します。",
+          "NSMicrophoneUsageDescription": "閲覧中のWebサイトでマイクを使用するために必要です。",
+          "NSMotionUsageDescription": "動画を全画面で表示する際に、端末の傾きに合わせて画面の向きを調整します。",
+          "NSPhotoLibraryAddUsageDescription": "Webページの画像を写真ライブラリに保存するために使用します。",
+          "NSPhotoLibraryUsageDescription": "Webページから選んだ画像を写真に保存するために使用します。"
+        }
+      },
+      "tag": "v0.16.0-build.103"
+    },
+    {
+      "file": "PersonalBrowser.ipa",
       "sha256": "68475609e60e5a80165fa9e8ef2d1f244ca07627c9158ddbbb50a4dd2af463f8",
       "bundle_id": "local.personalbrowser.app",
       "version": "0.15.0",

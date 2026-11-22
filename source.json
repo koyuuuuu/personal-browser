@@ -12,6 +12,16 @@
       "iconURL": "https://raw.githubusercontent.com/koyuuuuu/personal-browser-distribution/main/icon.png",
       "versions": [
         {
+          "version": "0.16.0",
+          "buildVersion": "103",
+          "date": "2026-11-22T10:26:46.177373+00:00",
+          "localizedDescription": "ホーム画面へ戻る際に、再生していた動画の音声継続を準備。WebKitの移行時停止からの復帰は1回に限定し、手動停止・通話・イヤホン切断を尊重します。設定の「音声・バックグラウンド再生」で切り替え可能。元のプレーヤーとログイン状態を維持し、動画URLの抽出や別プレーヤーへの置換は行いません。サイトやiOSの制約で継続できない場合があります。",
+          "downloadURL": "https://github.com/koyuuuuu/personal-browser-distribution/releases/download/v0.16.0-build.103/PersonalBrowser.ipa",
+          "size": 5798877,
+          "minOSVersion": "17.0",
+          "sha256": "afa7c4a57480574634ae3d1e836a20a05999475e5e08a2a3612ee3fa1dee2b0f"
+        },
+        {
           "version": "0.15.0",
           "buildVersion": "96",
           "date": "2026-11-19T14:06:03.937616+00:00",
