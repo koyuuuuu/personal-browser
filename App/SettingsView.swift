@@ -27,7 +27,7 @@ struct SettingsView: View {
                 footer: { Text("オンにするとホーム画面で入力中の検索語を、選択した検索エンジンへ送信します。プライベートタブでは送信・表示しません。") }
                 Section("操作") {
                     NavigationLink("動画の全画面・向き") { VideoOrientationSettingsView() }.accessibilityIdentifier("videoOrientationSettingsLink")
-                    NavigationLink("音声の同時再生") { AudioMixingSettingsView() }.accessibilityIdentifier("audioMixingSettingsLink")
+                    NavigationLink("音声・バックグラウンド再生") { AudioMixingSettingsView() }.accessibilityIdentifier("audioMixingSettingsLink")
                     NavigationLink("表示・操作") { PresentationSettingsView(store: store) }.accessibilityIdentifier("presentationSettingsLink")
                     Picker("縦画面のバーの位置", selection: setting(\.toolbarPosition)) {
                         Text("上").tag(ToolbarPosition.top)

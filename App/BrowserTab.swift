@@ -157,6 +157,7 @@ final class BrowserTab: NSObject, ObservableObject, Identifiable, WKNavigationDe
             if self?.hasMixingPlayback != value { self?.hasMixingPlayback = value }
         }
         AudioSourcesController.shared.attach(view, tabID: id)
+        BackgroundAudioController.shared.attach(view, tabID: id)
         VideoOrientationController.shared.attach(view, tabID: id)
         PasswordFormController.shared.attach(view, tabID: id, isPrivate: isPrivate,
             trusted: { [weak self] in self?.passwordPageTrusted == true },
@@ -319,6 +320,7 @@ final class BrowserTab: NSObject, ObservableObject, Identifiable, WKNavigationDe
             PasswordFormController.shared.detach(view)
             AppPromotionBlocker.shared.detach(view)
             AudioSourcesController.shared.detach(view)
+            BackgroundAudioController.shared.detach(view)
             VideoOrientationController.shared.detach(view)
             AudioMixingController.shared.detach(view)
         }
@@ -416,6 +418,7 @@ final class BrowserTab: NSObject, ObservableObject, Identifiable, WKNavigationDe
         hasUnsavedInput = false
         PasswordFormController.shared.reset(webView)
         VideoOrientationController.shared.reset(webView)
+        BackgroundAudioController.shared.reset(webView)
         cancelPageRecovery(resetBudget: false)
         pageUnavailable = false; documentScrollLocked = false
         errorMessage = nil; navigationGrants = [:]; certificateWarningShown = false
@@ -498,6 +501,7 @@ final class BrowserTab: NSObject, ObservableObject, Identifiable, WKNavigationDe
     func webViewWebContentProcessDidTerminate(_ webView: WKWebView) {
         PasswordFormController.shared.reset(webView)
         VideoOrientationController.shared.reset(webView)
+        BackgroundAudioController.shared.reset(webView)
         mediaFrames.removeAll(); pipFrames.removeAll(); hasActiveMedia = false; isPictureInPicture = false
         hasMixingPlayback = false; isLoading = false; pageUnavailable = true
         errorMessage = "ページの表示処理が終了しました。"

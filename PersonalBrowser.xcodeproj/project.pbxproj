@@ -65,6 +65,26 @@
 			"isa" = "PBXBuildFile";
 			"fileRef" = "DF0C6C42929616E72B0C113A";
 		};
+		"87F9DB839CF20F09E4E1CAE1" = {
+			"isa" = "PBXFileReference";
+			"lastKnownFileType" = "sourcecode.swift";
+			"path" = "BackgroundAudioController.swift";
+			"sourceTree" = "<group>";
+		};
+		"0C27E1C7292BA7AAF6BB5F50" = {
+			"isa" = "PBXBuildFile";
+			"fileRef" = "87F9DB839CF20F09E4E1CAE1";
+		};
+		"D3BC2A491BF646620528A877" = {
+			"isa" = "PBXFileReference";
+			"lastKnownFileType" = "sourcecode.swift";
+			"path" = "BackgroundAudioScript.swift";
+			"sourceTree" = "<group>";
+		};
+		"230ACA6C6BC2E9428DD398B5" = {
+			"isa" = "PBXBuildFile";
+			"fileRef" = "D3BC2A491BF646620528A877";
+		};
 		"1F4A93E3356F2FB817A0CC43" = {
 			"isa" = "PBXFileReference";
 			"lastKnownFileType" = "sourcecode.swift";
@@ -518,6 +538,8 @@
 				"AF4B2F391E8945DF171E8D0F",
 				"EC80378C164AC5AEDCE3E716",
 				"DF0C6C42929616E72B0C113A",
+				"87F9DB839CF20F09E4E1CAE1",
+				"D3BC2A491BF646620528A877",
 				"1F4A93E3356F2FB817A0CC43",
 				"5B34EBCBFAA3F2B943A5E395",
 				"CCE61BA7C015A9311FAA2AA1",
@@ -587,6 +609,16 @@
 		"24503D32E1FAF4AE42A87DBE" = {
 			"isa" = "PBXBuildFile";
 			"fileRef" = "27B6E2C91F424C774DA534BC";
+		};
+		"A0878862461BA9183D18419D" = {
+			"isa" = "PBXFileReference";
+			"lastKnownFileType" = "sourcecode.swift";
+			"path" = "BackgroundAudioRecovery.swift";
+			"sourceTree" = "<group>";
+		};
+		"2E392F259539DC6CCCCC10C7" = {
+			"isa" = "PBXBuildFile";
+			"fileRef" = "A0878862461BA9183D18419D";
 		};
 		"70428F2874B6C707E9B24143" = {
 			"isa" = "PBXFileReference";
@@ -833,6 +865,7 @@
 			"children" = (
 				"8826D8EB9DC40A949DD78ECB",
 				"27B6E2C91F424C774DA534BC",
+				"A0878862461BA9183D18419D",
 				"70428F2874B6C707E9B24143",
 				"62FF8EFE771CF67A1302047B",
 				"4B56001B1CF53949E67845AF",
@@ -965,7 +998,7 @@
 				"INFOPLIST_FILE" = "App/Info.plist";
 				"GENERATE_INFOPLIST_FILE" = "NO";
 				"CURRENT_PROJECT_VERSION" = "1";
-				"MARKETING_VERSION" = "0.15.0";
+				"MARKETING_VERSION" = "0.16.0";
 				"CODE_SIGN_STYLE" = "Automatic";
 				"TARGETED_DEVICE_FAMILY" = "1";
 				"SUPPORTED_PLATFORMS" = "iphoneos iphonesimulator";
@@ -993,7 +1026,7 @@
 				"INFOPLIST_FILE" = "App/Info.plist";
 				"GENERATE_INFOPLIST_FILE" = "NO";
 				"CURRENT_PROJECT_VERSION" = "1";
-				"MARKETING_VERSION" = "0.15.0";
+				"MARKETING_VERSION" = "0.16.0";
 				"CODE_SIGN_STYLE" = "Automatic";
 				"TARGETED_DEVICE_FAMILY" = "1";
 				"SUPPORTED_PLATFORMS" = "iphoneos iphonesimulator";
@@ -1081,6 +1114,8 @@
 				"FE3000A0FF59936B42A8E29C",
 				"1A8960C76308A9512900F64B",
 				"45C4503F60B190C0C2DC99A6",
+				"0C27E1C7292BA7AAF6BB5F50",
+				"230ACA6C6BC2E9428DD398B5",
 				"376E1B20ACB2E21918F997FB",
 				"855E3DF795059A2C1C1D1611",
 				"FA681C460B87F6F2D1B13460",
@@ -1125,6 +1160,7 @@
 				"EFBAE1284FCAD4E6FAFC1A65",
 				"797E76956CC87E14595A6CA8",
 				"24503D32E1FAF4AE42A87DBE",
+				"2E392F259539DC6CCCCC10C7",
 				"FC310B3C7263977315122B52",
 				"4317089D044903CE42ADD4A5",
 				"3BBE197E2CABE4FA30F3DC5A",

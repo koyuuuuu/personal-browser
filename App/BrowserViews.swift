@@ -169,6 +169,7 @@ struct BrowserRootView: View {
         }
         .onChange(of: store.selectedID) { _, _ in
             PasswordFormController.shared.cancelPendingInteraction()
+            BackgroundAudioController.shared.context(selected: store.selectedID)
             VideoOrientationController.shared.context(selected: store.selectedID, allowed: sheet == nil && !overview.isPresented)
         }
         .tint(store.selectedTab?.isPrivate == true ? .purple : .blue)
@@ -219,6 +220,7 @@ struct BrowserRootView: View {
     }
     private func updateInterfaceAvailability() {
         let available = sheet == nil && !overview.isPresented
+        BackgroundAudioController.shared.context(selected: store.selectedID)
         PasswordFormController.shared.setInterfaceAvailable(available)
         VideoOrientationController.shared.context(selected: store.selectedID, allowed: available)
     }

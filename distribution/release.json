@@ -1,10 +1,10 @@
 {
-  "version": "0.15.0",
+  "version": "0.16.0",
   "bundle_id": "local.personalbrowser.app",
   "data_schema": 1,
   "public_repository": "koyuuuuu/personal-browser-distribution",
   "name": "Personal Browser",
   "developer_name": "Personal Browser",
   "description": "自分専用のブラウザ。タブ、履歴、ブックマーク、プライベート閲覧、UIカスタマイズに対応。",
-  "release_notes": "写真保存時のクラッシュと、購入画面の別窓・セッションを壊す遷移を修正。パスワード入力成功後に出る誤ったエラーを抑制。ページ保持を標準12ページへ増やし、入力中・購入処理中・再生中のページを優先。タブ一覧を現在のページがカードへ縮小する表示に変更し、一覧内でも実際の動画再生を維持します。"
+  "release_notes": "ホーム画面へ戻る際に、再生していた動画の音声継続を準備。WebKitの移行時停止からの復帰は1回に限定し、手動停止・通話・イヤホン切断を尊重します。設定の「音声・バックグラウンド再生」で切り替え可能。元のプレーヤーとログイン状態を維持し、動画URLの抽出や別プレーヤーへの置換は行いません。サイトやiOSの制約で継続できない場合があります。"
 }

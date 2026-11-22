@@ -94,7 +94,34 @@ def main():
                 v.addEventListener('timeupdate',()=>{clock.textContent='Video time '+v.currentTime.toFixed(1);progress()});
                 function check(){pending=true;result.textContent='Waiting for playback';progress();}</script>'''
                 mime = 'text/html; charset=utf-8'
-            elif self.path in ['/wide.mp4', '/tall.mp4']:
+            elif self.path == '/background-audio':
+                data = b'''<!doctype html><meta name="viewport" content="width=device-width,initial-scale=1"><title>Background audio fixture</title>
+                <iframe title="Background video frame" src="http://127.0.0.1:18767/background-audio-frame" allow="autoplay" style="border:0;width:100%;height:440px"></iframe>'''
+                mime = 'text/html; charset=utf-8'
+            elif self.path == '/background-audio-frame':
+                data = b'''<!doctype html><meta name="viewport" content="width=device-width,initial-scale=1"><title>Background frame</title>
+                <style>body{margin:0}video{width:100%;height:180px}button{font-size:16px;padding:10px}</style>
+                <video id="v" src="/background-audio.mp4" playsinline disablepictureinpicture preload="auto"></video>
+                <button onclick="v.play()">Play background video</button><button onclick="v.pause()">Pause background video</button>
+                <p id="state">Background frame ready</p><p id="result">No background sample</p>
+                <script>
+                const original=v;let hidden=null,everPiP=false;
+                v.addEventListener('webkitpresentationmodechanged',()=>{everPiP ||= v.webkitPresentationMode==='picture-in-picture';});
+                function state(){document.getElementById('state').textContent=v.paused?'Video paused':'Video playing';}
+                v.addEventListener('play',state);v.addEventListener('pause',state);
+                document.addEventListener('visibilitychange',()=>{
+                  if(document.hidden){hidden={time:v.currentTime,wall:Date.now(),paused:v.paused};return;}
+                  if(!hidden)return;
+                  const delta=v.currentTime-hidden.time,elapsed=(Date.now()-hidden.wall)/1000;
+                  const good=original===v && !v.muted && v.volume>0 && !everPiP && elapsed>=6;
+                  result.textContent=good && !v.paused && delta>=elapsed*0.7?'Background video advanced without PiP':
+                    good && v.paused && delta<0.75?'Background video remained paused':
+                    'Background failed '+delta.toFixed(2)+'/'+elapsed.toFixed(2)+' paused='+v.paused+' pip='+everPiP;
+                  hidden=null;state();
+                });
+                </script>'''
+                mime = 'text/html; charset=utf-8'
+            elif self.path in ['/wide.mp4', '/tall.mp4', '/background-audio.mp4']:
                 data = (Path(__file__).resolve().parents[1] / 'UITests/Fixtures' / self.path[1:]).read_bytes()
                 mime = 'video/mp4'
             elif self.path == '/video-orientation-fixture':
@@ -262,7 +289,7 @@ def main():
                 mime = 'text/html; charset=utf-8'
             total = len(data); code = 200; content_range = None
             requested_range = self.headers.get('Range', '')
-            if self.path in ['/audio.wav', '/wide.mp4', '/tall.mp4'] and (match := re.fullmatch(r'bytes=(\d+)-(\d*)', requested_range)):
+            if self.path in ['/audio.wav', '/wide.mp4', '/tall.mp4', '/background-audio.mp4'] and (match := re.fullmatch(r'bytes=(\d+)-(\d*)', requested_range)):
                 start = int(match[1]); end = min(total - 1, int(match[2]) if match[2] else total - 1)
                 if 0 <= start <= end < total:
                     data = data[start:end + 1]; code = 206; content_range = f'bytes {start}-{end}/{total}'

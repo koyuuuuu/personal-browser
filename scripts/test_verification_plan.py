@@ -5,6 +5,13 @@ from verification_plan import AREAS, ROOT, changed_methods, plan
 
 
 class VerificationPolicyTests(unittest.TestCase):
+    def test_background_audio_checks_real_home_transition_without_unchanged_storage_and_tls(self):
+        result = plan(["App/BackgroundAudioController.swift", "App/BackgroundAudioScript.swift", "App/BrowserViews.swift", "App/BrowserTab.swift", "App/BrowserWebKitBridge.h", "App/BrowserWebKitBridge.m", "App/SettingsView.swift", "App/AudioMixingSettingsView.swift", "UITests/BrowserUITests.swift"],
+                      tab_changes={"createWebView", "releaseWebView", "webView", "webViewWebContentProcessDidTerminate"}, ui_changes={"setUpWithError"})
+        self.assertEqual(result["ui_tests"], sorted(AREAS["background-audio"]))
+        self.assertFalse(result["compatibility"])
+        self.assertFalse(result["verify_archives"])
+
     def test_canvas_controller_checks_media_and_browsing_without_unchanged_tls_handlers(self):
         result = plan(["App/WebSurfaceController.swift", "App/TabLiveCanvas.swift", "App/BrowserTab.swift"],
                       tab_changes={"makeUIView", "updateUIView", "makeUIViewController", "updateUIViewController", "webViewDidClose", "userContentController"})

@@ -11,6 +11,7 @@ final class BrowserUITests: XCTestCase {
         XCUIDevice.shared.orientation = .portrait
         app = XCUIApplication()
         app.launchArguments = ["--ui-testing"]
+        if name.contains("testBackgroundVideoAudioContinuesAcrossHomeAndRespectsPause") { app.launchArguments += ["--ui-no-fixture"] }
         if name.contains("testCheckoutContextAndResidentPagesSurviveAuxiliaryWindows") { app.launchArguments += ["--ui-no-fixture", "--ui-session-fixture"] }
         if name.contains("testSavingWebsitePhotoDoesNotTerminateBrowser") { app.launchArguments += ["--ui-no-fixture", "--ui-photo-fixture"] }
         if name.contains("testOverviewKeepsLiveVideoAndMorphsCurrentTabIntoGrid") { app.launchArguments += ["--ui-no-fixture", "--ui-overview-media-fixture"] }
@@ -400,6 +401,44 @@ final class BrowserUITests: XCTestCase {
         XCTAssertTrue(app.buttons["Play first"].waitForExistence(timeout: 8))
     }
 
+    func testBackgroundVideoAudioContinuesAcrossHomeAndRespectsPause() {
+        func audioSettings() {
+            tapMenuControl("menuButton"); tapMenuControl("設定"); tapMenuControl("audioMixingSettingsLink")
+        }
+        audioSettings()
+        let toggle = app.switches["backgroundAudioToggle"]
+        XCTAssertTrue(toggle.waitForExistence(timeout: 5))
+        if toggle.value as? String != "1" { toggle.coordinate(withNormalizedOffset: CGVector(dx: 0.9, dy: 0.5)).tap() }
+        XCTAssertEqual(toggle.value as? String, "1")
+        tapMenuControl("閉じる")
+        navigate("http://127.0.0.1:18765/background-audio")
+        XCTAssertTrue(app.staticTexts["Background frame ready"].waitForExistence(timeout: 15))
+        tapMenuControl("Play background video")
+        XCTAssertTrue(app.staticTexts["Video playing"].waitForExistence(timeout: 8))
+        // Allow one real metadata sample, then use the actual OS Home action.
+        // Compare the original player's media clock with time spent hidden,
+        // not just foreground progress after activation or a synthetic flag.
+        settlePresentation()
+        XCUIDevice.shared.press(.home)
+        XCTAssertTrue(app.wait(for: .runningBackground, timeout: 8))
+        Thread.sleep(forTimeInterval: 12)
+        app.activate()
+        XCTAssertTrue(app.staticTexts["Background video advanced without PiP"].waitForExistence(timeout: 10))
+        tapMenuControl("Pause background video")
+        XCTAssertTrue(app.staticTexts["Video paused"].waitForExistence(timeout: 5))
+        XCUIDevice.shared.press(.home)
+        XCTAssertTrue(app.wait(for: .runningBackground, timeout: 8))
+        Thread.sleep(forTimeInterval: 8)
+        app.activate()
+        XCTAssertTrue(app.staticTexts["Background video remained paused"].waitForExistence(timeout: 8))
+        audioSettings()
+        toggle.coordinate(withNormalizedOffset: CGVector(dx: 0.9, dy: 0.5)).tap()
+        XCTAssertEqual(toggle.value as? String, "0")
+        tapMenuControl("閉じる")
+        relaunchPreservingData()
+        audioSettings(); XCTAssertEqual(toggle.value as? String, "0")
+    }
+
     func testConcurrentAudioPreferenceAndRealPlayersAcrossTabs() {
         var page = app.webViews.containing(.staticText, identifier: "Concurrent A").firstMatch
         func settings() {
@@ -425,7 +464,7 @@ final class BrowserUITests: XCTestCase {
         XCTAssertTrue(toggle.waitForExistence(timeout: 5))
         if toggle.value as? String != "1" { toggle.coordinate(withNormalizedOffset: CGVector(dx: 0.9, dy: 0.5)).tap() }
         XCTAssertEqual(toggle.value as? String, "1")
-        app.navigationBars["音声の同時再生"].buttons["設定"].tap()
+        app.navigationBars["音声・バックグラウンド再生"].buttons["設定"].tap()
         tapMenuControl("閉じる")
         navigate("http://127.0.0.1:18765/concurrent-audio-a")
         let first = page.buttons["Play first"]

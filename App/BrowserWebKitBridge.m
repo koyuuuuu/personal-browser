@@ -1,5 +1,35 @@
 #import "BrowserWebKitBridge.h"
 
+void PBConfigureBackgroundAudio(WKWebView *view, WKFrameInfo *frame, BOOL enabled, BOOL foreground)
+{
+    [view callAsyncJavaScript:@"globalThis.__personalBrowserBackgroundAudio?.configure(enabled, foreground);"
+                   arguments:@{@"enabled": @(enabled), @"foreground": @(foreground)}
+                     inFrame:frame inContentWorld:WKContentWorld.defaultClientWorld completionHandler:nil];
+}
+void PBSetBackgroundAudioPolicy(WKWebView *view, BOOL enabled)
+{
+    [view callAsyncJavaScript:@"globalThis.__personalBrowserBackgroundAudio?.policy(enabled);"
+                   arguments:@{@"enabled": @(enabled)}
+                     inFrame:nil inContentWorld:WKContentWorld.defaultClientWorld completionHandler:nil];
+}
+void PBArmBackgroundAudio(WKWebView *view, WKFrameInfo *frame, NSString *document, NSString *video, NSString *token)
+{
+    [view callAsyncJavaScript:@"globalThis.__personalBrowserBackgroundAudio?.arm(documentID, video, token);"
+                   arguments:@{@"documentID": document, @"video": video, @"token": token}
+                     inFrame:frame inContentWorld:WKContentWorld.defaultClientWorld completionHandler:nil];
+}
+void PBCommandBackgroundAudio(WKWebView *view, WKFrameInfo *frame, NSString *document, NSString *token, NSString *action)
+{
+    [view callAsyncJavaScript:@"globalThis.__personalBrowserBackgroundAudio?.command(documentID, token, action);"
+                   arguments:@{@"documentID": document, @"token": token, @"action": action}
+                     inFrame:frame inContentWorld:WKContentWorld.defaultClientWorld completionHandler:nil];
+}
+void PBStopBackgroundAudio(WKWebView *view, WKFrameInfo *frame)
+{
+    [view evaluateJavaScript:@"globalThis.__personalBrowserBackgroundAudio?.stop();"
+                    inFrame:frame inContentWorld:WKContentWorld.defaultClientWorld completionHandler:nil];
+}
+
 void PBRunPasswordCommand(WKWebView *view, WKFrameInfo *frame, NSDictionary<NSString *, id> *command,
                           void (^completion)(id _Nullable, NSError * _Nullable))
 {

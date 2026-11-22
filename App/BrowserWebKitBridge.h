@@ -1,6 +1,16 @@
 #import <WebKit/WebKit.h>
 
 NS_ASSUME_NONNULL_BEGIN
+void PBConfigureBackgroundAudio(WKWebView *view, WKFrameInfo * _Nullable frame, BOOL enabled, BOOL foreground)
+    NS_SWIFT_NAME(configureBackgroundAudio(_:frame:enabled:foreground:));
+void PBSetBackgroundAudioPolicy(WKWebView *view, BOOL enabled)
+    NS_SWIFT_NAME(setBackgroundAudioPolicy(_:enabled:));
+void PBArmBackgroundAudio(WKWebView *view, WKFrameInfo *frame, NSString *document, NSString *video, NSString *token)
+    NS_SWIFT_NAME(armBackgroundAudio(_:frame:document:video:token:));
+void PBCommandBackgroundAudio(WKWebView *view, WKFrameInfo *frame, NSString *document, NSString *token, NSString *action)
+    NS_SWIFT_NAME(commandBackgroundAudio(_:frame:document:token:action:));
+void PBStopBackgroundAudio(WKWebView *view, WKFrameInfo *frame)
+    NS_SWIFT_NAME(stopBackgroundAudio(_:frame:));
 /// Secrets are passed as arguments, never embedded in JavaScript source.
 void PBRunPasswordCommand(WKWebView *view, WKFrameInfo *frame, NSDictionary<NSString *, id> *command,
     void (^completion)(id _Nullable result, NSError * _Nullable error))

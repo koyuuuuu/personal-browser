@@ -115,7 +115,8 @@ final class AudioMixingController: ObservableObject {
               if (enabled) {
                 if (session.type === 'play-and-record') return;
                 if (previous === null) previous = session.type;
-                if (session.type !== 'ambient') session.type = 'ambient';
+                const type = globalThis.__personalBrowserBackgroundAudio?.prefersPlayback ? 'playback' : 'ambient';
+                if (session.type !== type) session.type = type;
               } else if (previous !== null) {
                 if (session.type === 'ambient') session.type = previous;
                 previous = null;

@@ -10,6 +10,7 @@ ROOT = Path(__file__).resolve().parents[1]
 
 # One representative scenario per behavior, rather than overlapping smoke tests.
 AREAS = {
+    "background-audio": ["testBackgroundVideoAudioContinuesAcrossHomeAndRespectsPause", "testConcurrentAudioPreferenceAndRealPlayersAcrossTabs"],
     "session-navigation": ["testCheckoutContextAndResidentPagesSurviveAuxiliaryWindows"],
     "photo-saving": ["testSavingWebsitePhotoDoesNotTerminateBrowser"],
     "live-overview": ["testOverviewKeepsLiveVideoAndMorphsCurrentTabIntoGrid", "testSwipeClosingGridReflowsAndRemainsUsableAfterRepeatedDeletions", "testOverviewOpensAtLastActiveTab"],
@@ -39,6 +40,9 @@ AREAS = {
     "launch": ["testWebKitRendersAndExecutesOfflinePage"],
 }
 PATH_AREAS = {
+    "App/BackgroundAudioController.swift": ["background-audio"],
+    "App/BackgroundAudioScript.swift": ["background-audio"],
+    "Sources/BrowserCore/BackgroundAudioRecovery.swift": ["background-audio"],
     "App/TabLiveCanvas.swift": ["live-overview", "browsing-layout"],
     "App/WebSurfaceController.swift": ["video-orientation", "live-overview", "browsing-layout"],
     "App/TabOverviewPresentation.swift": ["live-overview"],
@@ -155,12 +159,15 @@ def plan(changed, store_changes=(), ui_changes=(), tab_changes=None, pending_app
     changed = set(changed)
     areas = set()
     session_context = bool(changed & {"App/TabLiveCanvas.swift", "App/TabOverviewPresentation.swift", "App/PageEditObserver.swift", "App/TabRetentionPreferences.swift"})
+    background_context = bool(changed & {"App/BackgroundAudioController.swift", "App/BackgroundAudioScript.swift"})
     video_context = "App/VideoOrientationController.swift" in changed
     password_context = bool(changed & {"App/PasswordVault.swift", "App/PasswordVaultView.swift", "App/PasswordFormController.swift", "App/PasswordFormScript.swift", "App/PasswordSuggestionBar.swift"})
     volume_context = bool(changed & {"App/AudioSourcesController.swift", "App/MediaVolumeScript.swift", "App/AudioSourcesView.swift"})
     resilience_context = bool(changed & {"App/ChromeRecoveryObserver.swift", "App/AppPromotionBlocker.swift", "App/AppPromotionScript.swift", "Sources/BrowserCore/PageRecovery.swift"})
     for path in changed:
-        if session_context and path == "App/Info.plist":
+        if background_context and path in {"App/BrowserViews.swift", "App/SettingsView.swift", "App/AudioMixingSettingsView.swift", "App/BrowserWebKitBridge.h", "App/BrowserWebKitBridge.m"}:
+            areas.add("background-audio")
+        elif session_context and path == "App/Info.plist":
             areas.add("photo-saving")
         elif session_context and path == "App/BrowserViews.swift":
             areas.update(["live-overview", "browsing-layout"])
@@ -198,7 +205,11 @@ def plan(changed, store_changes=(), ui_changes=(), tab_changes=None, pending_app
     if "App/BrowserTab.swift" in changed:
         names = set(tab_changes or ())
         resilience_methods = {"preamble", "resolve", "init", "createWebView", "configureBlocking", "load", "capturePreview", "releaseWebView", "dispose", "webView", "show", "webViewWebContentProcessDidTerminate", "cancelPageRecovery", "recoverPageIfNeeded", "retryPage", "updateUIView"}
-        if session_context and tab_changes is not None and names <= {"preamble", "resolve", "init", "createWebView", "capturePreview", "suspend", "releaseWebView", "webView", "webViewDidClose", "userContentController", "loadInBrowser", "makeUIView", "updateUIView", "makeUIViewController", "updateUIViewController", "layoutSubviews", "markEditedInput"}:
+        if background_context and tab_changes is not None and names <= {"createWebView", "releaseWebView", "webView", "webViewWebContentProcessDidTerminate"}:
+            # Attach/detach/reset only; existing navigation, storage and build14
+            # media handler/script remain unchanged.
+            areas.add("background-audio")
+        elif session_context and tab_changes is not None and names <= {"preamble", "resolve", "init", "createWebView", "capturePreview", "suspend", "releaseWebView", "webView", "webViewDidClose", "userContentController", "loadInBrowser", "makeUIView", "updateUIView", "makeUIViewController", "updateUIViewController", "layoutSubviews", "markEditedInput"}:
             # Navigation ownership/cache/canvas changed; certificate handling,
             # process recovery and the build14 media policy are untouched.
             areas.update(["session-navigation", "live-overview", "browsing-layout"])
@@ -247,7 +258,7 @@ def plan(changed, store_changes=(), ui_changes=(), tab_changes=None, pending_app
         tests.update(AREAS["launch"])
     # These cases already launch and render a real WKWebView fixture, including
     # when a shared UI helper changes along with the feature under test.
-    if areas & {"selection-search", "audio-mixing", "audio-volume", "browsing-resilience", "chrome-recovery", "password-vault", "video-orientation", "live-overview", "session-navigation", "photo-saving"}:
+    if areas & {"background-audio", "selection-search", "audio-mixing", "audio-volume", "browsing-resilience", "chrome-recovery", "password-vault", "video-orientation", "live-overview", "session-navigation", "photo-saving"}:
         tests.difference_update(AREAS["launch"])
     return {
         "areas": sorted(areas), "ui_tests": sorted(tests),
