@@ -427,7 +427,10 @@ final class BrowserUITests: XCTestCase {
         XCTAssertEqual(toggle.value as? String, "1")
         closeAudioSettings()
         navigate("http://127.0.0.1:18765/background-audio")
-        XCTAssertTrue(app.staticTexts["Embedded video ready"].waitForExistence(timeout: 15))
+        // The first normal navigation can still be compiling the bundled
+        // content rules. Run100's actual HTTP request arrived just after the
+        // old 15s deadline; require readiness, not a fixed startup assumption.
+        XCTAssertTrue(app.staticTexts["Embedded video ready"].waitForExistence(timeout: 60))
         pressVideoControl(play: true)
         XCTAssertTrue(app.staticTexts["Embedded video playing"].waitForExistence(timeout: 8))
         // Allow one real metadata sample, then use the actual OS Home action.
