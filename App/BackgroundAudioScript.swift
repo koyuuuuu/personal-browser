@@ -55,6 +55,11 @@ enum BackgroundAudioScript {
       function valid(t) {
         return t && t.video.isConnected && t.source === (t.video.currentSrc || t.video.src) && !t.video.srcObject && !t.video.ended && !t.video.muted && t.video.volume > 0 && !pip(t.video);
       }
+      function requestRecovery() {
+        const t = target;
+        if (!enabled || foreground || !document.hidden || !valid(t) || !t.video.paused || t.cancelled || t.requested || performance.now() > t.deadline) return;
+        t.requested = true; send({event:'recover',token:t.token});
+      }
       function configure(on, visible) {
         enabled = on; foreground = visible;
         clearInterval(timer); timer = null;
@@ -68,11 +73,11 @@ enum BackgroundAudioScript {
         arm(documentID, videoID, token) {
           if (!enabled || doc !== documentID) return;
           const v = players().find(v => id(v) === videoID);
-          const transitionPause = v && document.hidden && eligible.has(v) && v.paused && !v.ended && !v.muted && v.volume > 0 && !v.srcObject && !pip(v);
+          const transitionPause = v && !foreground && eligible.has(v) && v.paused && !v.ended && !v.muted && v.volume > 0 && !v.srcObject && !pip(v);
           if (!v || (!audible(v) && !transitionPause)) { send({event:'cancel',token}); return; }
           target = {video:v, source:v.currentSrc || v.src, token, cancelled:false, requested:false, deadline:performance.now()+3000};
           audioPolicy(true);
-          if (transitionPause) { target.requested = true; send({event:'recover',token}); }
+          if (transitionPause) requestRecovery();
         },
         command(documentID, token, action) {
           if (doc !== documentID || target?.token !== token || !valid(target)) return;
@@ -95,17 +100,18 @@ enum BackgroundAudioScript {
         document.addEventListener(event, e => {
           if (!(e.target instanceof HTMLVideoElement)) return;
           if (event === 'play' || event === 'playing') eligible.add(e.target);
-          if ((event === 'pause' && !document.hidden) || event === 'ended' || event === 'emptied') eligible.delete(e.target);
+          if ((event === 'pause' && foreground) || event === 'ended' || event === 'emptied') eligible.delete(e.target);
           const t = target;
           if (e.target === t?.video) {
             if (!valid(t) || event === 'emptied') cancel();
-            if (event === 'pause' && !foreground && document.hidden && !t.cancelled && !t.requested && performance.now() <= t.deadline) {
-              t.requested = true; send({event:'recover',token:t.token});
-            }
+            if (event === 'pause') requestRecovery();
           }
           inventory();
         }, true);
       }
+      // WebKit can pause during deactivation, before visibility changes. Only
+      // request the bounded recovery once the document is actually hidden.
+      document.addEventListener('visibilitychange', requestRecovery);
       window.addEventListener('pagehide', () => { cancel(); target = null; audioPolicy(false); });
       const ready = () => send({event:'ready'});
       window.addEventListener('pageshow', ready); ready();

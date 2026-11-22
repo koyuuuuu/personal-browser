@@ -42,6 +42,7 @@ if [[ -n "${UI_TESTS:-}" ]]; then
     IFS=',' read -r -a ui_names <<< "$UI_TESTS"
     ui_selection=()
     photo_selection=()
+    background_selection=()
     release_layout=0
     for name in "${ui_names[@]}"; do
         if [[ ! "$name" =~ ^test[A-Za-z0-9_]+$ ]]; then
@@ -52,6 +53,8 @@ if [[ -n "${UI_TESTS:-}" ]]; then
             release_layout=1
         elif [[ "$name" == "testSavingWebsitePhotoDoesNotTerminateBrowser" ]]; then
             photo_selection+=("-only-testing:PersonalBrowserUITests/BrowserUITests/$name")
+        elif [[ "$name" == "testBackgroundVideoAudioContinuesAcrossHomeAndRespectsPause" ]]; then
+            background_selection+=("-only-testing:PersonalBrowserUITests/BrowserUITests/$name")
         else
             ui_selection+=("-only-testing:PersonalBrowserUITests/BrowserUITests/$name")
         fi
@@ -103,6 +106,10 @@ CERT_CONFIG
     # Once it passes, every other selected case and the device build still run.
     if [[ ${#photo_selection[@]} -gt 0 ]]; then
         run_debug_ui "Photo-" "${photo_selection[@]}"
+    fi
+    if [[ ${#background_selection[@]} -gt 0 ]]; then
+        # Complete the Home flow before running every remaining selected case.
+        run_debug_ui "Background-" "${background_selection[@]}"
     fi
     if [[ ${#ui_selection[@]} -gt 0 ]]; then
         run_debug_ui "" "${ui_selection[@]}"

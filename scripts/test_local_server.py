@@ -117,7 +117,8 @@ def main():
                 const relay=value=>parent.postMessage({fixture:'background-video',state:value},'http://127.0.0.1:18765');
                 function state(){document.getElementById('state').textContent=v.paused?'Video paused':'Video playing';relay(v.paused?'video paused':'video playing');}
                 v.addEventListener('play',state);v.addEventListener('pause',state);
-                document.addEventListener('visibilitychange',()=>{
+                document.addEventListener('visibilitychange',event=>{
+                  if(!event.isTrusted)return;
                   if(document.hidden){hidden={time:v.currentTime,wall:Date.now(),paused:v.paused};return;}
                   if(!hidden)return;
                   const delta=v.currentTime-hidden.time,elapsed=(Date.now()-hidden.wall)/1000;

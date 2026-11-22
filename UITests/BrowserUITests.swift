@@ -420,6 +420,14 @@ final class BrowserUITests: XCTestCase {
             host.coordinate(withNormalizedOffset: CGVector(dx: play ? 0.25 : 0.75, dy: 0))
                 .withOffset(CGVector(dx: 0, dy: 244)).tap()
         }
+        func visitHome(seconds: TimeInterval) {
+            XCUIDevice.shared.press(.home)
+            Thread.sleep(forTimeInterval: seconds)
+            let home = XCTAttachment(screenshot: XCUIScreen.main.screenshot())
+            home.name = "OS screen after Home"; home.lifetime = .keepAlways; add(home)
+            print("Home state: app=\(app.state.rawValue); springboard=\(XCUIApplication(bundleIdentifier: "com.apple.springboard").state.rawValue)")
+            app.activate()
+        }
         audioSettings()
         let toggle = app.switches["backgroundAudioToggle"]
         XCTAssertTrue(toggle.waitForExistence(timeout: 5))
@@ -437,21 +445,11 @@ final class BrowserUITests: XCTestCase {
         // Compare the original player's media clock with time spent hidden,
         // not just foreground progress after activation or a synthetic flag.
         settlePresentation()
-        XCUIDevice.shared.press(.home)
-        XCTAssertEqual(XCTWaiter.wait(for: [XCTNSPredicateExpectation(predicate: NSPredicate { _, _ in
-            [XCUIApplication.State.runningBackground, .runningBackgroundSuspended].contains(self.app.state)
-        }, object: nil)], timeout: 8), .completed)
-        Thread.sleep(forTimeInterval: 12)
-        app.activate()
+        visitHome(seconds: 12)
         XCTAssertTrue(app.staticTexts["Embedded Background video advanced without PiP"].waitForExistence(timeout: 10))
         pressVideoControl(play: false)
         XCTAssertTrue(app.staticTexts["Embedded video paused"].waitForExistence(timeout: 5))
-        XCUIDevice.shared.press(.home)
-        XCTAssertEqual(XCTWaiter.wait(for: [XCTNSPredicateExpectation(predicate: NSPredicate { _, _ in
-            [XCUIApplication.State.runningBackground, .runningBackgroundSuspended].contains(self.app.state)
-        }, object: nil)], timeout: 8), .completed)
-        Thread.sleep(forTimeInterval: 8)
-        app.activate()
+        visitHome(seconds: 8)
         XCTAssertTrue(app.staticTexts["Embedded Background video remained paused"].waitForExistence(timeout: 8))
         audioSettings()
         toggle.coordinate(withNormalizedOffset: CGVector(dx: 0.9, dy: 0.5)).tap()
