@@ -2,6 +2,38 @@
   "releases": [
     {
       "file": "PersonalBrowser.ipa",
+      "sha256": "4c4ddcd3dac20f24cd1c6388434f320b3d59e06a21e1405ae79894035c639622",
+      "bundle_id": "local.personalbrowser.app",
+      "version": "0.16.1",
+      "build": "104",
+      "minimum_ios": "17.0",
+      "target_ios": "18.4.1",
+      "architecture": "arm64",
+      "platform": "iOS device",
+      "embedded_profile": false,
+      "signature_resources": false,
+      "installation_verified": false,
+      "source_commit": "adf72327ba7781f46730d32c3a5fbb38e0ef7d5f",
+      "data_schema": 1,
+      "size": 5797021,
+      "date": "2026-11-23T15:12:59.491781+00:00",
+      "description": "タブ一覧の選択中の青枠をサイトより最前面へ修正。現在のタブだけを拡縮し、他のタブが一緒に動く挙動を修正。サイトの表示サイズとスクロール位置を保ったまま連続的に一覧へ遷移するよう改善しました。",
+      "appPermissions": {
+        "entitlements": [],
+        "privacy": {
+          "NSCameraUsageDescription": "閲覧中のWebサイトでカメラを使用するために必要です。",
+          "NSFaceIDUsageDescription": "このブラウザのパスワード保管庫を安全に開くために使用します。",
+          "NSLocalNetworkUsageDescription": "自宅のネットワークにある自作アプリや動画サーバーへ接続するために使用します。",
+          "NSMicrophoneUsageDescription": "閲覧中のWebサイトでマイクを使用するために必要です。",
+          "NSMotionUsageDescription": "動画を全画面で表示する際に、端末の傾きに合わせて画面の向きを調整します。",
+          "NSPhotoLibraryAddUsageDescription": "Webページの画像を写真ライブラリに保存するために使用します。",
+          "NSPhotoLibraryUsageDescription": "Webページから選んだ画像を写真に保存するために使用します。"
+        }
+      },
+      "tag": "v0.16.1-build.104"
+    },
+    {
+      "file": "PersonalBrowser.ipa",
       "sha256": "afa7c4a57480574634ae3d1e836a20a05999475e5e08a2a3612ee3fa1dee2b0f",
       "bundle_id": "local.personalbrowser.app",
       "version": "0.16.0",

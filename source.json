@@ -12,6 +12,16 @@
       "iconURL": "https://raw.githubusercontent.com/koyuuuuu/personal-browser-distribution/main/icon.png",
       "versions": [
         {
+          "version": "0.16.1",
+          "buildVersion": "104",
+          "date": "2026-11-23T15:12:59.491781+00:00",
+          "localizedDescription": "タブ一覧の選択中の青枠をサイトより最前面へ修正。現在のタブだけを拡縮し、他のタブが一緒に動く挙動を修正。サイトの表示サイズとスクロール位置を保ったまま連続的に一覧へ遷移するよう改善しました。",
+          "downloadURL": "https://github.com/koyuuuuu/personal-browser-distribution/releases/download/v0.16.1-build.104/PersonalBrowser.ipa",
+          "size": 5797021,
+          "minOSVersion": "17.0",
+          "sha256": "4c4ddcd3dac20f24cd1c6388434f320b3d59e06a21e1405ae79894035c639622"
+        },
+        {
           "version": "0.16.0",
           "buildVersion": "103",
           "date": "2026-11-22T10:26:46.177373+00:00",
