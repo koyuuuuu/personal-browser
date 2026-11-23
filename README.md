@@ -2,7 +2,7 @@
 
 iPhone 12 / iOS 18.4.1向けの個人用ブラウザ。SwiftUIとWKWebViewで新規実装し、Windowsで編集、クラウドmacOSでビルド、SideStoreで実機へ導入・再署名する。
 
-**最新配信版は0.16.0 build 103。ホーム画面へ戻る際に、再生中の動画の音声継続を準備する機能を追加。設定から切り替え可能。** [リリース](https://github.com/koyuuuuu/personal-browser-distribution/releases/tag/v0.16.0-build.103)、[配信記録](docs/validation-0.16.0-2026-11-22.json)、[使い方と制約](docs/changes-0.16.0.ja.md)。本体ソースは[koyuuuuu/personal-browser](https://github.com/koyuuuuu/personal-browser)で公開し、標準の公開リポジトリ用Actionsランナーを利用する。有料ランナーや課金設定は追加していない。
+**最新配信版は0.16.1 build 104。タブ一覧の選択枠をサイトより前面へ修正し、現在のタブだけが連続的に拡縮するよう改善。** [リリース](https://github.com/koyuuuuu/personal-browser-distribution/releases/tag/v0.16.1-build.104)、[配信記録](docs/validation-0.16.1-2026-11-23.json)、[変更内容と検証範囲](docs/changes-0.16.1.ja.md)。本体ソースは[koyuuuuu/personal-browser](https://github.com/koyuuuuu/personal-browser)で公開し、標準の公開リポジトリ用Actionsランナーを利用する。有料ランナーや課金設定は追加していない。
 
 [v0.1.0の保存済みリリース](https://github.com/koyuuuuu/personal-browser/releases/tag/v0.1.0)から、初期版のビルド元とIPA保管先を参照できる。初期IPAは`ipa-archive`ブランチ、新版はGitHub Releasesに保存し、Actionsの1日保持期限が過ぎても取得できる。arm64実機用、最低iOS 17.0。SideStoreで個人用に署名して導入する。現在は本体リポジトリ全体が公開されている。
 
