@@ -104,12 +104,13 @@ struct TabGridView: UIViewRepresentable {
         private func publishGeometry(_ view: UICollectionView) {
             guard initialScroll, view.window != nil else { return }
             var frames: [UUID: CGRect] = [:]
+            var cards: [UUID: CGRect] = [:]
             for case let cell as SwipeTabCell in view.visibleCells {
                 guard let id = cell.previewTabID else { continue }
                 let rect = cell.previewFrameInWindow
-                if rect.width > 1 && rect.height > 1 { frames[id] = rect }
+                if rect.width > 1 && rect.height > 1 { frames[id] = rect; cards[id] = cell.cardFrameInWindow }
             }
-            TabOverviewPresentation.shared.report(frames: frames, viewport: view.convert(view.bounds, to: nil))
+            TabOverviewPresentation.shared.report(frames: frames, cards: cards, viewport: view.convert(view.bounds, to: nil))
         }
 
     }
@@ -126,6 +127,7 @@ final class SwipeTabCell: UICollectionViewCell, UIGestureRecognizerDelegate {
     var onPreviewLayout: (() -> Void)?
     var previewTabID: UUID? { tab?.id }
     var previewFrameInWindow: CGRect { previewButton.convert(previewButton.bounds, to: nil) }
+    var cardFrameInWindow: CGRect { contentView.convert(contentView.bounds, to: nil) }
     private var onSelect: (() -> Void)?
     private var committed = false
     private var observation: AnyCancellable?

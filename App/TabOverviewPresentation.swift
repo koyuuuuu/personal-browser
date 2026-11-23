@@ -15,49 +15,53 @@ final class TabOverviewPresentation: ObservableObject {
     private var generation = 0
     private var entered = false
     private(set) var frames: [UUID: CGRect] = [:]
+    private(set) var cards: [UUID: CGRect] = [:]
     private(set) var viewport = CGRect.zero
 
     func open(_ store: BrowserStore) {
         guard phase == .browsing else { return }
         self.store = store; generation += 1; entered = false
-        frames.removeAll(); viewport = .zero
+        frames.removeAll(); cards.removeAll(); viewport = .zero
         surface?.captureHomePreview()
         store.selectedTab?.existingWebView?.endEditing(true)
         withAnimation(.easeInOut(duration: duration)) {
             store.overviewPresented = true; phase = .opening
         }
     }
-    func report(frames: [UUID: CGRect], viewport: CGRect) {
+    func report(frames: [UUID: CGRect], cards: [UUID: CGRect], viewport: CGRect) {
         guard isPresented, phase != .closing, let store, let surface else { return }
-        self.frames = frames; self.viewport = viewport
+        self.frames = frames; self.cards = cards; self.viewport = viewport
         if phase == .opening {
-            guard let selected = store.selectedID, frames[selected] != nil else { return }
+            guard !entered, let selected = store.selectedID, frames[selected] != nil, cards[selected] != nil else { return }
             entered = true
             let token = generation
-            surface.showOverview(frames: frames, viewport: viewport, duration: duration) { [weak self] finished in
-                guard let self, finished, self.generation == token, self.phase == .opening else { return }
-                DispatchQueue.main.async { [weak self] in
-                    guard let self, self.generation == token, self.phase == .opening else { return }
+            // Collection layout may publish repeatedly in one run-loop turn.
+            // Use the settled geometry once; never restart an in-flight morph.
+            DispatchQueue.main.async { [weak self, weak surface] in
+                guard let self, let surface, self.generation == token, self.phase == .opening else { return }
+                surface.showOverview(frames: self.frames, cards: self.cards, viewport: self.viewport, duration: self.duration) { [weak self] finished in
+                    guard let self, finished, self.generation == token, self.phase == .opening else { return }
                     self.phase = .overview
+                    self.synchronize()
                 }
             }
         } else {
-            surface.showOverview(frames: frames, viewport: viewport, duration: 0)
+            surface.showOverview(frames: frames, cards: cards, viewport: viewport, duration: 0)
         }
     }
     func synchronize() {
         guard entered, phase == .overview else { return }
-        surface?.showOverview(frames: frames, viewport: viewport, duration: 0)
+        surface?.showOverview(frames: frames, cards: cards, viewport: viewport, duration: 0)
     }
     func close() {
-        guard isPresented, phase != .closing, let store else { return }
+        guard phase == .overview, let store else { return }
         generation += 1; let token = generation
         withAnimation(.easeInOut(duration: duration)) { phase = .closing }
         surface?.synchronize(store)
         let finish = { [weak self, weak store] in
             guard let self, let store, self.generation == token else { return }
             store.overviewPresented = false
-            self.phase = .browsing; self.frames.removeAll(); self.viewport = .zero; self.entered = false
+            self.phase = .browsing; self.frames.removeAll(); self.cards.removeAll(); self.viewport = .zero; self.entered = false
             self.surface?.synchronize(store)
         }
         if let surface { surface.returnToBrowser(duration: duration, completion: finish) }

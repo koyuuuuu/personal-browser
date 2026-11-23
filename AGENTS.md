@@ -1,5 +1,9 @@
 # Personal Browser: development and GitHub operations
 
+## 0.16.1 tab overview continuity repair (2026-11-23)
+
+The user provided a private screen recording and requests selected stroke above live content, only the selected card moving, and continuous document-to-card motion. Keep that video and derived frames out of source/CI/release assets. Freeze the original WKWebView viewport/transform/scroll throughout transitions; animate its existing clipping parent only. Other live cards settle without animation, and a separate noninteractive outline stays above all canvas content. Start each opening only once despite repeated collection geometry reports. Keep overview opaque behind expansion. Preserve mounted media, build14 media region, 0.16 background audio, lazy residency and all persisted formats. DEBUG + both --ui-testing/--ui-overview-motion-fixture gate presentation-layer observations with no reserved inset. Verification must retain actual video pixels/time, blue edge pixels, temporal identity/viewport/peer/monotonicity checks plus existing overview rotations/close/selection and Release browsing/password interaction; no unrelated TLS/storage/archive tests. See docs/changes-0.16.1.ja.md.
+
 ## Established project decisions
 
 - Native SwiftUI + WKWebView, iPhone 12 / iOS 18.4.1; no third-party browser fork.

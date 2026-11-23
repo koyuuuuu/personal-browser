@@ -1,18 +1,25 @@
 import UIKit
 import WebKit
 
-/// Each WebView is mounted once in its own clipping view. Overview changes only
-/// UIKit transforms/frames; it never replaces the player or resizes its viewport.
+/// The document viewport stays fixed during a transition. Only its clipping
+/// container moves/scales; retained WebViews never leave their window.
 @MainActor
 final class WebSurfaceView: UIView {
     let chromeRecovery = ChromeRecoveryObserver()
     private weak var store: BrowserStore?
     private var items: [UUID: LiveTabCanvasItem] = [:]
-    private let clip = CAShapeLayer()
+    private let outline = TabSelectionOutlineView()
     private var animating = false
+    #if DEBUG
+    private var motionProbe: OverviewMotionProbe?
+    #endif
+
     override init(frame: CGRect) {
-        super.init(frame: frame); clipsToBounds = true; isOpaque = false; backgroundColor = .clear
+        super.init(frame: frame)
+        clipsToBounds = true; isOpaque = false; backgroundColor = .clear
         chromeRecovery.install(on: self)
+        outline.isUserInteractionEnabled = false; outline.accessibilityElementsHidden = true
+        outline.alpha = 0; addSubview(outline)
     }
     required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }
 
@@ -29,27 +36,18 @@ final class WebSurfaceView: UIView {
             if items[tab.id]?.content !== webView {
                 items.removeValue(forKey: tab.id)?.removeFromSuperview()
                 let item = LiveTabCanvasItem(content: webView, homeSnapshot: false)
-                items[tab.id] = item; addSubview(item)
-                item.setViewport(bounds.size)
+                items[tab.id] = item; addSubview(item); item.setViewport(bounds.size)
             }
             let interactive = !store.overviewPresented && tab.id == store.selectedID && tab.hasContent
             let hidden = store.overviewPresented || tab.id != store.selectedID
             if webView.isUserInteractionEnabled != interactive { webView.isUserInteractionEnabled = interactive }
             if webView.accessibilityElementsHidden != hidden { webView.accessibilityElementsHidden = hidden }
         }
-        if let selected = store.selectedID, let item = items[selected], subviews.last !== item { bringSubviewToFront(item) }
-        if !store.overviewPresented {
-            for (id, item) in items {
-                if item.homeSnapshot { item.removeFromSuperview(); items.removeValue(forKey: id); continue }
-                if item.frame != bounds { item.frame = bounds }
-                if item.layer.cornerRadius != 0 { item.layer.cornerRadius = 0 }
-                item.setViewport(bounds.size)
-                let capturing = store.tabs.first(where: { $0.id == id })?.isCapturingPreview == true
-                let alpha: CGFloat = (id == store.selectedID && store.selectedTab?.hasContent == true) || capturing ? 1 : 0.01
-                if item.alpha != alpha { item.alpha = alpha }
-            }
-            if layer.mask != nil { layer.mask = nil }
-        } else { TabOverviewPresentation.shared.synchronize() }
+        if !animating {
+            if !store.overviewPresented { showBrowser() }
+            else { TabOverviewPresentation.shared.synchronize() }
+        }
+        raiseSelectedAndOutline()
         chromeRecovery.webView = store.overviewPresented ? nil : store.selectedTab?.existingWebView
         chromeRecovery.hidden = { [weak store] in store?.chromeVisible == false }
         chromeRecovery.locked = { [weak store] in store?.selectedTab?.documentScrollLocked == true }
@@ -59,65 +57,97 @@ final class WebSurfaceView: UIView {
     override func layoutSubviews() {
         super.layoutSubviews()
         guard !animating, let store else { return }
-        if !store.overviewPresented {
-            for item in items.values {
-                if item.frame != bounds { item.frame = bounds }
-                item.setViewport(bounds.size)
+        if !store.overviewPresented { showBrowser() }
+        else { TabOverviewPresentation.shared.synchronize() }
+    }
+    private func raiseSelectedAndOutline() {
+        if let selected = store?.selectedID, let item = items[selected], item.superview === self {
+            // Keep all nonselected cards below this one, and the stroke above it.
+            if subviews.dropLast().last !== item { bringSubviewToFront(item) }
+        }
+        if subviews.last !== outline { bringSubviewToFront(outline) }
+    }
+    private func showBrowser() {
+        guard let store else { return }
+        for (id, item) in items {
+            if item.homeSnapshot { item.removeFromSuperview(); items.removeValue(forKey: id); continue }
+            let selected = id == store.selectedID && store.selectedTab?.hasContent == true
+            let capturing = store.tabs.first(where: { $0.id == id })?.isCapturingPreview == true
+            if selected || capturing {
+                item.setViewport(bounds.size); item.place(in: bounds, radius: 0)
+                item.crop(to: nil); item.alpha = 1
+            } else {
+                // A full-size 1%-opaque page must not bleed through the grid.
+                // Mask its pixels, leaving the original live view mounted.
+                item.crop(to: .zero); item.alpha = 0.01
             }
-        } else { TabOverviewPresentation.shared.synchronize() }
+        }
+        outline.alpha = 0
+        raiseSelectedAndOutline()
     }
     func hasLivePreview(_ id: UUID) -> Bool {
         guard let tab = store?.tabs.first(where: { $0.id == id }) else { return false }
-        return items[id]?.homeSnapshot == true || (tab.isLive && tab.hasContent && !tab.pageUnavailable && (id == store?.selectedID || tab.isProtectedForMedia || tab.isCapturingPreview))
+        return items[id]?.homeSnapshot == true || (tab.isLive && tab.hasContent && !tab.pageUnavailable && (id == store?.selectedID || tab.isProtectedForMedia))
     }
     func captureHomePreview() {
         guard let store, let tab = store.selectedTab, !tab.hasContent,
               UIApplication.shared.applicationState == .active, let root = window?.rootViewController?.view,
               bounds.width > 1, bounds.height > 1 else { return }
-        // Own, currently visible Home UI only. No WK snapshot, active video
-        // snapshot or disk/private-preview write participates in this transition.
+        // Current native Home UI only; no media/private WK snapshot or disk IO.
         let rect = convert(bounds, to: root)
         guard let snapshot = root.resizableSnapshotView(from: rect, afterScreenUpdates: false, withCapInsets: .zero) else { return }
         items.removeValue(forKey: tab.id)?.removeFromSuperview()
         let item = LiveTabCanvasItem(content: snapshot, homeSnapshot: true)
-        items[tab.id] = item; addSubview(item); item.frame = bounds; item.setViewport(bounds.size)
+        items[tab.id] = item; addSubview(item); item.setViewport(bounds.size)
+        item.place(in: bounds, radius: 0); raiseSelectedAndOutline()
     }
-    func showOverview(frames: [UUID: CGRect], viewport: CGRect, duration: Double, completion: ((Bool) -> Void)? = nil) {
-        guard window != nil, let store else { completion?(false); return }
+    private func placeCard(_ item: LiveTabCanvasItem, rect: CGRect, viewport: CGRect) {
+        item.place(in: rect, radius: 14)
+        item.crop(to: viewport.intersection(bounds)); item.alpha = 1
+    }
+    func showOverview(frames: [UUID: CGRect], cards: [UUID: CGRect], viewport: CGRect, duration: Double,
+                      completion: ((Bool) -> Void)? = nil) {
+        guard window != nil, let store, !animating else { completion?(false); return }
+        let previews = frames.mapValues { convert($0, from: nil) }
+        let cards = cards.mapValues { convert($0, from: nil) }
         let crop = convert(viewport, from: nil).intersection(bounds)
-        let visible = frames.filter { self.hasLivePreview($0.key) }.mapValues { self.convert($0, from: nil).intersection(crop).intersection(self.bounds) }
-        let ordered = visible.keys.sorted { $0.uuidString < $1.uuidString }
-        let from = UIBezierPath(), to = UIBezierPath()
-        for id in ordered {
-            guard let rect = visible[id], !rect.isNull else { continue }
-            to.append(UIBezierPath(rect: rect))
-            let start = id == store.selectedID ? bounds : CGRect(x: rect.midX, y: rect.midY, width: 0, height: 0)
-            from.append(UIBezierPath(rect: start))
-        }
-        clip.frame = bounds; clip.path = to.cgPath; layer.mask = clip
-        if duration > 0 {
-            let animation = CABasicAnimation(keyPath: "path"); animation.fromValue = from.cgPath; animation.toValue = to.cgPath
-            animation.duration = duration; animation.timingFunction = CAMediaTimingFunction(name: .easeInEaseOut)
-            clip.add(animation, forKey: "overviewClip")
-        }
-        let changes = {
-            for (id, item) in self.items {
-                if self.hasLivePreview(id), let rect = frames[id] {
-                    item.frame = self.convert(rect, from: nil); item.layer.cornerRadius = 12
-                    item.layer.maskedCorners = [.layerMinXMaxYCorner, .layerMaxXMaxYCorner]
-                    item.alpha = 1; item.fitPreview()
-                } else { item.alpha = item.homeSnapshot ? 0 : 0.01 }
+        let selected = store.selectedID
+        // Settle every other live card immediately, before starting the one
+        // selected-page animation. They never grow/shrink with that page.
+        UIView.performWithoutAnimation {
+            for (id, item) in items where duration == 0 || id != selected {
+                if hasLivePreview(id), let rect = previews[id], rect.intersects(crop) {
+                    placeCard(item, rect: rect, viewport: crop)
+                } else { item.crop(to: .zero); item.alpha = item.homeSnapshot ? 0 : 0.01 }
             }
-            if let id = store.selectedID, let selected = self.items[id] { self.bringSubviewToFront(selected) }
         }
-        if duration == 0 { UIView.performWithoutAnimation(changes); completion?(true); return }
+        outline.layer.borderColor = (store.selectedTab?.isPrivate == true ? UIColor.systemPurple : .systemBlue)
+            .resolvedColor(with: traitCollection).cgColor
+        guard let selected, let fullCard = cards[selected] else { outline.alpha = 0; completion?(true); return }
+        raiseSelectedAndOutline()
+        if duration == 0 {
+            UIView.performWithoutAnimation { outline.frame = fullCard; outline.layer.cornerRadius = 14; outline.alpha = 1; outline.crop(to: crop) }
+            completion?(true); return
+        }
+        guard let item = items[selected], let rect = previews[selected] else { completion?(true); return }
+        UIView.performWithoutAnimation {
+            item.crop(to: nil); outline.crop(to: nil)
+            outline.frame = item.frame; outline.layer.cornerRadius = 0; outline.alpha = 0
+        }
         animating = true
-        UIView.animate(withDuration: duration, delay: 0, options: [.beginFromCurrentState, .allowUserInteraction, .curveEaseInOut], animations: changes) { finished in
-            self.animating = false; completion?(finished)
+        beginProbe(selected: selected, opening: true)
+        UIView.animate(withDuration: duration, delay: 0, options: [.allowUserInteraction, .curveEaseInOut]) {
+            item.place(in: rect, radius: 14)
+            self.outline.frame = fullCard; self.outline.layer.cornerRadius = 14; self.outline.alpha = 1
+        } completion: { finished in
+            self.endProbe(); self.animating = false
+            item.crop(to: crop); self.outline.crop(to: crop)
+            completion?(finished)
         }
     }
     func returnToBrowser(duration: Double, completion: @escaping () -> Void) {
         guard let store, let selected = store.selectedTab else { completion(); return }
+        let geometry = TabOverviewPresentation.shared
         if items[selected.id] == nil {
             let content: UIView
             if selected.hasContent { content = selected.webView }
@@ -127,37 +157,53 @@ final class WebSurfaceView: UIView {
             }
             let item = LiveTabCanvasItem(content: content, homeSnapshot: !selected.hasContent)
             items[selected.id] = item; addSubview(item); item.setViewport(bounds.size)
-            if let rect = TabOverviewPresentation.shared.frames[selected.id] { item.frame = convert(rect, from: nil); item.fitPreview() }
-            else { item.frame = CGRect(x: bounds.midX, y: bounds.maxY, width: 1, height: 1); item.fitPreview() }
         }
-        guard let selectedItem = items[selected.id] else { completion(); return }
-        bringSubviewToFront(selectedItem)
-        if selectedItem.alpha < 0.5, let rect = TabOverviewPresentation.shared.frames[selected.id] {
-            UIView.performWithoutAnimation {
-                selectedItem.frame = self.convert(rect, from: nil); selectedItem.fitPreview(); selectedItem.alpha = 1
-            }
+        guard let item = items[selected.id] else { completion(); return }
+        if item.alpha < 0.5 || item.isFullyMasked {
+            let rect = geometry.frames[selected.id].map { convert($0, from: nil) }
+                ?? CGRect(x: bounds.midX, y: bounds.maxY, width: 1, height: 1)
+            UIView.performWithoutAnimation { item.place(in: rect, radius: 14); item.alpha = 1; item.crop(to: nil) }
         }
-        let startRect = selectedItem.frame.intersection(bounds)
-        let from = UIBezierPath(rect: startRect.isNull ? CGRect(x: bounds.midX, y: bounds.midY, width: 1, height: 1) : startRect)
-        let to = UIBezierPath(rect: bounds)
-        for (id, item) in items where id != selected.id && item.alpha > 0.5 {
-            let rect = item.frame.intersection(bounds)
-            if !rect.isNull {
-                from.append(UIBezierPath(rect: rect))
-                to.append(UIBezierPath(rect: CGRect(x: rect.midX, y: rect.midY, width: 0, height: 0)))
-            }
+        UIView.performWithoutAnimation {
+            outline.frame = geometry.cards[selected.id].map { convert($0, from: nil) } ?? item.frame
+            outline.layer.cornerRadius = 14; outline.alpha = 1
         }
-        clip.frame = bounds; clip.path = to.cgPath; layer.mask = clip
-        if duration > 0 {
-            let animation = CABasicAnimation(keyPath: "path"); animation.fromValue = from.cgPath; animation.toValue = to.cgPath
-            animation.duration = duration; clip.add(animation, forKey: "overviewClip")
-        }
+        raiseSelectedAndOutline()
         animating = true
-        UIView.animate(withDuration: duration, delay: 0, options: [.beginFromCurrentState, .allowUserInteraction, .curveEaseInOut]) {
-            selectedItem.frame = self.bounds; selectedItem.layer.cornerRadius = 0
-            selectedItem.alpha = 1; selectedItem.setViewport(self.bounds.size)
-            for (id, item) in self.items where id != selected.id { item.alpha = item.homeSnapshot ? 0 : 0.01 }
-        } completion: { _ in self.animating = false; self.layer.mask = nil; completion() }
+        beginProbe(selected: selected.id, opening: false)
+        item.expandCrop(to: bounds, duration: duration)
+        outline.expandCrop(to: bounds.size, duration: duration)
+        UIView.animate(withDuration: duration, delay: 0, options: [.allowUserInteraction, .curveEaseInOut]) {
+            item.place(in: self.bounds, radius: 0)
+            self.outline.frame = self.bounds; self.outline.layer.cornerRadius = 0; self.outline.alpha = 0
+        } completion: { _ in
+            self.endProbe(); self.animating = false
+            item.crop(to: nil); self.outline.crop(to: nil)
+            // Only now may a different orientation/keyboard viewport reflow.
+            item.setViewport(self.bounds.size); item.place(in: self.bounds, radius: 0)
+            completion()
+        }
+    }
+    private func beginProbe(selected: UUID, opening: Bool) {
+        #if DEBUG
+        guard OverviewMotionDiagnostics.fixture else { return }
+        motionProbe = OverviewMotionProbe(opening: opening) { [weak self] in
+            guard let self, let item = self.items[selected] else { return nil }
+            return OverviewMotionProbe.Sample(
+                frame: item.layer.presentation()?.frame ?? item.frame,
+                content: ObjectIdentifier(item.content), viewport: item.content.bounds, transform: item.content.transform,
+                scroll: (item.content as? WKWebView)?.scrollView.contentOffset ?? .zero,
+                peers: self.items.filter { $0.key != selected && $0.value.alpha > 0.5 && !$0.value.isFullyMasked }
+                    .mapValues { $0.layer.presentation()?.frame ?? $0.frame },
+                outlineOnTop: self.subviews.last === self.outline)
+        }
+        motionProbe?.start()
+        #endif
+    }
+    private func endProbe() {
+        #if DEBUG
+        motionProbe?.finish(); motionProbe = nil
+        #endif
     }
 }
 
@@ -166,7 +212,8 @@ private final class LiveTabCanvasItem: UIView {
     let content: UIView
     let homeSnapshot: Bool
     private var viewport = CGSize.zero
-    private var previewing = false
+    private let cropLayer = CAShapeLayer()
+    private(set) var isFullyMasked = false
     init(content: UIView, homeSnapshot: Bool) {
         self.content = content; self.homeSnapshot = homeSnapshot
         super.init(frame: .zero); clipsToBounds = true; isOpaque = false; autoresizesSubviews = false
@@ -174,20 +221,66 @@ private final class LiveTabCanvasItem: UIView {
     }
     required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }
     func setViewport(_ size: CGSize) {
-        guard size.width > 0, size.height > 0 else { return }
-        let center = CGPoint(x: size.width / 2, y: size.height / 2)
-        // Metadata/preview updates must not reset an unchanged WK viewport or
-        // interrupt UIKit's ongoing link/image context-menu presentation.
-        guard viewport != size || previewing else { return }
-        previewing = false
-        viewport = size; content.transform = .identity
-        content.bounds = CGRect(origin: .zero, size: size); content.center = center
+        guard size.width > 0, size.height > 0, viewport != size else { return }
+        viewport = size
+        // No transform is ever applied to the WebView itself for an overview.
+        content.transform = .identity; content.bounds = CGRect(origin: .zero, size: size)
+        content.center = CGPoint(x: size.width / 2, y: size.height / 2)
     }
-    func fitPreview() {
-        guard viewport.width > 0, viewport.height > 0 else { return }
-        previewing = true
-        let scale = bounds.width / viewport.width
-        content.transform = CGAffineTransform(scaleX: scale, y: scale)
-        content.center = CGPoint(x: bounds.width / 2, y: viewport.height * scale / 2)
+    func place(in rect: CGRect, radius: CGFloat) {
+        guard viewport.width > 0, rect.width > 0, rect.height > 0 else { return }
+        let scale = rect.width / viewport.width
+        bounds = CGRect(x: 0, y: 0, width: viewport.width, height: rect.height / scale)
+        center = CGPoint(x: rect.midX, y: rect.midY)
+        transform = CGAffineTransform(scaleX: scale, y: scale)
+        layer.cornerRadius = radius / scale
+        layer.maskedCorners = radius > 0 ? [.layerMinXMaxYCorner, .layerMaxXMaxYCorner] : []
+    }
+    func crop(to rect: CGRect?) {
+        CATransaction.begin(); CATransaction.setDisableActions(true)
+        if let rect, let parent = superview {
+            let local = rect.isEmpty ? CGRect.zero : convert(rect, from: parent).intersection(bounds)
+            cropLayer.path = UIBezierPath(rect: local.isNull ? .zero : local).cgPath
+            layer.mask = cropLayer; isFullyMasked = local.isEmpty || local.isNull
+        } else { layer.mask = nil; isFullyMasked = false }
+        CATransaction.commit()
+    }
+    func expandCrop(to rect: CGRect, duration: Double) {
+        guard layer.mask != nil, viewport.width > 0, rect.width > 0 else { return }
+        let target = CGRect(x: 0, y: 0, width: viewport.width, height: rect.height * viewport.width / rect.width)
+        let previous = cropLayer.presentation()?.path ?? cropLayer.path
+        cropLayer.path = UIBezierPath(rect: target).cgPath
+        if duration > 0 {
+            let animation = CABasicAnimation(keyPath: "path"); animation.fromValue = previous; animation.toValue = cropLayer.path
+            animation.duration = duration; animation.timingFunction = CAMediaTimingFunction(name: .easeInEaseOut)
+            cropLayer.add(animation, forKey: "reveal")
+        }
+    }
+}
+
+@MainActor
+private final class TabSelectionOutlineView: UIView {
+    private let cropLayer = CAShapeLayer()
+    override init(frame: CGRect) {
+        super.init(frame: frame); backgroundColor = .clear; layer.borderWidth = 3; layer.cornerRadius = 14
+    }
+    required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }
+    func crop(to rect: CGRect?) {
+        CATransaction.begin(); CATransaction.setDisableActions(true)
+        if let rect, let parent = superview {
+            let local = convert(rect, from: parent).intersection(bounds)
+            cropLayer.path = UIBezierPath(rect: local.isNull ? .zero : local).cgPath; layer.mask = cropLayer
+        } else { layer.mask = nil }
+        CATransaction.commit()
+    }
+    func expandCrop(to size: CGSize, duration: Double) {
+        guard layer.mask != nil else { return }
+        let previous = cropLayer.presentation()?.path ?? cropLayer.path
+        cropLayer.path = UIBezierPath(rect: CGRect(origin: .zero, size: size)).cgPath
+        if duration > 0 {
+            let animation = CABasicAnimation(keyPath: "path"); animation.fromValue = previous; animation.toValue = cropLayer.path
+            animation.duration = duration; animation.timingFunction = CAMediaTimingFunction(name: .easeInEaseOut)
+            cropLayer.add(animation, forKey: "reveal")
+        }
     }
 }

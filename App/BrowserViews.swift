@@ -61,6 +61,8 @@ struct BrowserRootView: View {
             } else if resilienceFixture, let selected = store.selectedTab {
                 ResilienceFixtureControls(store: store, tab: selected)
                     .frame(width: 160).padding(.trailing, 10).padding(.bottom, 145)
+            } else if OverviewMotionDiagnostics.fixture {
+                OverviewMotionFixtureStatus().padding(.trailing, 10).padding(.bottom, 110)
             }
             #endif
         }
@@ -215,9 +217,8 @@ struct BrowserRootView: View {
             .zIndex(overview.isPresented ? 2 : 0)
             if overview.isPresented {
                 TabsView(store: store, dismiss: overview.close)
-                    .allowsHitTesting(overview.phase != .closing)
-                    .opacity(overview.phase == .closing ? 0 : 1)
-                    .transition(.opacity).zIndex(1)
+                    .allowsHitTesting(overview.phase == .overview)
+                    .transition(.identity).zIndex(1)
             }
         }
     }

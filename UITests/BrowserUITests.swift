@@ -15,7 +15,7 @@ final class BrowserUITests: XCTestCase {
         if name.contains("testConcurrentAudioPreferenceAndRealPlayersAcrossTabs") { app.launchArguments += ["--ui-no-fixture", "--ui-concurrent-audio-fixture"] }
         if name.contains("testCheckoutContextAndResidentPagesSurviveAuxiliaryWindows") { app.launchArguments += ["--ui-no-fixture", "--ui-session-fixture"] }
         if name.contains("testSavingWebsitePhotoDoesNotTerminateBrowser") { app.launchArguments += ["--ui-no-fixture", "--ui-photo-fixture"] }
-        if name.contains("testOverviewKeepsLiveVideoAndMorphsCurrentTabIntoGrid") { app.launchArguments += ["--ui-no-fixture", "--ui-overview-media-fixture"] }
+        if name.contains("testOverviewKeepsLiveVideoAndMorphsCurrentTabIntoGrid") { app.launchArguments += ["--ui-no-fixture", "--ui-overview-media-fixture", "--ui-overview-motion-fixture"] }
         if name.contains("testVideoFullscreenFollowsAspectAndRespectsPauseAndToggle") {
             app.launchArguments += ["--ui-no-fixture", "--ui-video-orientation-fixture"]
         }
@@ -104,9 +104,50 @@ final class BrowserUITests: XCTestCase {
         let before = pixels(); settlePresentation(); let after = pixels()
         XCTAssertNotNil(before); XCTAssertNotNil(after)
         XCTAssertNotEqual(before, after, "Live video/time pixels must change inside the card; a cached snapshot is insufficient")
+        assertSelectedOutlineAbovePage(rect)
         tile.tap()
         XCTAssertTrue(app.buttons["Check overview playback"].waitForExistence(timeout: 8)); app.buttons["Check overview playback"].tap()
         XCTAssertTrue(app.staticTexts["Playback advanced; page retained"].waitForExistence(timeout: 12))
+        // Leave another real playing page behind the native Home tab. Only the
+        // selected Home card may move while the live video card stays fixed.
+        tapMenuControl("menuButton"); tapMenuControl("新しいタブ")
+        tapMenuControl("tabsButton")
+        XCTAssertTrue(app.navigationBars["タブ 2"].waitForExistence(timeout: 8)); settlePresentation()
+        XCTAssertTrue(tile.waitForExistence(timeout: 5)); tile.tap()
+        XCTAssertTrue(app.buttons["Check overview playback"].waitForExistence(timeout: 8))
+        app.buttons["Check overview playback"].tap()
+        XCTAssertTrue(app.staticTexts["Playback advanced; page retained"].waitForExistence(timeout: 12))
+        let result = app.staticTexts["overviewMotionResult"]
+        XCTAssertTrue(result.waitForExistence(timeout: 5))
+        let status = result.label
+        for required in ["open2 close2", "frozentrue", "peerstrue", "monotonetrue", "outlinetrue", "observedtrue"] {
+            XCTAssertTrue(status.contains(required), "Actual presentation layers and the original document must remain continuous: \(status)")
+        }
+        XCTAssertFalse(status.contains("samples0"), "Must observe actual animation frames")
+    }
+
+    private func assertSelectedOutlineAbovePage(_ rect: CGRect) {
+        let image = app.screenshot().image
+        guard let cg = image.cgImage else { XCTFail("Missing screenshot"); return }
+        let scale = CGFloat(cg.width) / app.frame.width
+        // Sample the straight body edges over the live WebView, away from the
+        // header/corners and any test-only status overlay.
+        for x in [rect.minX + 1.5, rect.maxX - 1.5] {
+            var blue = 0
+            for fraction in [0.25, 0.4, 0.55] {
+                let sample = CGRect(x: x * scale, y: (rect.minY + rect.height * fraction) * scale, width: 1, height: 1).integral
+                guard let pixel = cg.cropping(to: sample) else { XCTFail("Missing edge pixel"); return }
+                var rgba = [UInt8](repeating: 0, count: 4)
+                let drawn = rgba.withUnsafeMutableBytes { bytes -> Bool in
+                    guard let context = CGContext(data: bytes.baseAddress, width: 1, height: 1, bitsPerComponent: 8, bytesPerRow: 4,
+                        space: CGColorSpace(name: CGColorSpace.sRGB)!, bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue | CGBitmapInfo.byteOrder32Big.rawValue) else { return false }
+                    context.draw(pixel, in: CGRect(x: 0, y: 0, width: 1, height: 1)); return true
+                }
+                XCTAssertTrue(drawn)
+                if rgba[2] > 170 && Int(rgba[2]) > Int(rgba[0]) + 60 && Int(rgba[2]) > Int(rgba[1]) + 35 { blue += 1 }
+            }
+            XCTAssertEqual(blue, 3, "The selected blue stroke must be visible above both sides of the live page")
+        }
     }
 
     func testVideoFullscreenFollowsAspectAndRespectsPauseAndToggle() {

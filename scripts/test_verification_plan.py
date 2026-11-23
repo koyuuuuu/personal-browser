@@ -5,6 +5,13 @@ from verification_plan import AREAS, ROOT, changed_methods, plan
 
 
 class VerificationPolicyTests(unittest.TestCase):
+    def test_overview_motion_checks_live_layers_and_release_browsing_without_unrelated_storage(self):
+        result = plan(["App/TabLiveCanvas.swift", "App/TabOverviewPresentation.swift", "App/OverviewMotionDiagnostics.swift", "App/TabGridView.swift", "App/BrowserViews.swift", "UITests/BrowserUITests.swift"],
+                      ui_changes={"setUpWithError", "testOverviewKeepsLiveVideoAndMorphsCurrentTabIntoGrid", "assertSelectedOutlineAbovePage"})
+        self.assertEqual(set(result["ui_tests"]), set(AREAS["live-overview"] + AREAS["browsing-layout"]))
+        self.assertFalse(result["compatibility"])
+        self.assertFalse(result["verify_archives"])
+
     def test_background_ui_only_fix_keeps_mixing_interaction_in_the_pending_release_gate(self):
         result = plan(["UITests/BrowserUITests.swift"], ui_changes={AREAS["background-audio"][0]},
                       pending_app_paths={"App/BackgroundAudioController.swift"})

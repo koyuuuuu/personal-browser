@@ -1,10 +1,10 @@
 {
-  "version": "0.16.0",
+  "version": "0.16.1",
   "bundle_id": "local.personalbrowser.app",
   "data_schema": 1,
   "public_repository": "koyuuuuu/personal-browser-distribution",
   "name": "Personal Browser",
   "developer_name": "Personal Browser",
   "description": "自分専用のブラウザ。タブ、履歴、ブックマーク、プライベート閲覧、UIカスタマイズに対応。",
-  "release_notes": "ホーム画面へ戻る際に、再生していた動画の音声継続を準備。WebKitの移行時停止からの復帰は1回に限定し、手動停止・通話・イヤホン切断を尊重します。設定の「音声・バックグラウンド再生」で切り替え可能。元のプレーヤーとログイン状態を維持し、動画URLの抽出や別プレーヤーへの置換は行いません。サイトやiOSの制約で継続できない場合があります。"
+  "release_notes": "タブ一覧の選択中の青枠をサイトより最前面へ修正。現在のタブだけを拡縮し、他のタブが一緒に動く挙動を修正。サイトの表示サイズとスクロール位置を保ったまま連続的に一覧へ遷移するよう改善しました。"
 }

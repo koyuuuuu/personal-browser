@@ -44,6 +44,7 @@ PATH_AREAS = {
     "App/BackgroundAudioScript.swift": ["background-audio"],
     "Sources/BrowserCore/BackgroundAudioRecovery.swift": ["background-audio"],
     "App/TabLiveCanvas.swift": ["live-overview", "browsing-layout"],
+    "App/OverviewMotionDiagnostics.swift": ["live-overview"],
     "App/WebSurfaceController.swift": ["video-orientation", "live-overview", "browsing-layout"],
     "App/TabOverviewPresentation.swift": ["live-overview"],
     "App/TabRetentionPreferences.swift": ["session-navigation"],
