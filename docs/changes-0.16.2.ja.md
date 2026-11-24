@@ -26,4 +26,6 @@ iOS検証は4設定の実際のコントロールセンター往復とネイテ�
 
 検証110はCore85件と標準全画面203.646秒を再度通過したが、音声ケースは起動直後の最初のAXスナップショット取得でタイムアウト。終了時の階層にはアドレス欄があり、ページは読み込み初期状態だったため、設定操作や音声の結果ではない。無音の画面表示・設定切替ではAVAudioSessionを準備せず、実際の非ミュート再生と活動中のWeb Audio、前面復帰時の実playing判定で準備する。診断も初回再生前にはAVAudioSessionを読まない。テストの音声ページはBOTH flags限定のネイティブ準備ボタンで初期UIの後に開く。PCMは明示再生までプリロードせず、停止中の同じ時計文字列を繰り返しDOMへ書かない。OS操作・実時計・全9件の条件は保持する。
 
+検証111はCore85件通過。音声は準備ボタンの実タッチ後、初回ページ待ちで停止し、画面はWK読み込み10%・方針待機のまま。再生／コントロールセンター未実施。標準全画面は4回の実移行・回転・時計・終了確認後、タブ一覧のAX取得で停止し、終了時の階層には実際の一覧・カード・完了が存在した。どちらもケース全体の成功とは扱わない。音声方針は据え置き、固定ページへのHTTP接続確認と固定ルートの到達ログを追加し、画面探索をfirstMatch・一意の画面内コントロールへ限定する。読み込み済み音声ページの不要な再読み込みを削除。実OS操作・時計・全9件の条件と待機上限は保持する。111で配信なし。
+
 根拠: [Apple playback](https://developer.apple.com/documentation/avfaudio/avaudiosession/category-swift.struct/playback)、[mixWithOthers](https://developer.apple.com/documentation/avfaudio/avaudiosession/categoryoptions-swift.struct/mixwithothers)、[isElementFullscreenEnabled](https://developer.apple.com/documentation/webkit/wkpreferences/iselementfullscreenenabled)、[fullscreenState](https://developer.apple.com/documentation/webkit/wkwebview/fullscreenstate)。

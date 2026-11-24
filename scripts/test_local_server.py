@@ -41,8 +41,9 @@ def main():
         protocol_version = 'HTTP/1.1'
 
         def do_GET(self):
-            if self.path in ['/background-audio', '/background-audio-frame', '/background-audio.mp4']:
-                print('Background fixture request: ' + self.path, flush=True)
+            if self.path in ['/background-audio', '/background-audio-frame', '/background-audio.mp4',
+                             '/concurrent-audio-a', '/concurrent-audio-b', '/standard-fullscreen', '/standard-fullscreen-frame']:
+                print('Playback fixture request: ' + self.path, flush=True)
             external_cases = {
                 '/test-open-cold': 'mybrowser://open?url=http%3A%2F%2F127.0.0.1%3A18765%2Fexternal-cold%3Fa%3D1%26b%3D2',
                 '/test-open-warm': 'mybrowser://open?url=http%3A%2F%2F127.0.0.1%3A18765%2Fexternal-warm',

@@ -11,6 +11,19 @@ final class BrowserUITests: XCTestCase {
         XCUIDevice.shared.orientation = .portrait
         app = XCUIApplication()
         app.launchArguments = ["--ui-testing"]
+        if name.contains("testConcurrentAudioPreferenceAndRealPlayersAcrossTabs") || name.contains("testStandardFullscreenEntersAndExitsWithoutLosingPage") {
+            // Diagnose fixture availability separately from WebKit/AX startup.
+            // Real page navigation and media playback are still required below.
+            let path = name.contains("testConcurrentAudio") ? "concurrent-audio-a" : "standard-fullscreen"
+            let response = expectation(description: "Loopback playback fixture is reachable")
+            URLSession.shared.dataTask(with: URL(string: "http://127.0.0.1:18765/" + path)!) { data, result, error in
+                XCTAssertNil(error)
+                XCTAssertEqual((result as? HTTPURLResponse)?.statusCode, 200)
+                XCTAssertFalse(data?.isEmpty ?? true)
+                response.fulfill()
+            }.resume()
+            wait(for: [response], timeout: 15)
+        }
         if name.contains("testBackgroundVideoAudioContinuesAcrossHomeAndRespectsPause") { app.launchArguments += ["--ui-no-fixture", "--ui-background-audio-fixture"] }
         if name.contains("testConcurrentAudioPreferenceAndRealPlayersAcrossTabs") { app.launchArguments += ["--ui-no-fixture", "--ui-concurrent-audio-fixture", "--ui-playback-audio-fixture"] }
         if name.contains("testStandardFullscreenEntersAndExitsWithoutLosingPage") { app.launchArguments += ["--ui-no-fixture", "--ui-standard-fullscreen-fixture"] }
@@ -237,7 +250,9 @@ final class BrowserUITests: XCTestCase {
             XCUIDevice.shared.orientation = .portrait; settlePresentation()
         }
         tapMenuControl("tabsButton")
-        XCTAssertTrue(app.navigationBars["タブ 1"].waitForExistence(timeout: 8))
+        let overviewBar = app.navigationBars.firstMatch
+        XCTAssertTrue(overviewBar.waitForExistence(timeout: 8))
+        XCTAssertEqual(overviewBar.identifier, "タブ 1")
         tapMenuControl("完了")
         XCTAssertTrue(app.buttons["Enter standard fullscreen"].waitForExistence(timeout: 8), "Normal browser controls must still work after returning from both fullscreen players")
     }
@@ -533,14 +548,13 @@ final class BrowserUITests: XCTestCase {
 
     func testConcurrentAudioPreferenceAndRealPlayersAcrossTabs() {
         tapMenuControl("preparePlaybackFixture")
-        XCTAssertTrue(app.staticTexts["Concurrent A"].waitForExistence(timeout: 60))
-        var page = app.webViews.containing(.staticText, identifier: "Concurrent A").firstMatch
+        XCTAssertTrue(app.staticTexts["Concurrent A"].firstMatch.waitForExistence(timeout: 60))
         func settings() {
             tapMenuControl("menuButton"); tapMenuControl("設定")
             tapMenuControl("audioMixingSettingsLink")
         }
         func progress() -> (Double, Double, Bool, Bool) {
-            let value = page.staticTexts.matching(NSPredicate(format: "label MATCHES %@", "[0-9.]+,[0-9.]+,(true|false),(true|false)")).firstMatch.label
+            let value = app.staticTexts.matching(NSPredicate(format: "label MATCHES %@", "[0-9.]+,[0-9.]+,(true|false),(true|false)")).firstMatch.label
             let p = value.split(separator: ",").map(String.init)
             guard p.count == 4 else { return (0,0,false,false) }
             return (Double(p[0]) ?? 0,Double(p[1]) ?? 0,p[2] == "true",p[3] == "true")
@@ -602,11 +616,10 @@ final class BrowserUITests: XCTestCase {
         XCTAssertEqual(toggle.value as? String, "1")
         app.navigationBars["音声・バックグラウンド再生"].buttons["設定"].tap()
         tapMenuControl("閉じる")
-        navigate("http://127.0.0.1:18765/concurrent-audio-a")
-        let first = page.buttons["Play first"]
+        let first = app.buttons["Play first"].firstMatch
         XCTAssertTrue(first.waitForExistence(timeout: 10)); first.tap()
         advance(first: true, second: false)
-        page.buttons["Play second"].tap(); advance(first: true, second: true)
+        app.buttons["Play second"].firstMatch.tap(); advance(first: true, second: true)
         for (master, nonExclusive) in [(true, true), (true, false), (false, true), (false, false)] {
             settings()
             setAudioToggle("concurrentAudioToggle", true)
@@ -620,17 +633,17 @@ final class BrowserUITests: XCTestCase {
         closeSettings()
         tapMenuControl("menuButton"); tapMenuControl("新しいタブ")
         navigate("http://127.0.0.1:18765/concurrent-audio-b")
-        page = app.webViews.containing(.staticText, identifier: "Concurrent B").firstMatch
-        XCTAssertTrue(page.buttons["Play first"].waitForExistence(timeout: 10)); page.buttons["Play first"].tap(); advance(first: true, second: false)
+        XCTAssertTrue(app.staticTexts["Concurrent B"].firstMatch.waitForExistence(timeout: 10))
+        XCTAssertTrue(first.waitForExistence(timeout: 10)); first.tap(); advance(first: true, second: false)
         app.buttons["tabsButton"].tap(); app.buttons["Concurrent A"].tap()
-        page = app.webViews.containing(.staticText, identifier: "Concurrent A").firstMatch
+        XCTAssertTrue(app.staticTexts["Concurrent A"].firstMatch.waitForExistence(timeout: 10))
         advance(first: true, second: true)
-        page.buttons["Pause first"].tap(); advance(first: false, second: true)
-        page.buttons["Pause both"].tap()
+        app.buttons["Pause first"].firstMatch.tap(); advance(first: false, second: true)
+        app.buttons["Pause both"].firstMatch.tap()
         app.buttons["tabsButton"].tap(); app.buttons["Concurrent B"].tap()
-        page = app.webViews.containing(.staticText, identifier: "Concurrent B").firstMatch
+        XCTAssertTrue(app.staticTexts["Concurrent B"].firstMatch.waitForExistence(timeout: 10))
         advance(first: true, second: false)
-        page.buttons["Pause both"].tap()
+        app.buttons["Pause both"].firstMatch.tap()
         XCUIDevice.shared.press(.home); relaunchPreservingData()
         settings(); XCTAssertEqual(toggle.value as? String, "1")
         setAudioToggle("concurrentAudioToggle", false); XCTAssertEqual(toggle.value as? String, "0")
