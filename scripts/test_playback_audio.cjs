@@ -50,6 +50,10 @@ const raw = (path, member) => fs.readFileSync(path, 'utf8').split(member)[1].spl
       }, event);
       assert.equal(await page.evaluate(()=>navigator.audioSession.type), 'auto');
     }
+    await page.evaluate(()=>{navigator.audioSession.state='active';navigator.audioSession.dispatchEvent(new Event('statechange'));});
+    assert.ok(await page.evaluate(()=>messages.some(m=>m.active===true && m.type==='auto')), 'Active top-level Web Audio must notify native preparation');
+    await frame.evaluate(()=>{navigator.audioSession.state='active';navigator.audioSession.dispatchEvent(new Event('statechange'));});
+    assert.equal(await frame.evaluate(()=>messages.some(m=>m.active===true)),false,'A child cannot claim top-page activity');
     await page.evaluate(()=>{navigator.audioSession.type='play-and-record'; __personalBrowserSetAudioMixing(true); __personalBrowserBackgroundAudio.policy(true); __personalBrowserBackgroundAudio.policy(false);});
     assert.equal(await page.evaluate(()=>navigator.audioSession.type), 'play-and-record', 'Capture must not be replaced');
     assert.equal(await page.evaluate(()=>player.paused), true, 'No policy event may start stopped media');

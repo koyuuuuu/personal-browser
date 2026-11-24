@@ -32,6 +32,8 @@ final class AudioMixingController: ObservableObject {
     private final class Entry {
         weak var view: WKWebView?
         let playback: (Bool) -> Void
+        var hasPlayedAudibly = false
+        var webAudioActive = false
         init(_ view: WKWebView, playback: @escaping (Bool) -> Void) { self.view = view; self.playback = playback }
     }
 
@@ -59,7 +61,6 @@ final class AudioMixingController: ObservableObject {
         let controller = view.configuration.userContentController
         controller.add(MixingMessageHandler(owner: self, view: view), contentWorld: .defaultClient, name: "browserAudioMixing")
         controller.addUserScript(WKUserScript(source: Self.script, injectionTime: .atDocumentStart, forMainFrameOnly: false, in: .defaultClient))
-        prepare(activate: false)
         if enabled { startTimer(); sample(view) }
     }
     func detach(_ view: WKWebView) {
@@ -69,7 +70,6 @@ final class AudioMixingController: ObservableObject {
     }
 
     private func updateViews() {
-        prepare(activate: false)
         if enabled { startTimer() }
         else { timer?.invalidate(); timer = nil }
         for entry in entries.values {
@@ -89,21 +89,38 @@ final class AudioMixingController: ObservableObject {
         #if DEBUG
         if Self.fixture { fixtureReturns += 1 }
         #endif
-        prepare(activate: false)
-        for entry in entries.values { if let view = entry.view { applyWebPolicy(view) } }
+        for entry in entries.values {
+            guard let view = entry.view else { continue }
+            view.requestMediaPlaybackState { [weak self, weak entry] state in
+                guard let self, let entry, let view = entry.view,
+                      self.entries[ObjectIdentifier(view)] === entry,
+                      UIApplication.shared.applicationState == .active else { return }
+                if state == .playing { self.prepare(activate: false) }
+                self.applyWebPolicy(view)
+            }
+        }
     }
     fileprivate func mediaEvent(_ view: WKWebView, audible: Bool) {
         guard entries[ObjectIdentifier(view)] != nil else { return }
-        if audible { prepare(activate: true) }
+        if audible {
+            entries[ObjectIdentifier(view)]?.hasPlayedAudibly = true
+            prepare(activate: true)
+        }
         // Frame play events request the top page's policy via the native
         // bridge; a child must not undo the page's owned background override.
         applyWebPolicy(view)
         if enabled { sample(view) }
     }
-    fileprivate func policyEvent(_ view: WKWebView, type: String) {
-        guard entries[ObjectIdentifier(view)] != nil else { return }
+    fileprivate func policyEvent(_ view: WKWebView, type: String, active: Bool?) {
+        guard let entry = entries[ObjectIdentifier(view)] else { return }
+        if let active, type != "play-and-record", entry.webAudioActive != active {
+            entry.webAudioActive = active
+            // Web Audio has no HTMLMediaElement play event. Configure only
+            // once it is actually active, never while opening an idle page.
+            if active, UIApplication.shared.applicationState == .active { prepare(activate: false) }
+        }
         #if DEBUG
-        if Self.fixture {
+        if Self.fixture, entries.values.contains(where: { $0.hasPlayedAudibly }) {
             let session = AVAudioSession.sharedInstance()
             let value = "Native \(session.category == .playback ? "playback" : "other"); Web \(type == "auto" ? "auto" : "other"); mix\(session.categoryOptions.contains(.mixWithOthers)); return\(fixtureReturns)"
             if fixtureStatus != value { fixtureStatus = value }
@@ -172,7 +189,12 @@ final class AudioMixingController: ObservableObject {
             const audible = player instanceof HTMLMediaElement && !player.paused && !player.ended && !player.muted && player.volume > 0;
             send(audible);
           }, true);
-          if (navigator.audioSession) navigator.audioSession.addEventListener('statechange', apply);
+          if (navigator.audioSession) navigator.audioSession.addEventListener('statechange', () => {
+            apply();
+            if (window === window.top) {
+              try { send({type:navigator.audioSession.type, active:navigator.audioSession.state === 'active'}); } catch (_) {}
+            }
+          });
         })();
         """#
 }
@@ -186,7 +208,7 @@ private final class MixingMessageHandler: NSObject, WKScriptMessageHandler {
         guard let view, message.webView === view else { return }
         if message.body as? String == "ready" { owner?.applyWebPolicy(view) }
         else if let audible = message.body as? Bool { owner?.mediaEvent(view, audible: audible) }
-        else if let value = message.body as? [String: Any], let type = value["type"] as? String { owner?.policyEvent(view, type: type) }
+        else if let value = message.body as? [String: Any], let type = value["type"] as? String { owner?.policyEvent(view, type: type, active: value["active"] as? Bool) }
     }
 }
 

@@ -532,6 +532,8 @@ final class BrowserUITests: XCTestCase {
     }
 
     func testConcurrentAudioPreferenceAndRealPlayersAcrossTabs() {
+        tapMenuControl("preparePlaybackFixture")
+        XCTAssertTrue(app.staticTexts["Concurrent A"].waitForExistence(timeout: 60))
         var page = app.webViews.containing(.staticText, identifier: "Concurrent A").firstMatch
         func settings() {
             tapMenuControl("menuButton"); tapMenuControl("設定")

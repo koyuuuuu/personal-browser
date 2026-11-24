@@ -40,6 +40,7 @@ struct BrowserRootView: View {
     @State private var preparedVideoFixture = false
     @State private var preparedAudioFixture = false
     @State private var preparedPlaybackFixture = false
+    @State private var requestedPlaybackFixture = false
     @State private var preparedPasswordFixture = false
     @State private var preparedResilienceFixture = false
     private var resilienceFixture: Bool {
@@ -64,7 +65,15 @@ struct BrowserRootView: View {
             } else if OverviewMotionDiagnostics.fixture {
                 OverviewMotionFixtureStatus().padding(.trailing, 10).padding(.bottom, 110)
             } else if AudioMixingController.fixture {
-                PlaybackAudioFixtureStatus().padding(.trailing, 10).padding(.bottom, 110)
+                VStack {
+                    if !requestedPlaybackFixture {
+                        Button("音声検証ページを開く") {
+                            requestedPlaybackFixture = true
+                            store.navigate("http://127.0.0.1:18765/concurrent-audio-a")
+                        }.buttonStyle(.borderedProminent).accessibilityIdentifier("preparePlaybackFixture")
+                    }
+                    PlaybackAudioFixtureStatus()
+                }.padding(.trailing, 10).padding(.bottom, 110)
             } else if BackgroundAudioController.fixturePath == "background-audio" {
                 BackgroundAudioFixtureStatus().padding(.trailing, 10).padding(.bottom, 110)
             }
@@ -104,7 +113,7 @@ struct BrowserRootView: View {
                 preparedPlaybackFixture = true
                 var features = store.features; features.blockAdvertisements = false; store.updateFeatures(features)
                 VideoOrientationController.shared.setEnabled(false)
-                store.navigate("http://127.0.0.1:18765/" + path)
+                if !AudioMixingController.fixture { store.navigate("http://127.0.0.1:18765/" + path) }
             }
             if resilienceFixture && !preparedResilienceFixture {
                 preparedResilienceFixture = true

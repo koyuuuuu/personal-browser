@@ -182,10 +182,11 @@ def main():
                 # localhost DNS/IPv6 differences. iOS may defer preload: start
                 # this player explicitly before testing its CORS-mode reload.
                 extra_player = '<audio id="third" aria-label="No CORS" src="http://127.0.0.1:18767/audio.wav" preload="auto"></audio><button onclick="document.getElementById(\'third\').play()">Play third</button>' if self.path == '/volume-fixture' else ''
+                preload = 'auto' if self.path == '/volume-fixture' else 'none'
                 data = ('''<!doctype html><meta name="viewport" content="width=device-width,initial-scale=1">
                 <title>''' + title + '''</title><h1>''' + title + '''</h1>
-                <audio id="first" src="/audio.wav" loop preload="auto"></audio>
-                <audio id="second" src="/audio.wav" loop preload="auto"></audio>
+                <audio id="first" src="/audio.wav" loop preload="''' + preload + '''"></audio>
+                <audio id="second" src="/audio.wav" loop preload="''' + preload + '''"></audio>
                 <button onclick="document.getElementById('first').play()">Play first</button><button onclick="document.getElementById('second').play()">Play second</button>
                 <button onclick="document.getElementById('first').pause()">Pause first</button><button onclick="document.getElementById('first').pause();document.getElementById('second').pause()">Pause both</button>
                 <p id="progress">0,0,false,false</p>
@@ -196,7 +197,8 @@ def main():
                   const delta=p.currentTime-previous[i];
                   total[i]+=delta>=0?delta:Math.max(0,p.duration-previous[i]+p.currentTime);
                   previous[i]=p.currentTime;
-                });document.getElementById('progress').textContent=total.map(t=>t.toFixed(3)).join(',')+','+players.map(p=>!p.paused&&!p.ended).join(',');}
+                });const value=total.map(t=>t.toFixed(3)).join(',')+','+players.map(p=>!p.paused&&!p.ended).join(',');
+                const output=document.getElementById('progress');if(output.textContent!==value)output.textContent=value;}
                 setInterval(sample,250);
                 </script>''' + extra_player).encode('utf-8')
                 mime = 'text/html; charset=utf-8'
