@@ -95,6 +95,9 @@ final class AudioMixingController: ObservableObject {
     fileprivate func mediaEvent(_ view: WKWebView, audible: Bool) {
         guard entries[ObjectIdentifier(view)] != nil else { return }
         if audible { prepare(activate: true) }
+        // Frame play events request the top page's policy via the native
+        // bridge; a child must not undo the page's owned background override.
+        applyWebPolicy(view)
         if enabled { sample(view) }
     }
     fileprivate func policyEvent(_ view: WKWebView, type: String) {
@@ -150,7 +153,7 @@ final class AudioMixingController: ObservableObject {
             // permanent exclusive playback override on an idle document.
             // The bounded background transition owns playback temporarily.
             if (globalThis.__personalBrowserBackgroundAudio?.prefersPlayback) return;
-            if (!navigator.audioSession) return;
+            if (window !== window.top || !navigator.audioSession) return;
             try {
               const session = navigator.audioSession;
               if (session.type === 'play-and-record') return;
@@ -165,7 +168,7 @@ final class AudioMixingController: ObservableObject {
           document.addEventListener('play', event => {
             apply();
             const player = event.target;
-            const audible = player instanceof HTMLMediaElement && !player.muted && player.volume > 0;
+            const audible = player instanceof HTMLMediaElement && !player.paused && !player.ended && !player.muted && player.volume > 0;
             send(audible);
           }, true);
           if (navigator.audioSession) navigator.audioSession.addEventListener('statechange', apply);

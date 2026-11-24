@@ -20,4 +20,6 @@ iOS検証は4設定の実際のコントロールセンター往復とネイテ�
 
 検証107はCore85件を通過したが、最初のホームで時計0.02秒／6.93秒・paused=falseとなり、106の進行成功だけでは背景継続の安定性を確認できなかった。常時のWeb playback固定を廃止し、前面はauto、ネイティブは消音に従わないplayback + mixWithOthersを再適用する。既存の背景移行だけが一時的なWeb playbackを所有し、前面へ戻る際は所有フラグを先に解除してautoへ戻す。録音開始に不適切な常時exclusive型の指定も避ける。新たに報告されたControl Center／標準全画面の2ケースを先に実行し、その後にHomeと残りの関連ケースを必須とする。全9件の判定条件・1回3秒の復帰予算は保持する。
 
+検証108は、埋め込み文書の状態イベントがページ共通の背景playbackをautoへ戻し得る経路をソース確認で見つけ、配信前に中止。型の更新は上位ページだけが所有し、子フレームの再生通知はネイティブ経由で上位へ渡す。トップの所有フラグを確認してから更新するため、背景の所有権を子が解除しない。停止済み要素の合成playイベントでは音声セッションを有効化しない。ポリシー検証に子フレームの直接更新を拒否する条件を追加した。
+
 根拠: [Apple playback](https://developer.apple.com/documentation/avfaudio/avaudiosession/category-swift.struct/playback)、[mixWithOthers](https://developer.apple.com/documentation/avfaudio/avaudiosession/categoryoptions-swift.struct/mixwithothers)、[isElementFullscreenEnabled](https://developer.apple.com/documentation/webkit/wkpreferences/iselementfullscreenenabled)、[fullscreenState](https://developer.apple.com/documentation/webkit/wkwebview/fullscreenstate)。

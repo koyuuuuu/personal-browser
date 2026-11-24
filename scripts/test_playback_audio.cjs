@@ -9,7 +9,7 @@ const raw = (path, member) => fs.readFileSync(path, 'utf8').split(member)[1].spl
   try {
     const page = await browser.newPage();
     await page.addInitScript(() => {
-      const session = new EventTarget(); session.type = 'ambient';
+      const session = new EventTarget(); session.type = window === window.top ? 'ambient' : 'auto';
       Object.defineProperty(navigator, 'audioSession', {value:session});
       window.messages = [];
       window.webkit = {messageHandlers:{browserAudioMixing:{postMessage:m=>messages.push(m)}, browserBackgroundAudio:{postMessage() {}}}};
@@ -39,6 +39,9 @@ const raw = (path, member) => fs.readFileSync(path, 'utf8').split(member)[1].spl
     assert.equal(await page.evaluate(()=>navigator.audioSession.type), 'auto');
     await page.evaluate(()=>{__personalBrowserBackgroundAudio.policy(true);navigator.audioSession.dispatchEvent(new Event('statechange'));});
     assert.equal(await page.evaluate(()=>navigator.audioSession.type),'playback','Foreground events must not undo the owned background transition');
+    await frame.evaluate(()=>{navigator.audioSession.type='ambient';__personalBrowserSetAudioMixing(true);});
+    assert.equal(await frame.evaluate(()=>navigator.audioSession.type),'ambient','Child script must defer policy writes to the native top-page relay');
+    assert.equal(await page.evaluate(()=>navigator.audioSession.type),'playback','A child must not undo the top-owned background transition');
     await page.evaluate(()=>__personalBrowserBackgroundAudio.policy(false));
     for (const event of ['statechange', 'pageshow', 'visibilitychange']) {
       await page.evaluate(event=>{
