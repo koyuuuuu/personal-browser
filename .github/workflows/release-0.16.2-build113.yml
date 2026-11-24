@@ -1,0 +1,95 @@
+name: One-time 0.16.2 build113 release (user requested no tests)
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-0.16.2-build113
+  cancel-in-progress: false
+
+jobs:
+  build:
+    if: github.ref == 'refs/heads/main'
+    runs-on: macos-15-intel
+    timeout-minutes: 30
+    env:
+      BROWSER_XCODE_PATH: ${{ vars.BROWSER_XCODE_PATH }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Build and inspect unsigned device IPA without running tests
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ -n "${BROWSER_XCODE_PATH:-}" ]]; then
+            export DEVELOPER_DIR="${BROWSER_XCODE_PATH}/Contents/Developer"
+          fi
+          python3 - <<'PY'
+          import json
+          config = json.load(open('distribution/release.json'))
+          assert config['version'] == '0.16.2'
+          assert config['bundle_id'] == 'local.personalbrowser.app'
+          assert config['data_schema'] == 1
+          PY
+          mkdir -p build dist
+          xcodebuild build -project PersonalBrowser.xcodeproj -scheme PersonalBrowser \
+            -configuration Release -sdk iphoneos -destination 'generic/platform=iOS' \
+            -derivedDataPath build/device CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO \
+            'CODE_SIGN_IDENTITY=' ARCHS=arm64 ONLY_ACTIVE_ARCH=YES \
+            BROWSER_BUNDLE_ID=local.personalbrowser.app CURRENT_PROJECT_VERSION=113 \
+            COMPILER_INDEX_STORE_ENABLE=NO 2>&1 | tee build/device-build.log
+          package_dir="$(mktemp -d "${TMPDIR:-/tmp}/personal-browser-release.XXXXXX")"
+          trap 'rm -rf "$package_dir"' EXIT
+          mkdir -p "$package_dir/Payload"
+          ditto build/device/Build/Products/Release-iphoneos/PersonalBrowser.app "$package_dir/Payload/PersonalBrowser.app"
+          ditto -c -k --keepParent "$package_dir/Payload" dist/PersonalBrowser.ipa
+          python3 scripts/inspect_ipa.py dist/PersonalBrowser.ipa --unsigned --target-ios 18.4.1 \
+            --bundle-id local.personalbrowser.app > dist/build-info.json
+          cat dist/build-info.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: PersonalBrowser-113
+          path: dist/*
+          retention-days: 1
+          if-no-files-found: error
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: release-build113-failure
+          path: build/device-build.log
+          retention-days: 1
+
+  publish:
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/download-artifact@v4
+        with:
+          name: PersonalBrowser-113
+          path: dist
+      - name: Publish build113 using the established release pipeline
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          DISTRIBUTION_TOKEN: ${{ secrets.BROWSER_DISTRIBUTION_TOKEN }}
+        run: GITHUB_RUN_NUMBER=113 python3 scripts/publish_release.py
+
+  delivery-audit:
+    needs: publish
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Verify published package and feed
+        run: python3 scripts/verify_delivery.py --expected-version 0.16.2 --expected-build 113
