@@ -16,4 +16,6 @@ iOS検証は4設定の実際のコントロールセンター往復とネイテ�
 
 初回iOS検証105ではCore85件は通過したが、OSホーム中の元動画の時計が18.36秒に対して0.10秒しか進まず、背景継続を満たさなかった。再生は明示的な停止状態ではなかった。上位ページだけへ適用していたplaybackを、AudioSessionを持つ各プレーヤー文書にも適用するよう修正。型だけを模擬したポリシー検証にも別オリジンiframeを追加し、背景テストにはDEBUG＋既存2フラグ限定の短い方針・復帰診断を追加した。背景時計の成功条件は緩和しない。残りのUI・製品版ビルド・配信は105では未実施。
 
+検証106はCore85件と最初の実OSホームでの動画時計進行を通過。次の明示停止後のホームでは、時計は0.00秒・paused=trueを維持したが、8秒のOS待機に対して非表示通知間隔が5.42秒しかなく、必須の6秒以上を満たさなかった。停止の判定を緩めず、この待機も最初と同じ12秒に変更する。非表示の信頼された通知対・6秒以上・停止時計差0.75秒未満の条件は保持する。106も残りのUI・配信へは進んでいない。
+
 根拠: [Apple playback](https://developer.apple.com/documentation/avfaudio/avaudiosession/category-swift.struct/playback)、[mixWithOthers](https://developer.apple.com/documentation/avfaudio/avaudiosession/categoryoptions-swift.struct/mixwithothers)、[isElementFullscreenEnabled](https://developer.apple.com/documentation/webkit/wkpreferences/iselementfullscreenenabled)、[fullscreenState](https://developer.apple.com/documentation/webkit/wkwebview/fullscreenstate)。

@@ -518,7 +518,10 @@ final class BrowserUITests: XCTestCase {
         XCTAssertTrue(app.staticTexts["Embedded Background video advanced without PiP"].waitForExistence(timeout: 10))
         pressVideoControl(play: false)
         XCTAssertTrue(app.staticTexts["Embedded video paused"].waitForExistence(timeout: 5))
-        visitHome(seconds: 8)
+        // UIKit/WebKit can deliver hidden a few seconds after the Home touch.
+        // Keep the mandatory >=6s trusted hidden interval for paused playback
+        // too, rather than failing it solely on a late visibility notification.
+        visitHome(seconds: 12)
         XCTAssertTrue(app.staticTexts["Embedded Background video remained paused"].waitForExistence(timeout: 8))
         audioSettings()
         toggle.coordinate(withNormalizedOffset: CGVector(dx: 0.9, dy: 0.5)).tap()
