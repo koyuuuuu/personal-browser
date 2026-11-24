@@ -28,4 +28,6 @@ iOS検証は4設定の実際のコントロールセンター往復とネイテ�
 
 検証111はCore85件通過。音声は準備ボタンの実タッチ後、初回ページ待ちで停止し、画面はWK読み込み10%・方針待機のまま。再生／コントロールセンター未実施。標準全画面は4回の実移行・回転・時計・終了確認後、タブ一覧のAX取得で停止し、終了時の階層には実際の一覧・カード・完了が存在した。どちらもケース全体の成功とは扱わない。音声方針は据え置き、固定ページへのHTTP接続確認と固定ルートの到達ログを追加し、画面探索をfirstMatch・一意の画面内コントロールへ限定する。読み込み済み音声ページの不要な再読み込みを削除。実OS操作・時計・全9件の条件と待機上限は保持する。111で配信なし。
 
+検証112はCore85件と標準全画面214.201秒を通過し、通常のタブ操作まで成功。音声は再生前で停止。RunnerのHTTP確認17:22:40は成功したが、準備ボタン17:23:13から実際のWK要求17:24:41まで約88秒かかり、AX待機の失敗後に届いた。音声不良やサーバー停止の証拠ではない。固定ルートの実WK要求数を取得し、初回はAXを呼ばず実HTTP到達を最大120秒待ってから、従来どおり表示60秒・実再生・OS操作を確認する。模擬読み込み完了や自動再生の解除は行わない。ローカルの実HTTPで事前確認は数えずWK要求のみ数えることを確認。失敗しても残りの選択済みDebug・Release結果を集めるが、1件でも失敗すれば製品ビルド・配信を止める。全9件は必須のまま。音声・全画面の本体方針は変更せず、112では配信なし。
+
 根拠: [Apple playback](https://developer.apple.com/documentation/avfaudio/avaudiosession/category-swift.struct/playback)、[mixWithOthers](https://developer.apple.com/documentation/avfaudio/avaudiosession/categoryoptions-swift.struct/mixwithothers)、[isElementFullscreenEnabled](https://developer.apple.com/documentation/webkit/wkpreferences/iselementfullscreenenabled)、[fullscreenState](https://developer.apple.com/documentation/webkit/wkwebview/fullscreenstate)。

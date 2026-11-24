@@ -36,11 +36,19 @@ def main():
         return struct.pack('>I', len(value)) + kind + value + struct.pack('>I', zlib.crc32(kind + value) & 0xffffffff)
     rows = b''.join(b'\x00' + bytes((20, 80 + y % 140, 210)) * 240 for y in range(160))
     photo = b'\x89PNG\r\n\x1a\n' + png_chunk(b'IHDR', struct.pack('>IIBBBBB', 240, 160, 8, 2, 0, 0, 0)) + png_chunk(b'IDAT', zlib.compress(rows)) + png_chunk(b'IEND', b'')
+    playback_requests = 0
+    playback_request_lock = threading.Lock()
 
     class Handler(BaseHTTPRequestHandler):
         protocol_version = 'HTTP/1.1'
 
         def do_GET(self):
+            nonlocal playback_requests
+            # Fixed fixture only: distinguish a real WK navigation from the
+            # Runner's HTTP preflight without querying the cold WK AX tree.
+            if self.path == '/concurrent-audio-a' and 'Safari/' in self.headers.get('User-Agent', ''):
+                with playback_request_lock:
+                    playback_requests += 1
             if self.path in ['/background-audio', '/background-audio-frame', '/background-audio.mp4',
                              '/concurrent-audio-a', '/concurrent-audio-b', '/standard-fullscreen', '/standard-fullscreen-frame']:
                 print('Playback fixture request: ' + self.path, flush=True)
@@ -59,7 +67,11 @@ def main():
                 threading.Thread(target=child.wait, daemon=True).start()
                 self.send_response(204)
                 self.send_header('Content-Length', '0'); self.end_headers(); return
-            if self.path == '/fixture-photo.png':
+            if self.path == '/concurrent-audio-request-count':
+                with playback_request_lock:
+                    data = str(playback_requests).encode()
+                mime = 'text/plain; charset=utf-8'
+            elif self.path == '/fixture-photo.png':
                 data, mime = photo, 'image/png'
             elif self.path == '/photo-fixture':
                 data = b'''<!doctype html><meta name="viewport" content="width=device-width,initial-scale=1"><title>Photo fixture</title>

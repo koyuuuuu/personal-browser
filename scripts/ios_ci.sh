@@ -105,25 +105,27 @@ CERT_CONFIG
         COMPILER_INDEX_STORE_ENABLE=NO \
         2>&1 | tee "build/ui-${phase}tests.log"
     }
+    ui_failed=0
     # Check the unresolved photo flow first, without rerunning it in the group.
     # Once it passes, every other selected case and the device build still run.
     if [[ ${#photo_selection[@]} -gt 0 ]]; then
-        run_debug_ui "Photo-" "${photo_selection[@]}"
+        if ! run_debug_ui "Photo-" "${photo_selection[@]}"; then ui_failed=1; fi
     fi
     if [[ ${#playback_selection[@]} -gt 0 ]]; then
         # Verify both newly reported paths before the retained Home regression
-        # gate. A failure still blocks all publication and the device build.
-        run_debug_ui "Playback-" "${playback_selection[@]}"
+        # gate. Collect the other selected results even after a failure; every
+        # failed group still blocks the device build and publication below.
+        if ! run_debug_ui "Playback-" "${playback_selection[@]}"; then ui_failed=1; fi
     fi
     if [[ ${#background_selection[@]} -gt 0 ]]; then
         # Complete the Home flow before running every remaining selected case.
-        run_debug_ui "Background-" "${background_selection[@]}"
+        if ! run_debug_ui "Background-" "${background_selection[@]}"; then ui_failed=1; fi
     fi
     if [[ ${#ui_selection[@]} -gt 0 ]]; then
-        run_debug_ui "" "${ui_selection[@]}"
+        if ! run_debug_ui "" "${ui_selection[@]}"; then ui_failed=1; fi
     fi
     if [[ "$release_layout" == "1" ]]; then
-        xcodebuild test \
+        if ! xcodebuild test \
             -only-testing:PersonalBrowserUITests/BrowserUITests/testReleaseBrowsingLayoutAndPageInteraction \
             -project PersonalBrowser.xcodeproj -scheme PersonalBrowser \
             -configuration Release -destination "platform=iOS Simulator,id=${simulator_id}" \
@@ -131,7 +133,11 @@ CERT_CONFIG
             -derivedDataPath build/simulator-release \
             -resultBundlePath "build/UI-Release-${GITHUB_RUN_ID:-local}-${GITHUB_RUN_ATTEMPT:-1}.xcresult" \
             "${signing[@]}" "BROWSER_BUNDLE_ID=${bundle_id}" "CURRENT_PROJECT_VERSION=${build_number}" \
-            COMPILER_INDEX_STORE_ENABLE=NO 2>&1 | tee build/ui-release-tests.log
+            COMPILER_INDEX_STORE_ENABLE=NO 2>&1 | tee build/ui-release-tests.log; then ui_failed=1; fi
+    fi
+    if [[ "$ui_failed" != "0" ]]; then
+        echo 'Selected UI checks failed; device build and publication are blocked.' >&2
+        exit 1
     fi
 
 else

@@ -4,6 +4,7 @@ import UIKit
 final class BrowserUITests: XCTestCase {
     private var app: XCUIApplication!
     private static var launchFailure = false
+    private var playbackRequestsBeforeLaunch = 0
 
     override func setUpWithError() throws {
         continueAfterFailure = false
@@ -23,6 +24,15 @@ final class BrowserUITests: XCTestCase {
                 response.fulfill()
             }.resume()
             wait(for: [response], timeout: 15)
+            if name.contains("testConcurrentAudio") {
+                let countReady = expectation(description: "Read the real WK request baseline")
+                fetchPlaybackRequestCount { count in
+                    XCTAssertNotNil(count)
+                    self.playbackRequestsBeforeLaunch = count ?? 0
+                    countReady.fulfill()
+                }
+                wait(for: [countReady], timeout: 15)
+            }
         }
         if name.contains("testBackgroundVideoAudioContinuesAcrossHomeAndRespectsPause") { app.launchArguments += ["--ui-no-fixture", "--ui-background-audio-fixture"] }
         if name.contains("testConcurrentAudioPreferenceAndRealPlayersAcrossTabs") { app.launchArguments += ["--ui-no-fixture", "--ui-concurrent-audio-fixture", "--ui-playback-audio-fixture"] }
@@ -548,6 +558,22 @@ final class BrowserUITests: XCTestCase {
 
     func testConcurrentAudioPreferenceAndRealPlayersAcrossTabs() {
         tapMenuControl("preparePlaybackFixture")
+        // Cold Simulator WK startup took 88s in run112. Repeated AX requests
+        // preceded the actual GET; wait for real network delivery without AX
+        // traffic first. This grants no autoplay or artificial page readiness.
+        let received = expectation(description: "WebKit requested the actual audio fixture")
+        let deadline = Date().addingTimeInterval(120)
+        func poll() {
+            fetchPlaybackRequestCount { count in
+                DispatchQueue.main.async {
+                    guard Date() < deadline else { return }
+                    if let count, count > self.playbackRequestsBeforeLaunch { received.fulfill() }
+                    else { DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { poll() } }
+                }
+            }
+        }
+        poll()
+        wait(for: [received], timeout: 120)
         XCTAssertTrue(app.staticTexts["Concurrent A"].firstMatch.waitForExistence(timeout: 60))
         func settings() {
             tapMenuControl("menuButton"); tapMenuControl("設定")
@@ -1245,6 +1271,14 @@ final class BrowserUITests: XCTestCase {
         XCTAssertTrue(app.textFields["addressField"].waitForExistence(timeout: 5))
         tapMenuControl("tabsButton")
         XCTAssertTrue(app.navigationBars["タブ 17"].waitForExistence(timeout: 5))
+    }
+
+    private func fetchPlaybackRequestCount(_ completion: @escaping (Int?) -> Void) {
+        URLSession.shared.dataTask(with: URL(string: "http://127.0.0.1:18765/concurrent-audio-request-count")!) { data, response, error in
+            guard error == nil, (response as? HTTPURLResponse)?.statusCode == 200,
+                  let data, let value = String(data: data, encoding: .utf8) else { completion(nil); return }
+            completion(Int(value))
+        }.resume()
     }
 
     private func settlePresentation() {
