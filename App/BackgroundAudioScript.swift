@@ -33,7 +33,7 @@ enum BackgroundAudioScript {
           const area = Math.max(0, Math.min(innerWidth,r.right)-Math.max(0,r.left)) * Math.max(0,Math.min(innerHeight,r.bottom)-Math.max(0,r.top));
           return {id:id(v), playing:audible(v), area:css.display !== 'none' && css.visibility === 'visible' && Number(css.opacity) > 0 ? area : 0};
         });
-        send({event:'inventory', videos});
+        send({event:'inventory', videos, audioType:navigator.audioSession?.type ?? 'unsupported'});
       }
       function audioPolicy(on) {
         // Restore only our override, and leave capture/record sessions alone.

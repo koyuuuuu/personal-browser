@@ -65,6 +65,8 @@ struct BrowserRootView: View {
                 OverviewMotionFixtureStatus().padding(.trailing, 10).padding(.bottom, 110)
             } else if AudioMixingController.fixture {
                 PlaybackAudioFixtureStatus().padding(.trailing, 10).padding(.bottom, 110)
+            } else if BackgroundAudioController.fixturePath == "background-audio" {
+                BackgroundAudioFixtureStatus().padding(.trailing, 10).padding(.bottom, 110)
             }
             #endif
         }

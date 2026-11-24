@@ -16,9 +16,13 @@ const raw = (path, member) => fs.readFileSync(path, 'utf8').split(member)[1].spl
     });
     await page.addInitScript(raw('App/AudioMixingController.swift', 'static let script ='));
     await page.addInitScript(raw('App/BackgroundAudioScript.swift', 'static let source ='));
-    await page.route('https://media.test/**', route=>route.fulfill({contentType:'text/html',body:'<audio id="player"></audio>'}));
+    await page.route('https://media.test/**', route=>route.fulfill({contentType:'text/html',body:'<audio id="player"></audio><iframe src="https://embedded.test/player"></iframe>'}));
+    await page.route('https://embedded.test/**', route=>route.fulfill({contentType:'text/html',body:'<audio></audio>'}));
     await page.goto('https://media.test/');
     assert.equal(await page.evaluate(()=>navigator.audioSession.type), 'playback');
+    const frame = page.frames().find(frame=>frame.url().startsWith('https://embedded.test/'));
+    assert.ok(frame);
+    assert.equal(await frame.evaluate(()=>navigator.audioSession.type), 'playback', 'The real player document needs playback too');
     for (const mixing of [false, true, false]) {
       await page.evaluate(mixing=>{
         navigator.audioSession.type='ambient'; __personalBrowserSetAudioMixing(mixing);

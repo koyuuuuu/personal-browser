@@ -3,6 +3,9 @@ import Combine
 import MediaPlayer
 import UIKit
 import WebKit
+#if DEBUG
+import SwiftUI
+#endif
 
 /// Keeps the existing, authenticated WebKit player. No media URL extraction,
 /// native replacement player, silent audio, private API or permanent retry loop.
@@ -20,6 +23,8 @@ final class BackgroundAudioController: ObservableObject {
     private var backgroundTask: UIBackgroundTaskIdentifier = .invalid
     private var remoteTargets: [(MPRemoteCommand, Any)] = []
     #if DEBUG
+    @Published private(set) var fixtureStatus = "Background policy waiting"
+    private var fixtureEvents: [String] = []
     static var fixturePath: String? {
         let args = ProcessInfo.processInfo.arguments
         guard args.contains("--ui-testing") else { return nil }
@@ -30,7 +35,11 @@ final class BackgroundAudioController: ObservableObject {
     #endif
     private func trace(_ value: String) {
         #if DEBUG
-        if Self.fixturePath == "background-audio" { print("Background audio: " + value) }
+        if Self.fixturePath == "background-audio" {
+            fixtureEvents.append(value); fixtureEvents = Array(fixtureEvents.suffix(8))
+            fixtureStatus = fixtureEvents.joined(separator: " | ")
+            print("Background audio: " + value)
+        }
         #endif
     }
 
@@ -128,7 +137,8 @@ final class BackgroundAudioController: ObservableObject {
         session = Session(viewID: candidate.0, document: candidate.1, frame: candidate.2.info, token: token)
         recovery.arm(token: token, now: now)
         trace("armed")
-        // The top document owns audioSession.type, including iframe players.
+        // Keep the top policy too; each player document already receives the
+        // foreground playback policy, including cross-origin frames.
         setBackgroundAudioPolicy(view, enabled: true)
         armBackgroundAudio(view, frame: candidate.2.info, document: candidate.1, video: candidate.3, token: token)
         installRemoteCommands()
@@ -181,7 +191,11 @@ final class BackgroundAudioController: ObservableObject {
             configureBackgroundAudio(view, frame: message.frameInfo, enabled: enabled && entry.tabID == selected, foreground: foreground)
         } else if event == "inventory", foreground {
             let videos = Array((value["videos"] as? [[String: Any]] ?? []).prefix(32))
-            if entry.frames[document]?.videos.count != videos.count { trace("frame videos=\(videos.count)") }
+            if entry.frames[document]?.videos.count != videos.count {
+                let type = value["audioType"] as? String ?? "unsupported"
+                let known = ["auto", "playback", "ambient", "play-and-record", "transient", "transient-solo", "unsupported"].contains(type) ? type : "unknown"
+                trace("frame videos=\(videos.count); policy=\(known)")
+            }
             if entry.frames[document] == nil, entry.frames.count >= 64,
                let oldest = entry.frames.min(by: { $0.value.updated < $1.value.updated })?.key {
                 entry.frames.removeValue(forKey: oldest)
@@ -206,3 +220,14 @@ private final class BackgroundAudioHandler: NSObject, WKScriptMessageHandler {
     init(owner: BackgroundAudioController) { self.owner = owner }
     func userContentController(_ userContentController: WKUserContentController, didReceive message: WKScriptMessage) { owner?.receive(message) }
 }
+
+#if DEBUG
+@MainActor
+struct BackgroundAudioFixtureStatus: View {
+    @ObservedObject private var controller = BackgroundAudioController.shared
+    var body: some View {
+        Text(controller.fixtureStatus).font(.system(size: 7)).frame(width: 180)
+            .background(.background).accessibilityIdentifier("backgroundAudioPolicyStatus").allowsHitTesting(false)
+    }
+}
+#endif

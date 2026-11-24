@@ -14,4 +14,6 @@ iOS検証は4設定の実際のコントロールセンター往復とネイテ�
 
 実際のiPhoneの消音スイッチ・スピーカー出力・特定の第三者サイトの受け入れは別途必要。サイト自身の停止やDRM、WebKit／他アプリの排他制御を解除する機能ではない。
 
+初回iOS検証105ではCore85件は通過したが、OSホーム中の元動画の時計が18.36秒に対して0.10秒しか進まず、背景継続を満たさなかった。再生は明示的な停止状態ではなかった。上位ページだけへ適用していたplaybackを、AudioSessionを持つ各プレーヤー文書にも適用するよう修正。型だけを模擬したポリシー検証にも別オリジンiframeを追加し、背景テストにはDEBUG＋既存2フラグ限定の短い方針・復帰診断を追加した。背景時計の成功条件は緩和しない。残りのUI・製品版ビルド・配信は105では未実施。
+
 根拠: [Apple playback](https://developer.apple.com/documentation/avfaudio/avaudiosession/category-swift.struct/playback)、[mixWithOthers](https://developer.apple.com/documentation/avfaudio/avaudiosession/categoryoptions-swift.struct/mixwithothers)、[isElementFullscreenEnabled](https://developer.apple.com/documentation/webkit/wkpreferences/iselementfullscreenenabled)、[fullscreenState](https://developer.apple.com/documentation/webkit/wkwebview/fullscreenstate)。

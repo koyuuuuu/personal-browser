@@ -147,7 +147,9 @@ final class AudioMixingController: ObservableObject {
             // ambient is mixable but obeys the hardware Silent switch. The
             // user's playback requirement takes priority for BOTH settings.
             // Native playback+mixWithOthers still requests supported mixing.
-            if (window !== window.top || !navigator.audioSession) return;
+            // AudioSession belongs to the current document. Embedded players
+            // need their own policy too, including cross-origin frames.
+            if (!navigator.audioSession) return;
             try {
               const session = navigator.audioSession;
               if (session.type === 'play-and-record') return;
