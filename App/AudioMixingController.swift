@@ -102,7 +102,7 @@ final class AudioMixingController: ObservableObject {
         #if DEBUG
         if Self.fixture {
             let session = AVAudioSession.sharedInstance()
-            fixtureStatus = "Native \(session.category == .playback ? "playback" : "other"); Web \(type == "playback" ? "playback" : "other"); mix\(session.categoryOptions.contains(.mixWithOthers)); return\(fixtureReturns)"
+            fixtureStatus = "Native \(session.category == .playback ? "playback" : "other"); Web \(type == "auto" ? "auto" : "other"); mix\(session.categoryOptions.contains(.mixWithOthers)); return\(fixtureReturns)"
         }
         #endif
     }
@@ -113,9 +113,9 @@ final class AudioMixingController: ObservableObject {
                 errorMessage = "録音・通話用の音声セッションを優先しています。終了後に同時再生を試してください。"
                 return
             }
-            if session.category != .playback || session.mode != .moviePlayback || !session.categoryOptions.contains(.mixWithOthers) {
-                try session.setCategory(.playback, mode: .moviePlayback, options: [.mixWithOthers])
-            }
+            // Reassert after WebKit/OS transitions; the process-local getter
+            // alone does not establish the media process's current category.
+            try session.setCategory(.playback, mode: .moviePlayback, options: [.mixWithOthers])
             if activate { try session.setActive(true) }
             errorMessage = nil
         } catch { errorMessage = "音声ミックスの設定を適用できませんでした。再生を止めて設定を入れ直してください。" }
@@ -145,15 +145,16 @@ final class AudioMixingController: ObservableObject {
           const send = value => { try { webkit.messageHandlers.browserAudioMixing.postMessage(value); } catch (_) {} };
           const apply = () => {
             // ambient is mixable but obeys the hardware Silent switch. The
-            // user's playback requirement takes priority for BOTH settings.
-            // Native playback+mixWithOthers still requests supported mixing.
-            // AudioSession belongs to the current document. Embedded players
-            // need their own policy too, including cross-origin frames.
+            // Native playback+mixWithOthers ignores Silent. Leave WebKit free
+            // to classify real media/capture with auto instead of imposing a
+            // permanent exclusive playback override on an idle document.
+            // The bounded background transition owns playback temporarily.
+            if (globalThis.__personalBrowserBackgroundAudio?.prefersPlayback) return;
             if (!navigator.audioSession) return;
             try {
               const session = navigator.audioSession;
               if (session.type === 'play-and-record') return;
-              if (session.type !== 'playback') session.type = 'playback';
+              if (session.type !== 'auto') session.type = 'auto';
               send({type:session.type});
             } catch (_) { /* Permissions Policy / API support is site-dependent. */ }
           };

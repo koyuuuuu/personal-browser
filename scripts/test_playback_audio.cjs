@@ -19,15 +19,15 @@ const raw = (path, member) => fs.readFileSync(path, 'utf8').split(member)[1].spl
     await page.route('https://media.test/**', route=>route.fulfill({contentType:'text/html',body:'<audio id="player"></audio><iframe src="https://embedded.test/player"></iframe>'}));
     await page.route('https://embedded.test/**', route=>route.fulfill({contentType:'text/html',body:'<audio></audio>'}));
     await page.goto('https://media.test/');
-    assert.equal(await page.evaluate(()=>navigator.audioSession.type), 'playback');
+    assert.equal(await page.evaluate(()=>navigator.audioSession.type), 'auto');
     const frame = page.frames().find(frame=>frame.url().startsWith('https://embedded.test/'));
     assert.ok(frame);
-    assert.equal(await frame.evaluate(()=>navigator.audioSession.type), 'playback', 'The real player document needs playback too');
+    assert.equal(await frame.evaluate(()=>navigator.audioSession.type), 'auto', 'Embedded documents must not be forced ambient');
     for (const mixing of [false, true, false]) {
       await page.evaluate(mixing=>{
         navigator.audioSession.type='ambient'; __personalBrowserSetAudioMixing(mixing);
       }, mixing);
-      assert.equal(await page.evaluate(()=>navigator.audioSession.type), 'playback', 'Both toggle values ignore Silent');
+      assert.equal(await page.evaluate(()=>navigator.audioSession.type), 'auto', 'Neither toggle may force ambient');
     }
     await page.evaluate(()=>{
       // Background entry may remember an old ambient type. Return must still
@@ -36,13 +36,16 @@ const raw = (path, member) => fs.readFileSync(path, 'utf8').split(member)[1].spl
       __personalBrowserBackgroundAudio.policy(true);
       __personalBrowserBackgroundAudio.policy(false);
     });
-    assert.equal(await page.evaluate(()=>navigator.audioSession.type), 'playback');
+    assert.equal(await page.evaluate(()=>navigator.audioSession.type), 'auto');
+    await page.evaluate(()=>{__personalBrowserBackgroundAudio.policy(true);navigator.audioSession.dispatchEvent(new Event('statechange'));});
+    assert.equal(await page.evaluate(()=>navigator.audioSession.type),'playback','Foreground events must not undo the owned background transition');
+    await page.evaluate(()=>__personalBrowserBackgroundAudio.policy(false));
     for (const event of ['statechange', 'pageshow', 'visibilitychange']) {
       await page.evaluate(event=>{
         navigator.audioSession.type='ambient';
         (event==='statechange'?navigator.audioSession:event==='pageshow'?window:document).dispatchEvent(new Event(event));
       }, event);
-      assert.equal(await page.evaluate(()=>navigator.audioSession.type), 'playback');
+      assert.equal(await page.evaluate(()=>navigator.audioSession.type), 'auto');
     }
     await page.evaluate(()=>{navigator.audioSession.type='play-and-record'; __personalBrowserSetAudioMixing(true); __personalBrowserBackgroundAudio.policy(true); __personalBrowserBackgroundAudio.policy(false);});
     assert.equal(await page.evaluate(()=>navigator.audioSession.type), 'play-and-record', 'Capture must not be replaced');

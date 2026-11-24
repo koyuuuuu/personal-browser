@@ -43,6 +43,7 @@ if [[ -n "${UI_TESTS:-}" ]]; then
     ui_selection=()
     photo_selection=()
     background_selection=()
+    playback_selection=()
     release_layout=0
     for name in "${ui_names[@]}"; do
         if [[ ! "$name" =~ ^test[A-Za-z0-9_]+$ ]]; then
@@ -55,6 +56,8 @@ if [[ -n "${UI_TESTS:-}" ]]; then
             photo_selection+=("-only-testing:PersonalBrowserUITests/BrowserUITests/$name")
         elif [[ "$name" == "testBackgroundVideoAudioContinuesAcrossHomeAndRespectsPause" ]]; then
             background_selection+=("-only-testing:PersonalBrowserUITests/BrowserUITests/$name")
+        elif [[ "$name" == "testConcurrentAudioPreferenceAndRealPlayersAcrossTabs" || "$name" == "testStandardFullscreenEntersAndExitsWithoutLosingPage" ]]; then
+            playback_selection+=("-only-testing:PersonalBrowserUITests/BrowserUITests/$name")
         else
             ui_selection+=("-only-testing:PersonalBrowserUITests/BrowserUITests/$name")
         fi
@@ -106,6 +109,11 @@ CERT_CONFIG
     # Once it passes, every other selected case and the device build still run.
     if [[ ${#photo_selection[@]} -gt 0 ]]; then
         run_debug_ui "Photo-" "${photo_selection[@]}"
+    fi
+    if [[ ${#playback_selection[@]} -gt 0 ]]; then
+        # Verify both newly reported paths before the retained Home regression
+        # gate. A failure still blocks all publication and the device build.
+        run_debug_ui "Playback-" "${playback_selection[@]}"
     fi
     if [[ ${#background_selection[@]} -gt 0 ]]; then
         # Complete the Home flow before running every remaining selected case.

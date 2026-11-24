@@ -1,6 +1,6 @@
 # 0.16.2 消音中の再生と全画面操作
 
-非排他モードがWeb Audio Sessionをambientへ切り替え、ホーム／コントロールセンターから戻る際にもその値を復元していた。ambientは消音スイッチに従うため、今回の「どちらの設定でも消音中に再生」の要望と両立しない。前面のWeb音声も常にplaybackを要求し、ネイティブはplayback + mixWithOthersを準備する。設定変更・実際の再生開始・前面への復帰・ページ再表示・音声セッション状態変化で方針を適用する。設定値は従来の独立キーを保持し、同時再生は可能な範囲で試みるが、消音中の再生を優先する。
+非排他モードがWeb Audio Sessionをambientへ切り替え、ホーム／コントロールセンターから戻る際にもその値を復元していた。ambientは消音スイッチに従うため、今回の「どちらの設定でも消音中に再生」の要望と両立しない。前面のWeb音声はambientを強制せずautoでWebKitに実際のメディア・録音を判定させ、ネイティブはplayback + mixWithOthersを毎回準備する。背景移行中だけは既存の補助が一時的にWebのplaybackを所有し、前面の状態イベントはその所有権を解除しない。設定変更・実際の再生開始・前面への復帰・ページ再表示・音声セッション状態変化で方針を適用する。設定値は従来の独立キーを保持し、同時再生は可能な範囲で試みるが、消音中の再生を優先する。
 
 バックグラウンド補助は古いambientを復元せず、現在の前面ポリシーへ戻す。録音／通話のrecord・playAndRecordは優先し、サイトのミュート・音量ゼロ・一時停止は変更しない。設定や前面への復帰で音源を強制再生したり音声セッションを停止したりしない。既存の1回・3秒の背景復帰予算、手動停止／通話／イヤホン切断の取消しは保持する。build14のupdateMedia/mediaScriptはそのまま。
 
@@ -14,8 +14,10 @@ iOS検証は4設定の実際のコントロールセンター往復とネイテ�
 
 実際のiPhoneの消音スイッチ・スピーカー出力・特定の第三者サイトの受け入れは別途必要。サイト自身の停止やDRM、WebKit／他アプリの排他制御を解除する機能ではない。
 
-初回iOS検証105ではCore85件は通過したが、OSホーム中の元動画の時計が18.36秒に対して0.10秒しか進まず、背景継続を満たさなかった。再生は明示的な停止状態ではなかった。上位ページだけへ適用していたplaybackを、AudioSessionを持つ各プレーヤー文書にも適用するよう修正。型だけを模擬したポリシー検証にも別オリジンiframeを追加し、背景テストにはDEBUG＋既存2フラグ限定の短い方針・復帰診断を追加した。背景時計の成功条件は緩和しない。残りのUI・製品版ビルド・配信は105では未実施。
+初回iOS検証105ではCore85件は通過したが、OSホーム中の元動画の時計が18.36秒に対して0.10秒しか進まず、背景継続を満たさなかった。再生は明示的な停止状態ではなかった。この時点では埋め込み文書の違いを疑い、各文書にも方針を試みるよう修正。型だけを模擬したポリシー検証にも別オリジンiframeを追加し、背景テストにはDEBUG＋既存2フラグ限定の短い方針・復帰診断を追加した。背景時計の成功条件は緩和しない。WebKitの実装では型はページで共有され、別オリジン文書ではMicrophone Permissions Policyにより設定が拒否されautoと見える場合があるため、このautoだけから原因は断定しない。残りのUI・製品版ビルド・配信は105では未実施。
 
 検証106はCore85件と最初の実OSホームでの動画時計進行を通過。次の明示停止後のホームでは、時計は0.00秒・paused=trueを維持したが、8秒のOS待機に対して非表示通知間隔が5.42秒しかなく、必須の6秒以上を満たさなかった。停止の判定を緩めず、この待機も最初と同じ12秒に変更する。非表示の信頼された通知対・6秒以上・停止時計差0.75秒未満の条件は保持する。106も残りのUI・配信へは進んでいない。
+
+検証107はCore85件を通過したが、最初のホームで時計0.02秒／6.93秒・paused=falseとなり、106の進行成功だけでは背景継続の安定性を確認できなかった。常時のWeb playback固定を廃止し、前面はauto、ネイティブは消音に従わないplayback + mixWithOthersを再適用する。既存の背景移行だけが一時的なWeb playbackを所有し、前面へ戻る際は所有フラグを先に解除してautoへ戻す。録音開始に不適切な常時exclusive型の指定も避ける。新たに報告されたControl Center／標準全画面の2ケースを先に実行し、その後にHomeと残りの関連ケースを必須とする。全9件の判定条件・1回3秒の復帰予算は保持する。
 
 根拠: [Apple playback](https://developer.apple.com/documentation/avfaudio/avaudiosession/category-swift.struct/playback)、[mixWithOthers](https://developer.apple.com/documentation/avfaudio/avaudiosession/categoryoptions-swift.struct/mixwithothers)、[isElementFullscreenEnabled](https://developer.apple.com/documentation/webkit/wkpreferences/iselementfullscreenenabled)、[fullscreenState](https://developer.apple.com/documentation/webkit/wkwebview/fullscreenstate)。

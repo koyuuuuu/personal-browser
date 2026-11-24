@@ -44,11 +44,12 @@ enum BackgroundAudioScript {
             if (previousType === null) previousType = s.type;
             s.type = 'playback';
           } else if (!on && previousType !== null) {
+            const previous = previousType;
+            previousType = null;
             // Foreground playback must keep ignoring the Silent switch too.
             // Never restore an old ambient type over the current app policy.
             if (typeof globalThis.__personalBrowserSetAudioMixing === 'function') globalThis.__personalBrowserSetAudioMixing();
-            else if (s.type === 'playback') s.type = previousType;
-            previousType = null;
+            else if (s.type === 'playback') s.type = previous;
           }
         } catch (_) {}
       }

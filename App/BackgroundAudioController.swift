@@ -137,8 +137,8 @@ final class BackgroundAudioController: ObservableObject {
         session = Session(viewID: candidate.0, document: candidate.1, frame: candidate.2.info, token: token)
         recovery.arm(token: token, now: now)
         trace("armed")
-        // Keep the top policy too; each player document already receives the
-        // foreground playback policy, including cross-origin frames.
+        // The top document owns the temporary page policy. Frame readers may
+        // remain auto when Permissions Policy prevents their AudioSession API.
         setBackgroundAudioPolicy(view, enabled: true)
         armBackgroundAudio(view, frame: candidate.2.info, document: candidate.1, video: candidate.3, token: token)
         installRemoteCommands()

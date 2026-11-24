@@ -570,7 +570,7 @@ final class BrowserUITests: XCTestCase {
                 guard status.exists else { return false }
                 let label = status.label
                 let count = Int(label.components(separatedBy: "return").last ?? "") ?? -1
-                return count > before && label.contains("Native playback; Web playback; mixtrue")
+                return count > before && label.contains("Native playback; Web auto; mixtrue")
             }
             XCTAssertEqual(XCTWaiter.wait(for: [XCTNSPredicateExpectation(predicate: returned, object: nil)], timeout: 10), .completed,
                 "Native and Web sessions must retain playback after an actual inactive/active transition")
