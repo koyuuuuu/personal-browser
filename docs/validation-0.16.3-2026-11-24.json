@@ -1,0 +1,72 @@
+{
+  "date_utc": "2026-11-24",
+  "version": "0.16.3",
+  "build": "114",
+  "source_commit": "15150d00f4854e86b2dc5dcf11d66bfe9a8f37f8",
+  "tag": "v0.16.3-build.114",
+  "ci_run": "https://github.com/koyuuuuu/personal-browser/actions/runs/45462875423",
+  "delivery_status": "published",
+  "root_causes": {
+    "mixing": "0.16.2 forced Web auto regardless of the nonexclusive preference; real Web media can select exclusive MediaPlayback with no mixing option. UI-process AVAudioSession.mixWithOthers does not enforce the Web process category.",
+    "fullscreen_notice": "WKFullScreenViewController adds the standard Element Fullscreen warning banner. No public disable setting.",
+    "credential_warning": "PasswordSuggestionBar still displayed a catch-path alert, and manager fill used the general error reporter, despite the earlier successful-ACK/focus fix."
+  },
+  "implementation": {
+    "mixing": "Restore Web ambient when both existing mixing prefs are on, auto otherwise. Embed initial preference in document-start script and refresh only owned future scripts; restore current preference on return. Preserve native playback+mixWithOthers, capture priority, explicit pause/mute/zero and bounded background behavior.",
+    "fullscreen": "Page API adapter routes video requests to original video legacy native fullscreen; other elements use original-node Popover/CSS top layer with parent iframe relay and attributes/style/scroll restoration. No source extraction, replacement, reparenting, private banner APIs or forced play. Native origin+close UI remains for app-window mode; credentials disabled there; exit restores browser controls immediately even if page JS is busy. Fullscreen-related page alert notices also complete silently.",
+    "passwords": "Remove inline fill catch alert, suppress manager-fill error reporting, remove missing-record/form notices; automatic fill remains silent. Preserve authentication, origin/form/privacy checks and save/import/backup errors."
+  },
+  "verification_policy": {
+    "user_preference": "Carry forward the immediately preceding instruction to perform device testing themselves and release without long UI automation.",
+    "normal_run": "https://github.com/koyuuuuu/personal-browser/actions/runs/45462838510",
+    "normal_run_conclusion": "cancelled",
+    "ios_ui_tests_passed": false,
+    "release_workflow": "One-time build114 Release device build/inspection/publish/delivery only; removed after delivery, normal ios.yml unchanged."
+  },
+  "checks": {
+    "python_tooling": 63,
+    "project_generation": "current",
+    "web_audio_policy": "passed; initial nonexclusive setting/toggles/foreground signals/background ownership+restore/capture/pause/mute; AudioSession is mocked, not hardware audio proof",
+    "quiet_fullscreen": "passed in Chromium: two real CSS/popover full-window cycles at420x840, original real H264/AAC video/time retained across entry/exit, styles restored, cross-origin child/parent iframe expansion+exit; native video calls mocked for routing and zero Element Fullscreen calls",
+    "ci_jobs": "build/publish/delivery-audit all success",
+    "native_release_device_build": "passed",
+    "local_ipa_inspection": "passed",
+    "anonymous_delivery_audit": "passed",
+    "local_ipa_build_info_public_feed_hash_and_size_match": true,
+    "source_tag_points_to_built_sha": true,
+    "debug_fixture_flags_in_release": false,
+    "fixture_mp4_bundled": false,
+    "strong_swift_webkit_overlay": false,
+    "old_input_warning_literals_in_release": false,
+    "photo_motion_faceid_audio_purposes_preserved": true,
+    "media_baseline_sha256": "8233d9cc7ff0b82e3aa24f9ad97543226dd5c9124dfd80ce1d73ab3de5b91edc"
+  },
+  "limits": [
+    "WebKit ambient mixes but obeys Silent; universal simultaneous mixing and Silent override cannot be guaranteed through public WKWebView APIs. The settings UI and release notes disclose this.",
+    "Actual iPhone other-app speaker mixing, native video/popover presentation, supplied-site notices and password acceptance await user testing. No completed native UI or Core unit-test run is claimed for this release.",
+    "No exact affected-site URL/banner text was supplied in response to the optional clarification. The identified WebKit banner route and fullscreen-related JS alerts are addressed; unrelated OS/auth/TLS dialogs and general site errors remain."
+  ],
+  "preserved": [
+    "Bundle local.personalbrowser.app, schema1 and latest bookmarks/history/settings/vault formats",
+    "Original media identities and byte-identical build14 region; no active-media/private snapshot",
+    "All historical source tags and IPA assets"
+  ],
+  "source_url": "https://raw.githubusercontent.com/koyuuuuu/personal-browser-distribution/main/source.json",
+  "public_release": "https://github.com/koyuuuuu/personal-browser-distribution/releases/tag/v0.16.3-build.114",
+  "ipa": {
+    "file": "PersonalBrowser.ipa",
+    "sha256": "318d48d833d9dd745c693400796ce8605913635db2cb0fb6336080f17b0000f2",
+    "bundle_id": "local.personalbrowser.app",
+    "version": "0.16.3",
+    "build": "114",
+    "minimum_ios": "17.0",
+    "target_ios": "18.4.1",
+    "architecture": "arm64",
+    "platform": "iOS device",
+    "embedded_profile": false,
+    "signature_resources": false,
+    "installation_verified": false,
+    "size": 5814142,
+    "data_schema": 1
+  }
+}

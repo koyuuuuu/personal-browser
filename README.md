@@ -2,7 +2,7 @@
 
 iPhone 12 / iOS 18.4.1向けの個人用ブラウザ。SwiftUIとWKWebViewで新規実装し、Windowsで編集、クラウドmacOSでビルド、SideStoreで実機へ導入・再署名する。
 
-**最新配信版は0.16.2 build 113。消音中の音声とコントロールセンター復帰、標準全画面の移行・終了を修正。利用者の指示により残りの自動テストを省略して配信。** [リリース](https://github.com/koyuuuuu/personal-browser-distribution/releases/tag/v0.16.2-build.113)、[配信記録](docs/validation-0.16.2-2026-11-24.json)、[変更内容と検証範囲](docs/changes-0.16.2.ja.md)。本体ソースは[koyuuuuu/personal-browser](https://github.com/koyuuuuu/personal-browser)で公開し、標準の公開リポジトリ用Actionsランナーを利用する。有料ランナーや課金設定は追加していない。
+**最新配信版は0.16.3 build 114。他アプリとの同時再生を復元し、全画面通知を避ける経路へ変更。パスワード入力時の保管庫警告を廃止。実機操作の自動テストは省略して配信。** [リリース](https://github.com/koyuuuuu/personal-browser-distribution/releases/tag/v0.16.3-build.114)、[配信記録](docs/validation-0.16.3-2026-11-24.json)、[変更内容と制約](docs/changes-0.16.3.ja.md)。本体ソースは[koyuuuuu/personal-browser](https://github.com/koyuuuuu/personal-browser)で公開し、標準の公開リポジトリ用Actionsランナーを利用する。有料ランナーや課金設定は追加していない。
 
 [v0.1.0の保存済みリリース](https://github.com/koyuuuuu/personal-browser/releases/tag/v0.1.0)から、初期版のビルド元とIPA保管先を参照できる。初期IPAは`ipa-archive`ブランチ、新版はGitHub Releasesに保存し、Actionsの1日保持期限が過ぎても取得できる。arm64実機用、最低iOS 17.0。SideStoreで個人用に署名して導入する。現在は本体リポジトリ全体が公開されている。
 

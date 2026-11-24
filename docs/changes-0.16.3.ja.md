@@ -13,3 +13,5 @@
 利用者の直前の「テストはもういいのでこちらでやるのでリリースしてください」という希望を引き継ぎ、長いiOS UI操作テストは実行せず、Release実機用ビルド・パッケージ検査・配信を行う。自動起動する通常114は停止し、一時的なrelease-0.16.3-build114ワークフローを使う。通常CIは変更しない。未実施のUIケースや実機の受け入れを合格扱いにしない。
 
 根拠: WebKitの[AudioSessionIOS.mm](https://github.com/WebKit/WebKit/blob/main/Source/WebCore/platform/audio/ios/AudioSessionIOS.mm)、[DOMAudioSession.cpp](https://github.com/WebKit/WebKit/blob/main/Source/WebCore/Modules/audiosession/DOMAudioSession.cpp)、[WKFullScreenViewController.mm](https://github.com/WebKit/WebKit/blob/main/Source/WebKit/UIProcess/ios/fullscreen/WKFullScreenViewController.mm)。
+
+0.16.3 build114を配信完了。ソース15150d00f4854e86b2dc5dcf11d66bfe9a8f37f8、リリース実行45462875423のbuild/publish/delivery-auditが成功。通常114は停止し、iOS UI合格とは扱わない。IPA5814142 bytes、SHA-256 318d48d833d9dd745c693400796ce8605913635db2cb0fb6336080f17b0000f2。ローカル検査・公開フィード・固定タグは一致。旧入力警告の文言、検証用フラグ・MP4・強いSwiftWebKit依存は製品版にない。写真保存・Motion・FaceID・背景音声の宣言と旧版資産・最新ユーザーデータは保持した。一時ワークフローを削除し、通常CIは維持する。実機確認は利用者へ引き継ぐ。
