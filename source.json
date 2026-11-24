@@ -12,6 +12,16 @@
       "iconURL": "https://raw.githubusercontent.com/koyuuuuu/personal-browser-distribution/main/icon.png",
       "versions": [
         {
+          "version": "0.16.3",
+          "buildVersion": "114",
+          "date": "2026-11-24T18:50:29.740800+00:00",
+          "localizedDescription": "非排他モードの指定がWeb側に反映されず他アプリとの同時再生が止まる問題を修正。動画の全画面は標準動画プレーヤーへ、その他は元の要素をアプリ内で拡大する経路へ切り替え、WebKitの全画面通知を回避します。パスワード入力時の保管庫に関する警告表示を廃止しました。非排他モードはWebKitの仕様により消音スイッチに従う場合があります。",
+          "downloadURL": "https://github.com/koyuuuuu/personal-browser-distribution/releases/download/v0.16.3-build.114/PersonalBrowser.ipa",
+          "size": 5814142,
+          "minOSVersion": "17.0",
+          "sha256": "318d48d833d9dd745c693400796ce8605913635db2cb0fb6336080f17b0000f2"
+        },
+        {
           "version": "0.16.2",
           "buildVersion": "113",
           "date": "2026-11-24T17:59:04.692378+00:00",
