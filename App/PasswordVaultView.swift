@@ -59,7 +59,6 @@ struct PasswordVaultView: View {
                 Section("保存済みアカウント（\(vault.records.count)件）") {
                     TextField("サイト・アカウントを検索", text: $search)
                         .textInputAutocapitalization(.never).autocorrectionDisabled()
-                    if matching.isEmpty { Text("保存されたパスワードはありません").foregroundStyle(.secondary) }
                     ForEach(matching) { record in
                         Button { editing = record } label: {
                             VStack(alignment: .leading, spacing: 3) {
@@ -177,7 +176,6 @@ struct PasswordVaultView: View {
     @ViewBuilder private var pageSection: some View {
         if let page {
             Section("このページへの入力・保存") {
-                if page.targets.isEmpty { Text("対応するログインフォームが見つかりません。保管庫から手動で登録できます。") }
                 ForEach(Array(page.targets.enumerated()), id: \.element.id) { index, target in
                     VStack(alignment: .leading, spacing: 6) {
                         Text(target.site.display).font(.headline)
@@ -185,7 +183,7 @@ struct PasswordVaultView: View {
                         if target.currentPassword, !page.isPrivate || vault.allowPrivateFill {
                             ForEach(vault.records.filter { $0.site == target.site }) { record in
                                 Button("\(record.username.isEmpty ? "ユーザー名なし" : record.username) を入力", systemImage: "key") {
-                                    perform { try await PasswordFormController.shared.fill(record, into: target, fromManager: true); vault.lock(); dismiss() }
+                                    perform(reportErrors: false) { try await PasswordFormController.shared.fill(record, into: target, fromManager: true); vault.lock(); dismiss() }
                                 }.accessibilityIdentifier("fillSavedPasswordButton")
                             }
                         }
@@ -206,9 +204,9 @@ struct PasswordVaultView: View {
         backupInput = nil; backupSheet = false; importing = false; pendingExport = false; confirmRecovery = false; search = ""; message = nil
     }
     private func show(_ error: Error) { message = (error as? PasswordVaultError)?.errorDescription ?? "処理できませんでした。ファイル形式と保管庫の状態を確認してください。" }
-    private func perform(_ operation: @escaping @MainActor () async throws -> Void) {
+    private func perform(reportErrors: Bool = true, _ operation: @escaping @MainActor () async throws -> Void) {
         guard !busy else { return }; busy = true
-        Task { @MainActor in defer { busy = false }; do { try await operation() } catch { show(error) } }
+        Task { @MainActor in defer { busy = false }; do { try await operation() } catch { if reportErrors { show(error) } } }
     }
 }
 

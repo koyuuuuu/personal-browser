@@ -81,6 +81,7 @@ struct BrowserRootView: View {
         }
         .onChange(of: sheet?.id) { _, _ in updateInterfaceAvailability() }
         .onChange(of: overview.isPresented) { _, _ in updateInterfaceAvailability() }
+        .onChange(of: store.selectedTab?.isPageFullscreen) { _, _ in updateInterfaceAvailability() }
         .onAppear {
             updateInterfaceAvailability()
             #if DEBUG
@@ -136,7 +137,8 @@ struct BrowserRootView: View {
         }
         .persistentSystemOverlays(store.presentation.hideHomeIndicator ? .hidden : .automatic)
         .environment(\.dynamicTypeSize, store.presentation.interfaceTextSize.dynamicSize ?? systemTextSize)
-        .statusBarHidden(store.landscape)
+        .statusBarHidden(store.landscape || store.selectedTab?.isPageFullscreen == true)
+        .ignoresSafeArea(.container, edges: store.selectedTab?.isPageFullscreen == true ? .all : [])
         .alert("お知らせ", isPresented: Binding(
             get: { store.notice != nil },
             set: { if !$0 { store.notice = nil } }
@@ -186,10 +188,11 @@ struct BrowserRootView: View {
         .safeAreaInset(edge: .top, spacing: 0) {
             VStack(spacing: 0) {
                 updateBanner
-                if let tab = store.selectedTab { PasswordSaveBanner(tab: tab, allowed: sheet == nil && !overview.isPresented) }
+                if let tab = store.selectedTab { PasswordSaveBanner(tab: tab, allowed: sheet == nil && !overview.isPresented && !tab.isPageFullscreen) }
             }.fixedSize(horizontal: false, vertical: true)
         }
-        .onChange(of: store.selectedID) { _, _ in
+        .onChange(of: store.selectedID) { previous, _ in
+            store.tabs.first(where: { $0.id == previous })?.exitPageFullscreen()
             PasswordFormController.shared.cancelPendingInteraction()
             BackgroundAudioController.shared.context(selected: store.selectedID)
             VideoOrientationController.shared.context(selected: store.selectedID, allowed: sheet == nil && !overview.isPresented)
@@ -242,7 +245,7 @@ struct BrowserRootView: View {
     private func updateInterfaceAvailability() {
         let available = sheet == nil && !overview.isPresented
         BackgroundAudioController.shared.context(selected: store.selectedID)
-        PasswordFormController.shared.setInterfaceAvailable(available)
+        PasswordFormController.shared.setInterfaceAvailable(available && store.selectedTab?.isPageFullscreen != true)
         VideoOrientationController.shared.context(selected: store.selectedID, allowed: available)
     }
     @ViewBuilder private var updateBanner: some View {

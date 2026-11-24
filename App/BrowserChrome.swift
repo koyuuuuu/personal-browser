@@ -26,12 +26,12 @@ struct TabBrowserView: View {
         GeometryReader { geometry in
             let landscape = geometry.size.width > geometry.size.height && geometry.size.width > 550
             VStack(spacing: 0) {
-                if !editingLogin && store.chromeVisible && (landscape || store.snapshot.settings.toolbarPosition == .top) { chrome(compact: landscape, width: geometry.size.width).opacity(store.overviewPresented ? 0 : 1).zIndex(10) }
-                if tab.isPrivate && !landscape && store.chromeVisible {
+                if !tab.isPageFullscreen && !editingLogin && store.chromeVisible && (landscape || store.snapshot.settings.toolbarPosition == .top) { chrome(compact: landscape, width: geometry.size.width).opacity(store.overviewPresented ? 0 : 1).zIndex(10) }
+                if !tab.isPageFullscreen && tab.isPrivate && !landscape && store.chromeVisible {
                     Label("プライベート · 履歴とタブを端末に保存しません", systemImage: "hand.raised").opacity(store.overviewPresented ? 0 : 1)
                         .font(.caption).foregroundStyle(.purple).padding(6).frame(maxWidth: .infinity)
                 }
-                if let error = tab.errorMessage, store.chromeVisible {
+                if let error = tab.errorMessage, store.chromeVisible, !tab.isPageFullscreen {
                     HStack {
                         Text(error).font(.caption).lineLimit(landscape ? 1 : 3)
                         Spacer()
@@ -39,13 +39,23 @@ struct TabBrowserView: View {
                     }.padding(8).background(Color.orange.opacity(0.12)).opacity(store.overviewPresented ? 0 : 1)
                 }
                 viewport(width: geometry.size.width)
-                if !editingLogin && !landscape && store.chromeVisible && store.snapshot.settings.toolbarPosition == .bottom { chrome(compact: false, width: geometry.size.width).opacity(store.overviewPresented ? 0 : 1).zIndex(10) }
-                PasswordSuggestionBar(tab: tab, allowed: passwordActionsAllowed && !addressFocused) { showSheet(.passwords($0)) }
+                if !tab.isPageFullscreen && !editingLogin && !landscape && store.chromeVisible && store.snapshot.settings.toolbarPosition == .bottom { chrome(compact: false, width: geometry.size.width).opacity(store.overviewPresented ? 0 : 1).zIndex(10) }
+                PasswordSuggestionBar(tab: tab, allowed: passwordActionsAllowed && !addressFocused && !tab.isPageFullscreen) { showSheet(.passwords($0)) }
                     .fixedSize(horizontal: false, vertical: true)
             }
             .frame(width: geometry.size.width, height: geometry.size.height)
             .onAppear { store.setLandscape(landscape) }
             .onChange(of: landscape) { _, value in addressFocused = false; swipe.cancel(); store.setLandscape(value) }
+        }
+        .overlay(alignment: .topLeading) {
+            if tab.isPageFullscreen {
+                HStack(spacing: 8) {
+                    Button { tab.exitPageFullscreen() } label: {
+                        Image(systemName: "xmark").frame(width: 44, height: 44)
+                    }.accessibilityLabel("全画面を閉じる").accessibilityIdentifier("pageFullscreenCloseButton")
+                    Text(tab.url?.host ?? "").font(.caption).lineLimit(1)
+                }.padding(.trailing, 12).background(.ultraThinMaterial, in: Capsule()).padding(8)
+            }
         }
         .overlay {
             PasswordKeyboardObserver { keyboardVisible = $0 }
@@ -53,9 +63,14 @@ struct TabBrowserView: View {
         }
         .background(store.overviewPresented ? Color.clear : Color(uiColor: .systemBackground))
         .onAppear { address = SearchAddress.display(tab.url) }
-        .onChange(of: store.overviewPresented) { _, showing in if showing { addressFocused = false; swipe.cancel() } }
+        .onChange(of: store.overviewPresented) { _, showing in if showing { tab.exitPageFullscreen(); addressFocused = false; swipe.cancel() } }
         .onChange(of: tab.errorMessage) { _, value in if value != nil { store.revealChrome() } }
         .onChange(of: tab.id) { _, _ in address = SearchAddress.display(tab.url); addressFocused = false }
+        .onChange(of: tab.isPageFullscreen) { _, full in
+            addressFocused = false; swipe.cancel()
+            if !full { store.revealChrome() }
+            store.objectWillChange.send()
+        }
         .onChange(of: tab.url) { _, url in if !addressFocused { address = SearchAddress.display(url) } }
         .onChange(of: addressFocused) { _, focused in if !focused { address = SearchAddress.display(tab.url) } }
         .onChange(of: tab.dialog?.id) { _, _ in promptText = tab.dialog?.defaultText ?? "" }

@@ -1,6 +1,8 @@
 #import <WebKit/WebKit.h>
 
 NS_ASSUME_NONNULL_BEGIN
+void PBExitQuietFullscreen(WKWebView *view, WKFrameInfo *frame)
+    NS_SWIFT_NAME(exitQuietFullscreen(_:frame:));
 void PBConfigureBackgroundAudio(WKWebView *view, WKFrameInfo * _Nullable frame, BOOL enabled, BOOL foreground)
     NS_SWIFT_NAME(configureBackgroundAudio(_:frame:enabled:foreground:));
 void PBSetBackgroundAudioPolicy(WKWebView *view, BOOL enabled)

@@ -12,7 +12,6 @@ struct PasswordSuggestionBar: View {
     @ScaledMetric private var rowHeight = 44.0
     @State private var busy = false
     @State private var pinned: PasswordFormTarget?
-    @State private var showError = false
     private var targets: [PasswordFormTarget] { forms.targets(for: tab).filter(\.currentPassword) }
     private var target: PasswordFormTarget? {
         let focused = targets.filter(\.focused)
@@ -51,7 +50,7 @@ struct PasswordSuggestionBar: View {
                                     }.accessibilityIdentifier("inlineSavedPasswordButton")
                                 }
                                 if accounts.isEmpty {
-                                    Button("保存情報なし・登録", systemImage: "plus") { openVault(PasswordPageRequest(tab: tab)) }
+                                    Button("パスワードを管理", systemImage: "key") { openVault(PasswordPageRequest(tab: tab)) }
                                 }
                             }
                         }.font(.callout).buttonStyle(.bordered).padding(.vertical, 2)
@@ -75,9 +74,6 @@ struct PasswordSuggestionBar: View {
             do { try await forms.fillAutomatically(record, into: target) }
             catch { /* No automatic authentication, repeated attempts or submit. */ }
         }
-        .alert("入力できませんでした", isPresented: $showError) {
-            Button("OK", role: .cancel) {}
-        } message: { Text("ページと保管庫の状態を確認して、入力欄を選び直してください。") }
     }
     private func unlockAndFill(_ target: PasswordFormTarget) {
         run(target) { token in
@@ -87,17 +83,12 @@ struct PasswordSuggestionBar: View {
         }
     }
     private func run(_ target: PasswordFormTarget, _ action: @escaping @MainActor (UUID) async throws -> Void) {
-        guard !busy else { return }; showError = false; pinned = target; busy = true
+        guard !busy else { return }; pinned = target; busy = true
         let token = forms.interactionID
         Task { @MainActor in
             defer { busy = false; pinned = nil }
             do { try await action(token) }
-            catch is CancellationError { }
-            catch {
-                // Ignore late failures for a page/interaction the user has left.
-                if token == forms.interactionID, phase == .active, allowed,
-                   forms.targets(for: tab).contains(where: { $0.id == target.id }) { showError = true }
-            }
+            catch { /* Input is deliberately quiet, including missing/locked records and stale forms. */ }
         }
     }
 }

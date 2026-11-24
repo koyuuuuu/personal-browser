@@ -1,5 +1,11 @@
 #import "BrowserWebKitBridge.h"
 
+void PBExitQuietFullscreen(WKWebView *view, WKFrameInfo *frame)
+{
+    [view evaluateJavaScript:@"globalThis.__personalBrowserQuietFullscreen?.exit();"
+                    inFrame:frame inContentWorld:WKContentWorld.pageWorld completionHandler:nil];
+}
+
 void PBConfigureBackgroundAudio(WKWebView *view, WKFrameInfo *frame, BOOL enabled, BOOL foreground)
 {
     [view callAsyncJavaScript:@"globalThis.__personalBrowserBackgroundAudio?.configure(enabled, foreground);"

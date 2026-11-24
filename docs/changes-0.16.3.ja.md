@@ -1,0 +1,15 @@
+# 0.16.3 同時再生の復元・全画面通知・入力時の警告
+
+0.16.2でWebの音声設定をautoへ固定したため、保存済みの非排他設定がWeb側に反映されなくなっていた。WebKitは実メディアのautoを排他的なplaybackカテゴリへ分類し、UIプロセスのAVAudioSessionのmixWithOthersだけではこれを制御できない。非排他オンではWebのambientを復元し、オフではautoを使う。保存した設定を文書の初期スクリプトにも埋め込み、再読み込みの最初の再生でautoへ一瞬戻らないようにする。変更時は自身のスクリプトだけを更新し、他のスクリプトや生きたWebViewを作り直さない。背景から戻る場合も現在の設定へ復元する。録音・通話、手動停止、ミュート、音量ゼロ、既存の背景復帰予算は保持する。
+
+公開実装ではWebのambientは混合可能なAmbientSoundへ、autoによる実メディアはMediaPlaybackへ分類される。ambientは消音スイッチに従う。Webプロセスの混合オプションをアプリから指定する公開APIはなく、全サイトで同時再生と消音スイッチ無視を同時保証することはできない。今回は最新の依頼どおり同時再生を復元し、この制約を設定画面に明記する。非排他モードをオフにした通常再生は消音中の再生を優先する。
+
+「全画面になりました・下へスワイプして終了」に相当する通知は、前版で有効にしたElement FullscreenのWKFullScreenViewControllerが出す標準バナー。公開の非表示設定はない。ページの全画面要求を、元のvideoのwebkitEnterFullscreen／webkitExitFullscreenへ渡す。動画は取得・抽出・置換・再生成せず、自動再生／停止／ミュートの変更も行わない。標準動画プレーヤーを使えない要素は、公開Popover/CSSの最前面へ同じ要素を表示し、アプリの表示領域を広げる。DOMの親は移動しない。元の属性・スタイル・スクロールを復元し、閉じる操作、iframeの拡大と親子の終了、回転時の既存アスペクト判定を維持する。URL表示と閉じるボタンをアプリ側に残し、CSS全画面中の保管庫操作は無効にする。iframeの元の全画面許可と操作条件は確認する。全画面に関係するページのalertも表示せず完了する。他のサイトエラー、TLS、OSの認証・権限表示は抑制しない。WebKitの私的ビュー探索や私的な通知非表示APIは使わない。
+
+入力成功後のACKを保持する既存修正だけでは、別の失敗経路でPasswordSuggestionBarの警告が残っていた。今回は入力処理のcatchから表示するダイアログを廃止する。保管庫画面からの入力も失敗を表示しない。保存情報の不在を訴える表示も取り除く。自動入力は従来どおり無言で中止する。認証・信頼できるオリジン・対象フォーム・プライベート制限など、入力前の確認は緩めない。保存／取り込み／暗号化バックアップの実エラーは従来どおり扱う。
+
+短いローカル確認: Python63件、プロジェクト生成、Web音声の設定・背景復元・録音／停止／ミュート保持。Chromiumで実Popoverの全画面寸法、同じ動画の時計進行、スタイル復元、繰り返し移行／終了、別オリジンiframeの親子拡大を確認した。ネイティブ動画APIの呼出しだけは模擬して経路を確認し、Element Fullscreenへの呼出しがゼロであることを確認した。これはiPhoneの音声出力や標準プレーヤーの実証ではない。
+
+利用者の直前の「テストはもういいのでこちらでやるのでリリースしてください」という希望を引き継ぎ、長いiOS UI操作テストは実行せず、Release実機用ビルド・パッケージ検査・配信を行う。自動起動する通常114は停止し、一時的なrelease-0.16.3-build114ワークフローを使う。通常CIは変更しない。未実施のUIケースや実機の受け入れを合格扱いにしない。
+
+根拠: WebKitの[AudioSessionIOS.mm](https://github.com/WebKit/WebKit/blob/main/Source/WebCore/platform/audio/ios/AudioSessionIOS.mm)、[DOMAudioSession.cpp](https://github.com/WebKit/WebKit/blob/main/Source/WebCore/Modules/audiosession/DOMAudioSession.cpp)、[WKFullScreenViewController.mm](https://github.com/WebKit/WebKit/blob/main/Source/WebKit/UIProcess/ios/fullscreen/WKFullScreenViewController.mm)。

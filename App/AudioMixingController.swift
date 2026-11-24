@@ -6,8 +6,8 @@ import UIKit
 import SwiftUI
 #endif
 
-/// Playback ignores the Ring/Silent switch in every preference combination.
-/// Mixing stays best effort; no pause/play retries or session deactivation.
+/// Native playback is mixable; Web nonexclusive mode must also be applied.
+/// WebKit ambient mixes with other apps but follows the Silent switch.
 @MainActor
 final class AudioMixingController: ObservableObject {
     static let shared = AudioMixingController()
@@ -60,7 +60,7 @@ final class AudioMixingController: ObservableObject {
         entries[ObjectIdentifier(view)] = Entry(view, playback: playback)
         let controller = view.configuration.userContentController
         controller.add(MixingMessageHandler(owner: self, view: view), contentWorld: .defaultClient, name: "browserAudioMixing")
-        controller.addUserScript(WKUserScript(source: Self.script, injectionTime: .atDocumentStart, forMainFrameOnly: false, in: .defaultClient))
+        controller.addUserScript(configuredScript())
         if enabled { startTimer(); sample(view) }
     }
     func detach(_ view: WKWebView) {
@@ -74,7 +74,18 @@ final class AudioMixingController: ObservableObject {
         else { timer?.invalidate(); timer = nil }
         for entry in entries.values {
             guard let view = entry.view else { continue }
+            let content = view.configuration.userContentController
+            let scripts = content.userScripts
+            content.removeAllUserScripts()
+            for script in scripts {
+                content.addUserScript(script.source.hasPrefix(Self.scriptMarker) ? configuredScript() : script)
+            }
             applyWebPolicy(view)
+            view.requestMediaPlaybackState { [weak self, weak entry] state in
+                guard let self, let entry, let view = entry.view,
+                      self.entries[ObjectIdentifier(view)] === entry else { return }
+                if state == .playing { self.prepare(activate: false) }
+            }
             if enabled { sample(view) } else { entry.playback(false) }
         }
     }
@@ -122,7 +133,7 @@ final class AudioMixingController: ObservableObject {
         #if DEBUG
         if Self.fixture, entries.values.contains(where: { $0.hasPlayedAudibly }) {
             let session = AVAudioSession.sharedInstance()
-            let value = "Native \(session.category == .playback ? "playback" : "other"); Web \(type == "auto" ? "auto" : "other"); mix\(session.categoryOptions.contains(.mixWithOthers)); return\(fixtureReturns)"
+            let value = "Native \(session.category == .playback ? "playback" : "other"); Web \(type); mix\(session.categoryOptions.contains(.mixWithOthers)); return\(fixtureReturns)"
             if fixtureStatus != value { fixtureStatus = value }
         }
         #endif
@@ -159,23 +170,31 @@ final class AudioMixingController: ObservableObject {
         }
     }
 
+    private static let scriptMarker = "/* PersonalBrowser audio mixing v2 */"
+    private func configuredScript() -> WKUserScript {
+        WKUserScript(source: Self.script.replacingOccurrences(of: "__MIXING__", with: enabled && nonExclusiveWebAudio ? "true" : "false"),
+            injectionTime: .atDocumentStart, forMainFrameOnly: false, in: .defaultClient)
+    }
+
     static let script =
         #"""
+        /* PersonalBrowser audio mixing v2 */
         (() => {
           if (globalThis.__personalBrowserSetAudioMixing) return;
           const send = value => { try { webkit.messageHandlers.browserAudioMixing.postMessage(value); } catch (_) {} };
-          const apply = () => {
-            // ambient is mixable but obeys the hardware Silent switch. The
-            // Native playback+mixWithOthers ignores Silent. Leave WebKit free
-            // to classify real media/capture with auto instead of imposing a
-            // permanent exclusive playback override on an idle document.
-            // The bounded background transition owns playback temporarily.
+          let mixing = __MIXING__;
+          const apply = value => {
+            if (typeof value === 'boolean') mixing = value;
+            // auto lets real Web media select exclusive playback, independently
+            // of the UI process's AVAudioSession. Ambient is the public WebKit
+            // mixable category. Native playback alone cannot impose it on WebKit.
             if (globalThis.__personalBrowserBackgroundAudio?.prefersPlayback) return;
             if (window !== window.top || !navigator.audioSession) return;
             try {
               const session = navigator.audioSession;
               if (session.type === 'play-and-record') return;
-              if (session.type !== 'auto') session.type = 'auto';
+              const desired = mixing ? 'ambient' : 'auto';
+              if (session.type !== desired) session.type = desired;
               send({type:session.type});
             } catch (_) { /* Permissions Policy / API support is site-dependent. */ }
           };

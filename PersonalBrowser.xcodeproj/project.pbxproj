@@ -361,6 +361,16 @@
 			"isa" = "PBXBuildFile";
 			"fileRef" = "7DFF5690D9E43389F782B650";
 		};
+		"884525D47BF90324C8124C18" = {
+			"isa" = "PBXFileReference";
+			"lastKnownFileType" = "sourcecode.swift";
+			"path" = "QuietFullscreenController.swift";
+			"sourceTree" = "<group>";
+		};
+		"8603B9F055FAEA46DF3A5B4A" = {
+			"isa" = "PBXBuildFile";
+			"fileRef" = "884525D47BF90324C8124C18";
+		};
 		"7F687A8BB3F9C47383429BAA" = {
 			"isa" = "PBXFileReference";
 			"lastKnownFileType" = "sourcecode.swift";
@@ -578,6 +588,7 @@
 				"6D01148E275DF9D98F9B23D6",
 				"6F9F31D3C004020DBE918D32",
 				"7DFF5690D9E43389F782B650",
+				"884525D47BF90324C8124C18",
 				"7F687A8BB3F9C47383429BAA",
 				"3729E35C1CA03854DE8B0BE3",
 				"1002EDD373DFA50E09A0576A",
@@ -1009,7 +1020,7 @@
 				"INFOPLIST_FILE" = "App/Info.plist";
 				"GENERATE_INFOPLIST_FILE" = "NO";
 				"CURRENT_PROJECT_VERSION" = "1";
-				"MARKETING_VERSION" = "0.16.2";
+				"MARKETING_VERSION" = "0.16.3";
 				"CODE_SIGN_STYLE" = "Automatic";
 				"TARGETED_DEVICE_FAMILY" = "1";
 				"SUPPORTED_PLATFORMS" = "iphoneos iphonesimulator";
@@ -1037,7 +1048,7 @@
 				"INFOPLIST_FILE" = "App/Info.plist";
 				"GENERATE_INFOPLIST_FILE" = "NO";
 				"CURRENT_PROJECT_VERSION" = "1";
-				"MARKETING_VERSION" = "0.16.2";
+				"MARKETING_VERSION" = "0.16.3";
 				"CODE_SIGN_STYLE" = "Automatic";
 				"TARGETED_DEVICE_FAMILY" = "1";
 				"SUPPORTED_PLATFORMS" = "iphoneos iphonesimulator";
@@ -1154,6 +1165,7 @@
 				"F6FEC42DC3C7B525AEF5354B",
 				"9F347C723944C0DAC55AB56C",
 				"E8DADFD4782657A82EC9A258",
+				"8603B9F055FAEA46DF3A5B4A",
 				"1157A27F7BA8FB81FB4FAF65",
 				"FAE077E5B484B5B59A79CE54",
 				"62B6B9F188D03032C04BE96E",

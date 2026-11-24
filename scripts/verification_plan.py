@@ -52,6 +52,7 @@ PATH_AREAS = {
     "App/BrowserRegressionFixtures.swift": ["session-navigation", "photo-saving", "live-overview"],
     "Sources/BrowserCore/TabRetentionPolicy.swift": ["session-navigation"],
     "App/VideoOrientationController.swift": ["video-orientation"],
+    "App/QuietFullscreenController.swift": ["video-orientation", "browsing-layout"],
     "App/VideoOrientationScript.swift": ["video-orientation"],
     "Sources/BrowserCore/VideoOrientationPolicy.swift": ["video-orientation", "tabs"],
     "browsing-layout": ["testReleaseBrowsingLayoutAndPageInteraction", "testPasswordVaultImportsLocksAndFillsOnlyOnRequest"],
@@ -161,7 +162,7 @@ def plan(changed, store_changes=(), ui_changes=(), tab_changes=None, pending_app
     areas = set()
     session_context = bool(changed & {"App/TabLiveCanvas.swift", "App/TabOverviewPresentation.swift", "App/PageEditObserver.swift", "App/TabRetentionPreferences.swift"})
     background_context = bool(changed & {"App/BackgroundAudioController.swift", "App/BackgroundAudioScript.swift"})
-    video_context = "App/VideoOrientationController.swift" in changed
+    video_context = bool(changed & {"App/VideoOrientationController.swift", "App/QuietFullscreenController.swift"})
     password_context = bool(changed & {"App/PasswordVault.swift", "App/PasswordVaultView.swift", "App/PasswordFormController.swift", "App/PasswordFormScript.swift", "App/PasswordSuggestionBar.swift"})
     volume_context = bool(changed & {"App/AudioSourcesController.swift", "App/MediaVolumeScript.swift", "App/AudioSourcesView.swift"})
     resilience_context = bool(changed & {"App/ChromeRecoveryObserver.swift", "App/AppPromotionBlocker.swift", "App/AppPromotionScript.swift", "Sources/BrowserCore/PageRecovery.swift"})

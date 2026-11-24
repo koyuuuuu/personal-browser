@@ -44,7 +44,7 @@ final class BrowserTab: NSObject, ObservableObject, Identifiable, WKNavigationDe
     private(set) var hasUnsavedInput = false
     func markEditedInput() { hasUnsavedInput = true }
     var canSuspend: Bool {
-        !isProtectedForMedia && !snapshotInProgress && !isLoading && !hasUnsavedInput &&
+        !isProtectedForMedia && !isPageFullscreen && !snapshotInProgress && !isLoading && !hasUnsavedInput &&
         dialog == nil && pendingConnection == nil && downloads.isEmpty &&
         (lastTopLevelRequest.map { BrowserNavigationPolicy.canReplay(method: $0.httpMethod, hasBody: $0.httpBody != nil || $0.httpBodyStream != nil) } ?? true)
     }
@@ -52,6 +52,13 @@ final class BrowserTab: NSObject, ObservableObject, Identifiable, WKNavigationDe
     var isProtectedForMedia: Bool { hasActiveMedia || isPictureInPicture || hasMixingPlayback }
     @Published private(set) var hasMixingPlayback = false
     @Published private(set) var hasPasswordForms = false
+    @Published private(set) var isPageFullscreen = false
+    private var quietFullscreen: QuietFullscreenController?
+    func setPageFullscreen(_ value: Bool) {
+        guard isPageFullscreen != value else { return }
+        isPageFullscreen = value; onStateChange?()
+    }
+    func exitPageFullscreen() { quietFullscreen?.exit() }
     private var previousScrollY: CGFloat?
     var onConnectionRequest: ((ConnectionRequest) -> Void)?
     var trustsCertificate: ((String, String) -> Bool)?
@@ -154,6 +161,7 @@ final class BrowserTab: NSObject, ObservableObject, Identifiable, WKNavigationDe
         view.onSelection = { [weak self] in self?.selectedText = $0 }
         view.onSearch = { [weak self] in self?.onSearchText?($0) }
         liveWebView = view
+        quietFullscreen = QuietFullscreenController(tab: self, view: view)
         configuration.userContentController.add(PageEditObserver(tab: self), contentWorld: .defaultClient, name: "browserPageEdited")
         configuration.userContentController.addUserScript(WKUserScript(source: PageEditObserver.source, injectionTime: .atDocumentStart, forMainFrameOnly: false, in: .defaultClient))
         AudioMixingController.shared.attach(view) { [weak self] value in
@@ -277,7 +285,7 @@ final class BrowserTab: NSObject, ObservableObject, Identifiable, WKNavigationDe
     }
 
     func capturePreview() {
-        guard !snapshotInProgress, !pageUnavailable, let view = liveWebView, hasContent, !hasActiveMedia, !isPictureInPicture,
+        guard !snapshotInProgress, !isPageFullscreen, !pageUnavailable, let view = liveWebView, hasContent, !hasActiveMedia, !isPictureInPicture,
               UIApplication.shared.applicationState == .active, view.window != nil, view.alpha == 1, view.superview?.alpha == 1,
               let capturedURL = url, WebURLPolicy.allows(capturedURL), view.bounds.width > 1, view.bounds.height > 1 else { return }
         snapshotInProgress = true
@@ -317,6 +325,7 @@ final class BrowserTab: NSObject, ObservableObject, Identifiable, WKNavigationDe
     }
 
     private func releaseWebView() {
+        quietFullscreen?.detach(); quietFullscreen = nil
         cancelPageRecovery(resetBudget: false)
         if let view = liveWebView {
             view.configuration.userContentController.removeScriptMessageHandler(forName: "browserPageEdited", contentWorld: .defaultClient)
@@ -418,6 +427,7 @@ final class BrowserTab: NSObject, ObservableObject, Identifiable, WKNavigationDe
     }
 
     func webView(_ webView: WKWebView, didStartProvisionalNavigation navigation: WKNavigation!) {
+        quietFullscreen?.reset()
         hasUnsavedInput = false
         PasswordFormController.shared.reset(webView)
         VideoOrientationController.shared.reset(webView)
@@ -731,6 +741,9 @@ final class BrowserTab: NSObject, ObservableObject, Identifiable, WKNavigationDe
 
     func webView(_ webView: WKWebView, runJavaScriptAlertPanelWithMessage message: String,
                  initiatedByFrame frame: WKFrameInfo, completionHandler: @escaping () -> Void) {
+        if ["fullscreen", "full screen", "全画面", "フルスクリーン"].contains(where: { message.range(of: $0, options: .caseInsensitive) != nil }) {
+            completionHandler(); return
+        }
         dialog?.resolve(nil)
         dialog = JavaScriptDialog(kind: .alert, message: message) { _ in completionHandler() }
     }

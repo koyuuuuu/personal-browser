@@ -1,10 +1,10 @@
 {
-  "version": "0.16.2",
+  "version": "0.16.3",
   "bundle_id": "local.personalbrowser.app",
   "data_schema": 1,
   "public_repository": "koyuuuuu/personal-browser-distribution",
   "name": "Personal Browser",
   "developer_name": "Personal Browser",
   "description": "自分専用のブラウザ。タブ、履歴、ブックマーク、プライベート閲覧、UIカスタマイズに対応。",
-  "release_notes": "消音モードでも、同時再生・非排他モードの設定に関係なく動画や音声を再生するよう修正。コントロールセンターやホーム画面から戻った際の無音化を防ぎます。標準の全画面APIを有効にし、全画面への切り替え・終了中の表示サイズの干渉を修正しました。"
+  "release_notes": "非排他モードの指定がWeb側に反映されず他アプリとの同時再生が止まる問題を修正。動画の全画面は標準動画プレーヤーへ、その他は元の要素をアプリ内で拡大する経路へ切り替え、WebKitの全画面通知を回避します。パスワード入力時の保管庫に関する警告表示を廃止しました。非排他モードはWebKitの仕様により消音スイッチに従う場合があります。"
 }

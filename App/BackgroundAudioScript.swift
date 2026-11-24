@@ -46,8 +46,8 @@ enum BackgroundAudioScript {
           } else if (!on && previousType !== null) {
             const previous = previousType;
             previousType = null;
-            // Foreground playback must keep ignoring the Silent switch too.
-            // Never restore an old ambient type over the current app policy.
+            // Restore the current foreground preference, including mixable
+            // ambient when nonexclusive mode is on, rather than a stale type.
             if (typeof globalThis.__personalBrowserSetAudioMixing === 'function') globalThis.__personalBrowserSetAudioMixing();
             else if (s.type === 'playback') s.type = previous;
           }

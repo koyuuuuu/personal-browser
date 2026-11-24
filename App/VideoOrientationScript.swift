@@ -36,7 +36,7 @@ enum VideoOrientationScript {
       function full(video) {
         if (video.webkitPresentationMode === 'picture-in-picture') return false;
         const known = states.get(video)?.nativeFullscreen;
-        const element = document.fullscreenElement;
+        const element = document.fullscreenElement || document.querySelector('[data-personal-browser-fullscreen="active"]');
         return known === true || (known == null && !!(video.webkitDisplayingFullscreen || video.webkitPresentationMode === 'fullscreen')) || !!element?.contains(video);
       }
       function inventory() {
@@ -76,7 +76,7 @@ enum VideoOrientationScript {
           try {
             if (video.paused) video.play().catch(() => {});
             if (video.webkitSupportsFullscreen && video.webkitEnterFullscreen) video.webkitEnterFullscreen();
-            else video.requestFullscreen?.().catch(() => {});
+            else video.dispatchEvent(new Event('__personalBrowserRequestQuietFullscreen', {bubbles:true}));
           } catch (_) {}
         }
       };

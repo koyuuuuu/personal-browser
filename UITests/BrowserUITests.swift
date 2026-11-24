@@ -247,12 +247,12 @@ final class BrowserUITests: XCTestCase {
             for count in 1...2 {
                 if count > 1 { tapMenuControl("Play standard video") }
                 tapMenuControl("Enter standard fullscreen")
-                XCTAssertTrue(app.staticTexts["Standard fullscreen active \(count)"].waitForExistence(timeout: 10), "Must enter actual DOM element fullscreen, never a video-only fallback")
+                let exit = app.buttons.matching(NSPredicate(format: "label IN %@", ["Done", "完了", "Close", "閉じる"])).firstMatch
+                if !exit.waitForExistence(timeout: 5) { app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).tap() }
+                XCTAssertTrue(exit.waitForExistence(timeout: 8), "Page requests must enter the actual native video player without Element Fullscreen's warning")
                 XCUIDevice.shared.orientation = count == 1 ? .landscapeLeft : .portrait
                 settlePresentation()
-                let exit = app.buttons["Exit standard fullscreen"]
-                XCTAssertTrue(exit.waitForExistence(timeout: 8))
-                XCTAssertGreaterThan(exit.frame.height, 40)
+                XCTAssertFalse(app.staticTexts.matching(NSPredicate(format: "label CONTAINS[c] 'Swipe down to exit' OR label CONTAINS '下にスワイプして'")).firstMatch.exists)
                 exit.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).tap()
                 let ended = (embedded ? "Embedded " : "") + "Standard fullscreen ended \(count); advanced true; retained true"
                 XCTAssertTrue(app.staticTexts[ended].waitForExistence(timeout: 10), "Exit must restore the same playing document after a real orientation/layout change")
@@ -613,7 +613,7 @@ final class BrowserUITests: XCTestCase {
             XCTAssertEqual(XCTWaiter.wait(for: [XCTNSPredicateExpectation(predicate: applied, object: nil)], timeout: 10), .completed,
                 "The requested setting must actually be applied before testing playback")
         }
-        func checkPlaybackPolicyAfterControlCenter() {
+        func checkPlaybackPolicyAfterControlCenter(mixing: Bool) {
             let status = app.staticTexts["playbackAudioStatus"]
             XCTAssertTrue(status.waitForExistence(timeout: 5))
             let before = Int(status.label.components(separatedBy: "return").last ?? "") ?? -1
@@ -629,7 +629,8 @@ final class BrowserUITests: XCTestCase {
                 guard status.exists else { return false }
                 let label = status.label
                 let count = Int(label.components(separatedBy: "return").last ?? "") ?? -1
-                return count > before && label.contains("Native playback; Web auto; mixtrue")
+                let type = mixing ? "ambient" : "auto"
+                return count > before && label.contains("Native playback; Web \(type); mixtrue")
             }
             XCTAssertEqual(XCTWaiter.wait(for: [XCTNSPredicateExpectation(predicate: returned, object: nil)], timeout: 10), .completed,
                 "Native and Web sessions must retain playback after an actual inactive/active transition")
@@ -651,7 +652,7 @@ final class BrowserUITests: XCTestCase {
             setAudioToggle("concurrentAudioToggle", true)
             setAudioToggle("nonExclusiveWebAudioToggle", nonExclusive)
             if !master { setAudioToggle("concurrentAudioToggle", false) }
-            closeSettings(); checkPlaybackPolicyAfterControlCenter()
+            closeSettings(); checkPlaybackPolicyAfterControlCenter(mixing: master && nonExclusive)
         }
         settings()
         setAudioToggle("concurrentAudioToggle", true)

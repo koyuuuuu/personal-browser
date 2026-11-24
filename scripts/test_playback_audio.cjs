@@ -14,12 +14,12 @@ const raw = (path, member) => fs.readFileSync(path, 'utf8').split(member)[1].spl
       window.messages = [];
       window.webkit = {messageHandlers:{browserAudioMixing:{postMessage:m=>messages.push(m)}, browserBackgroundAudio:{postMessage() {}}}};
     });
-    await page.addInitScript(raw('App/AudioMixingController.swift', 'static let script ='));
+    await page.addInitScript(raw('App/AudioMixingController.swift', 'static let script =').replaceAll('__MIXING__','true'));
     await page.addInitScript(raw('App/BackgroundAudioScript.swift', 'static let source ='));
     await page.route('https://media.test/**', route=>route.fulfill({contentType:'text/html',body:'<audio id="player"></audio><iframe src="https://embedded.test/player"></iframe>'}));
     await page.route('https://embedded.test/**', route=>route.fulfill({contentType:'text/html',body:'<audio></audio>'}));
     await page.goto('https://media.test/');
-    assert.equal(await page.evaluate(()=>navigator.audioSession.type), 'auto');
+    assert.equal(await page.evaluate(()=>navigator.audioSession.type), 'ambient');
     const frame = page.frames().find(frame=>frame.url().startsWith('https://embedded.test/'));
     assert.ok(frame);
     assert.equal(await frame.evaluate(()=>navigator.audioSession.type), 'auto', 'Embedded documents must not be forced ambient');
@@ -27,8 +27,9 @@ const raw = (path, member) => fs.readFileSync(path, 'utf8').split(member)[1].spl
       await page.evaluate(mixing=>{
         navigator.audioSession.type='ambient'; __personalBrowserSetAudioMixing(mixing);
       }, mixing);
-      assert.equal(await page.evaluate(()=>navigator.audioSession.type), 'auto', 'Neither toggle may force ambient');
+      assert.equal(await page.evaluate(()=>navigator.audioSession.type), mixing ? 'ambient' : 'auto', 'Web mixing must follow the actual preference');
     }
+    await page.evaluate(()=>__personalBrowserSetAudioMixing(true));
     await page.evaluate(()=>{
       // Background entry may remember an old ambient type. Return must still
       // use the current foreground policy instead of restoring that old type.
@@ -36,7 +37,7 @@ const raw = (path, member) => fs.readFileSync(path, 'utf8').split(member)[1].spl
       __personalBrowserBackgroundAudio.policy(true);
       __personalBrowserBackgroundAudio.policy(false);
     });
-    assert.equal(await page.evaluate(()=>navigator.audioSession.type), 'auto');
+    assert.equal(await page.evaluate(()=>navigator.audioSession.type), 'ambient');
     await page.evaluate(()=>{__personalBrowserBackgroundAudio.policy(true);navigator.audioSession.dispatchEvent(new Event('statechange'));});
     assert.equal(await page.evaluate(()=>navigator.audioSession.type),'playback','Foreground events must not undo the owned background transition');
     await frame.evaluate(()=>{navigator.audioSession.type='ambient';__personalBrowserSetAudioMixing(true);});
@@ -48,10 +49,10 @@ const raw = (path, member) => fs.readFileSync(path, 'utf8').split(member)[1].spl
         navigator.audioSession.type='ambient';
         (event==='statechange'?navigator.audioSession:event==='pageshow'?window:document).dispatchEvent(new Event(event));
       }, event);
-      assert.equal(await page.evaluate(()=>navigator.audioSession.type), 'auto');
+      assert.equal(await page.evaluate(()=>navigator.audioSession.type), 'ambient');
     }
     await page.evaluate(()=>{navigator.audioSession.state='active';navigator.audioSession.dispatchEvent(new Event('statechange'));});
-    assert.ok(await page.evaluate(()=>messages.some(m=>m.active===true && m.type==='auto')), 'Active top-level Web Audio must notify native preparation');
+    assert.ok(await page.evaluate(()=>messages.some(m=>m.active===true && m.type==='ambient')), 'Active top-level Web Audio must notify native preparation');
     await frame.evaluate(()=>{navigator.audioSession.state='active';navigator.audioSession.dispatchEvent(new Event('statechange'));});
     assert.equal(await frame.evaluate(()=>messages.some(m=>m.active===true)),false,'A child cannot claim top-page activity');
     await page.evaluate(()=>{navigator.audioSession.type='play-and-record'; __personalBrowserSetAudioMixing(true); __personalBrowserBackgroundAudio.policy(true); __personalBrowserBackgroundAudio.policy(false);});
