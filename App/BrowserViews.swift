@@ -63,6 +63,8 @@ struct BrowserRootView: View {
                     .frame(width: 160).padding(.trailing, 10).padding(.bottom, 145)
             } else if OverviewMotionDiagnostics.fixture {
                 OverviewMotionFixtureStatus().padding(.trailing, 10).padding(.bottom, 110)
+            } else if AudioMixingController.fixture {
+                PlaybackAudioFixtureStatus().padding(.trailing, 10).padding(.bottom, 110)
             }
             #endif
         }
@@ -78,11 +80,11 @@ struct BrowserRootView: View {
                 VideoOrientationController.shared.setEnabled(false)
                 store.navigate("http://127.0.0.1:18765/" + path)
             }
-            if VideoOrientationController.fixture && !preparedVideoFixture {
+            if (VideoOrientationController.fixture || VideoOrientationController.standardFixture) && !preparedVideoFixture {
                 preparedVideoFixture = true
                 VideoOrientationController.shared.setEnabled(false)
                 var features = store.features; features.blockAdvertisements = false; store.updateFeatures(features)
-                store.navigate("http://127.0.0.1:18765/video-orientation-fixture")
+                store.navigate("http://127.0.0.1:18765/" + (VideoOrientationController.standardFixture ? "standard-fullscreen" : "video-orientation-fixture"))
             }
             if PasswordVault.fixture && !preparedPasswordFixture {
                 preparedPasswordFixture = true

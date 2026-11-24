@@ -156,6 +156,24 @@ def main():
                 function check(){result.textContent='Fullscreen count '+count+'; continued '+advanced+'; wide paused '+wide.paused}
                 </script>'''
                 mime = 'text/html; charset=utf-8'
+            elif self.path in ['/standard-fullscreen', '/standard-fullscreen-frame']:
+                embedded = self.path.endswith('-frame')
+                data = ('''<!doctype html><html><head><meta name="viewport" content="width=device-width,initial-scale=1"><title>Standard fullscreen fixture</title>
+                <style>body{margin:0;background:white;color:black}button{font:16px sans-serif;min-height:48px;padding:8px}video{width:100%;height:180px}#stage{background:#123;color:white}#exit{display:none}#stage:fullscreen{width:100%;height:100%}#stage:fullscreen video{height:calc(100% - 100px)}#stage:fullscreen #exit{display:block}iframe{border:0;width:100%;height:430px}</style></head><body>
+                <section id="inline"><div id="stage"><video id="v" src="/background-audio.mp4" playsinline loop preload="auto"></video>
+                <button id="exit" onclick="document.exitFullscreen().catch(failed)">Exit standard fullscreen</button><p id="active"></p></div>
+                <button onclick="v.play()">Play standard video</button><button onclick="stage.requestFullscreen().catch(failed)">Enter standard fullscreen</button><p id="state">Standard video ready</p></section>
+                ''' + ('' if embedded else '''<button onclick="document.getElementById('inline').hidden=true;v.pause();embedded.hidden=false">Show embedded player</button><iframe id="embedded" title="Embedded fullscreen player" src="http://127.0.0.1:18767/standard-fullscreen-frame" allow="fullscreen" allowfullscreen hidden></iframe><p id="relay">Embedded waiting</p>''') + '''<script>
+                const original=v;let count=0,start=0;function failed(error){state.textContent='Fullscreen error '+error.name;}
+                function report(value){state.textContent=value;parent.postMessage({kind:'standard-fullscreen',value},'http://127.0.0.1:18765');}
+                v.addEventListener('timeupdate',()=>{if(count===0 && !v.paused && v.currentTime>0.5)report('Standard video playing');});
+                document.addEventListener('fullscreenchange',()=>{
+                  if(document.fullscreenElement===stage){count++;start=v.currentTime;active.textContent='Standard fullscreen active '+count;}
+                  else{active.textContent='';report('Standard fullscreen ended '+count+'; advanced '+(v.currentTime>start+0.5)+'; retained '+(original===v));}
+                });
+                addEventListener('message',event=>{if(event.origin==='http://127.0.0.1:18767' && event.source===document.getElementById('embedded')?.contentWindow && event.data?.kind==='standard-fullscreen')relay.textContent='Embedded '+event.data.value;});
+                </script></body></html>''').encode()
+                mime = 'text/html; charset=utf-8'
             elif self.path == '/audio.wav':
                 data, mime = audio, 'audio/wav'
             elif self.path in ['/concurrent-audio-a', '/concurrent-audio-b', '/volume-fixture']:

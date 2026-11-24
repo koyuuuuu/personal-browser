@@ -212,29 +212,54 @@ private final class LiveTabCanvasItem: UIView {
     let content: UIView
     let homeSnapshot: Bool
     private var viewport = CGSize.zero
+    private var restoreViewport = false
+    private var fullscreenObservation: NSKeyValueObservation?
     private let cropLayer = CAShapeLayer()
     private(set) var isFullyMasked = false
     init(content: UIView, homeSnapshot: Bool) {
         self.content = content; self.homeSnapshot = homeSnapshot
         super.init(frame: .zero); clipsToBounds = true; isOpaque = false; autoresizesSubviews = false
         content.autoresizingMask = []; addSubview(content)
+        if let view = content as? WKWebView {
+            fullscreenObservation = view.observe(\.fullscreenState, options: [.new]) { [weak self] view, change in
+                let state = change.newValue ?? view.fullscreenState
+                // WebKit moves its WebView into its own fullscreen window and
+                // restores the original placeholder itself. Never steal it.
+                Task { @MainActor in
+                    guard let self else { return }
+                    if state != .notInFullscreen { self.restoreViewport = true }
+                    else if self.restoreViewport { self.superview?.setNeedsLayout() }
+                }
+            }
+        }
     }
     required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }
     func setViewport(_ size: CGSize) {
-        guard size.width > 0, size.height > 0, viewport != size else { return }
+        guard size.width > 0, size.height > 0 else { return }
+        guard ownsLayout else { restoreViewport = true; return }
+        guard viewport != size || restoreViewport else { return }
+        restoreViewport = false
         viewport = size
         // No transform is ever applied to the WebView itself for an overview.
         content.transform = .identity; content.bounds = CGRect(origin: .zero, size: size)
         content.center = CGPoint(x: size.width / 2, y: size.height / 2)
     }
     func place(in rect: CGRect, radius: CGFloat) {
-        guard viewport.width > 0, rect.width > 0, rect.height > 0 else { return }
+        guard ownsLayout, viewport.width > 0, rect.width > 0, rect.height > 0 else { return }
         let scale = rect.width / viewport.width
-        bounds = CGRect(x: 0, y: 0, width: viewport.width, height: rect.height / scale)
-        center = CGPoint(x: rect.midX, y: rect.midY)
-        transform = CGAffineTransform(scaleX: scale, y: scale)
-        layer.cornerRadius = radius / scale
-        layer.maskedCorners = radius > 0 ? [.layerMinXMaxYCorner, .layerMaxXMaxYCorner] : []
+        let nextBounds = CGRect(x: 0, y: 0, width: viewport.width, height: rect.height / scale)
+        let nextCenter = CGPoint(x: rect.midX, y: rect.midY)
+        let nextTransform = CGAffineTransform(scaleX: scale, y: scale)
+        let corners: CACornerMask = radius > 0 ? [.layerMinXMaxYCorner, .layerMaxXMaxYCorner] : []
+        if bounds != nextBounds { bounds = nextBounds }
+        if center != nextCenter { center = nextCenter }
+        if transform != nextTransform { transform = nextTransform }
+        if layer.cornerRadius != radius / scale { layer.cornerRadius = radius / scale }
+        if layer.maskedCorners != corners { layer.maskedCorners = corners }
+    }
+    private var ownsLayout: Bool {
+        guard let view = content as? WKWebView else { return true }
+        return view.fullscreenState == .notInFullscreen && view.superview === self
     }
     func crop(to rect: CGRect?) {
         CATransaction.begin(); CATransaction.setDisableActions(true)

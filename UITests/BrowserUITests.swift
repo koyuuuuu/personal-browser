@@ -12,7 +12,8 @@ final class BrowserUITests: XCTestCase {
         app = XCUIApplication()
         app.launchArguments = ["--ui-testing"]
         if name.contains("testBackgroundVideoAudioContinuesAcrossHomeAndRespectsPause") { app.launchArguments += ["--ui-no-fixture", "--ui-background-audio-fixture"] }
-        if name.contains("testConcurrentAudioPreferenceAndRealPlayersAcrossTabs") { app.launchArguments += ["--ui-no-fixture", "--ui-concurrent-audio-fixture"] }
+        if name.contains("testConcurrentAudioPreferenceAndRealPlayersAcrossTabs") { app.launchArguments += ["--ui-no-fixture", "--ui-concurrent-audio-fixture", "--ui-playback-audio-fixture"] }
+        if name.contains("testStandardFullscreenEntersAndExitsWithoutLosingPage") { app.launchArguments += ["--ui-no-fixture", "--ui-standard-fullscreen-fixture"] }
         if name.contains("testCheckoutContextAndResidentPagesSurviveAuxiliaryWindows") { app.launchArguments += ["--ui-no-fixture", "--ui-session-fixture"] }
         if name.contains("testSavingWebsitePhotoDoesNotTerminateBrowser") { app.launchArguments += ["--ui-no-fixture", "--ui-photo-fixture"] }
         if name.contains("testOverviewKeepsLiveVideoAndMorphsCurrentTabIntoGrid") { app.launchArguments += ["--ui-no-fixture", "--ui-overview-media-fixture", "--ui-overview-motion-fixture"] }
@@ -211,6 +212,34 @@ final class BrowserUITests: XCTestCase {
         app.buttons["videoOff"].tap()
         app.buttons["Check video state"].tap()
         XCTAssertTrue(app.staticTexts["Fullscreen count 2; continued true; wide paused true"].exists)
+    }
+
+    func testStandardFullscreenEntersAndExitsWithoutLosingPage() {
+        XCTAssertTrue(app.buttons["Play standard video"].waitForExistence(timeout: 30))
+        for embedded in [false, true] {
+            if embedded { tapMenuControl("Show embedded player") }
+            tapMenuControl("Play standard video")
+            let playing = embedded ? "Embedded Standard video playing" : "Standard video playing"
+            XCTAssertTrue(app.staticTexts[playing].waitForExistence(timeout: 15))
+            for count in 1...2 {
+                if count > 1 { tapMenuControl("Play standard video") }
+                tapMenuControl("Enter standard fullscreen")
+                XCTAssertTrue(app.staticTexts["Standard fullscreen active \(count)"].waitForExistence(timeout: 10), "Must enter actual DOM element fullscreen, never a video-only fallback")
+                XCUIDevice.shared.orientation = count == 1 ? .landscapeLeft : .portrait
+                settlePresentation()
+                let exit = app.buttons["Exit standard fullscreen"]
+                XCTAssertTrue(exit.waitForExistence(timeout: 8))
+                XCTAssertGreaterThan(exit.frame.height, 40)
+                exit.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).tap()
+                let ended = (embedded ? "Embedded " : "") + "Standard fullscreen ended \(count); advanced true; retained true"
+                XCTAssertTrue(app.staticTexts[ended].waitForExistence(timeout: 10), "Exit must restore the same playing document after a real orientation/layout change")
+            }
+            XCUIDevice.shared.orientation = .portrait; settlePresentation()
+        }
+        tapMenuControl("tabsButton")
+        XCTAssertTrue(app.navigationBars["タブ 1"].waitForExistence(timeout: 8))
+        tapMenuControl("完了")
+        XCTAssertTrue(app.buttons["Enter standard fullscreen"].waitForExistence(timeout: 8), "Normal browser controls must still work after returning from both fullscreen players")
     }
 
     func testPasswordVaultImportsLocksAndFillsOnlyOnRequest() {
@@ -519,6 +548,31 @@ final class BrowserUITests: XCTestCase {
             }
             XCTAssertEqual(XCTWaiter.wait(for: [XCTNSPredicateExpectation(predicate: condition, object: nil)], timeout: 8), .completed)
         }
+        func closeSettings() {
+            app.navigationBars["音声・バックグラウンド再生"].buttons["設定"].tap(); tapMenuControl("閉じる")
+        }
+        func checkPlaybackPolicyAfterControlCenter() {
+            let status = app.staticTexts["playbackAudioStatus"]
+            XCTAssertTrue(status.waitForExistence(timeout: 5))
+            let before = Int(status.label.components(separatedBy: "return").last ?? "") ?? -1
+            let start = app.coordinate(withNormalizedOffset: CGVector(dx: 0.95, dy: 0.01))
+            let end = app.coordinate(withNormalizedOffset: CGVector(dx: 0.95, dy: 0.65))
+            start.press(forDuration: 0.1, thenDragTo: end)
+            let springboard = XCUIApplication(bundleIdentifier: "com.apple.springboard")
+            let volume = springboard.descendants(matching: .any).matching(NSPredicate(format: "label CONTAINS[c] 'volume' OR label CONTAINS '音量'")).firstMatch
+            XCTAssertTrue(volume.waitForExistence(timeout: 10), "Must open the actual OS Control Center")
+            let bottom = springboard.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.99))
+            bottom.press(forDuration: 0.1, thenDragTo: springboard.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.2)))
+            let returned = NSPredicate { _, _ in
+                guard status.exists else { return false }
+                let label = status.label
+                let count = Int(label.components(separatedBy: "return").last ?? "") ?? -1
+                return count > before && label.contains("Native playback; Web playback; mixtrue")
+            }
+            XCTAssertEqual(XCTWaiter.wait(for: [XCTNSPredicateExpectation(predicate: returned, object: nil)], timeout: 10), .completed,
+                "Native and Web sessions must retain playback after an actual inactive/active transition")
+            advance(first: true, second: true)
+        }
         settings()
         let toggle = app.switches["concurrentAudioToggle"]
         XCTAssertTrue(toggle.waitForExistence(timeout: 5))
@@ -531,6 +585,18 @@ final class BrowserUITests: XCTestCase {
         XCTAssertTrue(first.waitForExistence(timeout: 10)); first.tap()
         advance(first: true, second: false)
         page.buttons["Play second"].tap(); advance(first: true, second: true)
+        for (master, nonExclusive) in [(true, true), (true, false), (false, true), (false, false)] {
+            settings()
+            let masterToggle = app.switches["concurrentAudioToggle"], webToggle = app.switches["nonExclusiveWebAudioToggle"]
+            if masterToggle.value as? String != "1" { masterToggle.coordinate(withNormalizedOffset: CGVector(dx: 0.9, dy: 0.5)).tap() }
+            if webToggle.value as? String != (nonExclusive ? "1" : "0") { webToggle.coordinate(withNormalizedOffset: CGVector(dx: 0.9, dy: 0.5)).tap() }
+            if !master { masterToggle.coordinate(withNormalizedOffset: CGVector(dx: 0.9, dy: 0.5)).tap() }
+            closeSettings(); checkPlaybackPolicyAfterControlCenter()
+        }
+        settings()
+        app.switches["concurrentAudioToggle"].coordinate(withNormalizedOffset: CGVector(dx: 0.9, dy: 0.5)).tap()
+        app.switches["nonExclusiveWebAudioToggle"].coordinate(withNormalizedOffset: CGVector(dx: 0.9, dy: 0.5)).tap()
+        closeSettings()
         tapMenuControl("menuButton"); tapMenuControl("新しいタブ")
         navigate("http://127.0.0.1:18765/concurrent-audio-b")
         page = app.webViews.containing(.staticText, identifier: "Concurrent B").firstMatch

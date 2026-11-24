@@ -1,9 +1,13 @@
 import AVFoundation
 import Combine
 import WebKit
+import UIKit
+#if DEBUG
+import SwiftUI
+#endif
 
-/// Opt-in additions to the existing build14 playback path. No pause/play retry
-/// loops, private WebKit preferences, or audio-session deactivation on toggle.
+/// Playback ignores the Ring/Silent switch in every preference combination.
+/// Mixing stays best effort; no pause/play retries or session deactivation.
 @MainActor
 final class AudioMixingController: ObservableObject {
     static let shared = AudioMixingController()
@@ -15,7 +19,15 @@ final class AudioMixingController: ObservableObject {
     @Published private(set) var errorMessage: String?
     private var timer: Timer?
     private var entries: [ObjectIdentifier: Entry] = [:]
-    private var usesWebMixing: Bool { enabled && nonExclusiveWebAudio }
+    private var activeObservation: AnyCancellable?
+    #if DEBUG
+    @Published private(set) var fixtureStatus = "Audio policy waiting"
+    private var fixtureReturns = 0
+    static var fixture: Bool {
+        let args = ProcessInfo.processInfo.arguments
+        return args.contains("--ui-testing") && args.contains("--ui-playback-audio-fixture")
+    }
+    #endif
 
     private final class Entry {
         weak var view: WKWebView?
@@ -27,6 +39,8 @@ final class AudioMixingController: ObservableObject {
         self.defaults = defaults
         enabled = defaults.bool(forKey: Self.enabledKey)
         nonExclusiveWebAudio = defaults.object(forKey: Self.webKey) as? Bool ?? true
+        activeObservation = NotificationCenter.default.publisher(for: UIApplication.didBecomeActiveNotification)
+            .sink { [weak self] _ in self?.returned() }
     }
 
     func setEnabled(_ value: Bool) {
@@ -45,7 +59,8 @@ final class AudioMixingController: ObservableObject {
         let controller = view.configuration.userContentController
         controller.add(MixingMessageHandler(owner: self, view: view), contentWorld: .defaultClient, name: "browserAudioMixing")
         controller.addUserScript(WKUserScript(source: Self.script, injectionTime: .atDocumentStart, forMainFrameOnly: false, in: .defaultClient))
-        if enabled { prepare(activate: false); startTimer(); sample(view) }
+        prepare(activate: false)
+        if enabled { startTimer(); sample(view) }
     }
     func detach(_ view: WKWebView) {
         entries.removeValue(forKey: ObjectIdentifier(view))?.playback(false)
@@ -54,7 +69,8 @@ final class AudioMixingController: ObservableObject {
     }
 
     private func updateViews() {
-        if enabled { prepare(activate: false); startTimer() }
+        prepare(activate: false)
+        if enabled { startTimer() }
         else { timer?.invalidate(); timer = nil }
         for entry in entries.values {
             guard let view = entry.view else { continue }
@@ -64,12 +80,31 @@ final class AudioMixingController: ObservableObject {
     }
     fileprivate func applyWebPolicy(_ view: WKWebView) {
         guard entries[ObjectIdentifier(view)] != nil else { return }
-        applyAudioMixingPolicy(view, enabled: usesWebMixing)
+        applyAudioMixingPolicy(view, enabled: enabled && nonExclusiveWebAudio)
+    }
+    private func returned() {
+        // Control Center makes the app inactive without navigating. Reassert
+        // playback on return, without resuming or activating stopped media.
+        guard !entries.isEmpty else { return }
+        #if DEBUG
+        if Self.fixture { fixtureReturns += 1 }
+        #endif
+        prepare(activate: false)
+        for entry in entries.values { if let view = entry.view { applyWebPolicy(view) } }
     }
     fileprivate func mediaEvent(_ view: WKWebView, audible: Bool) {
-        guard enabled, entries[ObjectIdentifier(view)] != nil else { return }
+        guard entries[ObjectIdentifier(view)] != nil else { return }
         if audible { prepare(activate: true) }
-        sample(view)
+        if enabled { sample(view) }
+    }
+    fileprivate func policyEvent(_ view: WKWebView, type: String) {
+        guard entries[ObjectIdentifier(view)] != nil else { return }
+        #if DEBUG
+        if Self.fixture {
+            let session = AVAudioSession.sharedInstance()
+            fixtureStatus = "Native \(session.category == .playback ? "playback" : "other"); Web \(type == "playback" ? "playback" : "other"); mix\(session.categoryOptions.contains(.mixWithOthers)); return\(fixtureReturns)"
+        }
+        #endif
     }
     private func prepare(activate: Bool) {
         do {
@@ -78,7 +113,9 @@ final class AudioMixingController: ObservableObject {
                 errorMessage = "録音・通話用の音声セッションを優先しています。終了後に同時再生を試してください。"
                 return
             }
-            try session.setCategory(.playback, mode: .moviePlayback, options: [.mixWithOthers])
+            if session.category != .playback || session.mode != .moviePlayback || !session.categoryOptions.contains(.mixWithOthers) {
+                try session.setCategory(.playback, mode: .moviePlayback, options: [.mixWithOthers])
+            }
             if activate { try session.setActive(true) }
             errorMessage = nil
         } catch { errorMessage = "音声ミックスの設定を適用できませんでした。再生を止めて設定を入れ直してください。" }
@@ -101,44 +138,36 @@ final class AudioMixingController: ObservableObject {
         }
     }
 
-    private static let script =
-        """
+    static let script =
+        #"""
         (() => {
-          let enabled = false, previous = null;
-          const apply = value => {
-            enabled = value;
-            // AudioSession type is page-wide. Only the top document owns the
-            // override, so sibling/cross-origin frames cannot restore it twice.
+          if (globalThis.__personalBrowserSetAudioMixing) return;
+          const send = value => { try { webkit.messageHandlers.browserAudioMixing.postMessage(value); } catch (_) {} };
+          const apply = () => {
+            // ambient is mixable but obeys the hardware Silent switch. The
+            // user's playback requirement takes priority for BOTH settings.
+            // Native playback+mixWithOthers still requests supported mixing.
             if (window !== window.top || !navigator.audioSession) return;
             try {
               const session = navigator.audioSession;
-              if (enabled) {
-                if (session.type === 'play-and-record') return;
-                if (previous === null) previous = session.type;
-                const type = globalThis.__personalBrowserBackgroundAudio?.prefersPlayback ? 'playback' : 'ambient';
-                if (session.type !== type) session.type = type;
-              } else if (previous !== null) {
-                if (session.type === 'ambient') session.type = previous;
-                previous = null;
-              }
+              if (session.type === 'play-and-record') return;
+              if (session.type !== 'playback') session.type = 'playback';
+              send({type:session.type});
             } catch (_) { /* Permissions Policy / API support is site-dependent. */ }
           };
           globalThis.__personalBrowserSetAudioMixing = apply;
-          // Fetch current preferences on every document/BFCache presentation;
-          // a setting captured at WebView creation would become stale on reload.
-          const ready = () => { if (window === window.top) window.webkit.messageHandlers.browserAudioMixing.postMessage('ready'); };
+          const ready = () => { apply(); if (window === window.top) send('ready'); };
           ready(); window.addEventListener('pageshow', ready);
+          document.addEventListener('visibilitychange', () => { if (!document.hidden) ready(); });
           document.addEventListener('play', event => {
-            apply(enabled);
+            apply();
             const player = event.target;
             const audible = player instanceof HTMLMediaElement && !player.muted && player.volume > 0;
-            window.webkit.messageHandlers.browserAudioMixing.postMessage(audible);
+            send(audible);
           }, true);
-          if (navigator.audioSession) navigator.audioSession.addEventListener('statechange', () => {
-            window.webkit.messageHandlers.browserAudioMixing.postMessage(false);
-          });
+          if (navigator.audioSession) navigator.audioSession.addEventListener('statechange', apply);
         })();
-        """
+        """#
 }
 
 @MainActor
@@ -150,5 +179,17 @@ private final class MixingMessageHandler: NSObject, WKScriptMessageHandler {
         guard let view, message.webView === view else { return }
         if message.body as? String == "ready" { owner?.applyWebPolicy(view) }
         else if let audible = message.body as? Bool { owner?.mediaEvent(view, audible: audible) }
+        else if let value = message.body as? [String: Any], let type = value["type"] as? String { owner?.policyEvent(view, type: type) }
     }
 }
+
+#if DEBUG
+@MainActor
+struct PlaybackAudioFixtureStatus: View {
+    @ObservedObject private var controller = AudioMixingController.shared
+    var body: some View {
+        Text(controller.fixtureStatus).font(.system(size: 9)).frame(width: 185)
+            .background(.background).accessibilityIdentifier("playbackAudioStatus").allowsHitTesting(false)
+    }
+}
+#endif

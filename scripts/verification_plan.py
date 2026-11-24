@@ -14,7 +14,7 @@ AREAS = {
     "session-navigation": ["testCheckoutContextAndResidentPagesSurviveAuxiliaryWindows"],
     "photo-saving": ["testSavingWebsitePhotoDoesNotTerminateBrowser"],
     "live-overview": ["testOverviewKeepsLiveVideoAndMorphsCurrentTabIntoGrid", "testSwipeClosingGridReflowsAndRemainsUsableAfterRepeatedDeletions", "testOverviewOpensAtLastActiveTab"],
-    "video-orientation": ["testVideoFullscreenFollowsAspectAndRespectsPauseAndToggle"],
+    "video-orientation": ["testVideoFullscreenFollowsAspectAndRespectsPauseAndToggle", "testStandardFullscreenEntersAndExitsWithoutLosingPage"],
     "browsing-layout": ["testReleaseBrowsingLayoutAndPageInteraction", "testPasswordVaultImportsLocksAndFillsOnlyOnRequest"],
     "password-vault": ["testPasswordVaultImportsLocksAndFillsOnlyOnRequest"],
     "browsing-resilience": ["testLockedViewportChromeAndBoundedRecovery", "testAppPromotionSuppressionPreservesLoginAndCanBeDisabled", "testPortraitForwardScrollHidesBarsAndBottomBounceDoesNotReveal"],

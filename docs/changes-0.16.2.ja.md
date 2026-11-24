@@ -1,0 +1,17 @@
+# 0.16.2 消音中の再生と全画面操作
+
+非排他モードがWeb Audio Sessionをambientへ切り替え、ホーム／コントロールセンターから戻る際にもその値を復元していた。ambientは消音スイッチに従うため、今回の「どちらの設定でも消音中に再生」の要望と両立しない。前面のWeb音声も常にplaybackを要求し、ネイティブはplayback + mixWithOthersを準備する。設定変更・実際の再生開始・前面への復帰・ページ再表示・音声セッション状態変化で方針を適用する。設定値は従来の独立キーを保持し、同時再生は可能な範囲で試みるが、消音中の再生を優先する。
+
+バックグラウンド補助は古いambientを復元せず、現在の前面ポリシーへ戻す。録音／通話のrecord・playAndRecordは優先し、サイトのミュート・音量ゼロ・一時停止は変更しない。設定や前面への復帰で音源を強制再生したり音声セッションを停止したりしない。既存の1回・3秒の背景復帰予算、手動停止／通話／イヤホン切断の取消しは保持する。build14のupdateMedia/mediaScriptはそのまま。
+
+標準のElement Fullscreen APIはWKPreferencesの初期値falseのままだった。通常タブ・埋め込みプレーヤー・補助ウィンドウにも公開APIのisElementFullscreenEnabledを設定する。ユーザー操作やiframeのPermissions Policyは維持する。動画専用のwebkitEnterFullscreenだけでなく、サイトがプレーヤー全体に使うrequestFullscreen／exitFullscreenを利用できるようにする。
+
+WebKitは標準全画面中にWebViewをプレースホルダーと置換し、専用ウィンドウへ移す。アプリの一覧用コンテナがその最中に通常の表示領域や変形を適用しないよう、公開fullscreenStateと実際の親ビューを確認する。公開KVOで終了を監視し、WebKitが返した後に通常領域を復元する。アプリ側でWebViewを奪い返したり再生成したりしない。通常時も同じ幾何情報を書き直さず、標準プレーヤーの遷移を妨げない。
+
+ローカルの音声ポリシー検証はAudioSessionの型だけを模擬し、設定両値・前面復帰イベント・背景復元・録音・一時停止・ミュート保持を確認する。Chromiumでは実動画の標準全画面への移行と終了を通常ページ／別オリジンiframeで各2回確認する。これらをiOSでの消音スイッチや音声出力の実証とは扱わない。
+
+iOS検証は4設定の実際のコントロールセンター往復とネイティブ／Web再生モード・実音源の時計、従来の複数タブ同時再生、実際のOSホームと動画時計、標準全画面の繰り返し移行／終了と回転／同じ動画の保持、従来の自動全画面／縦長動画、タブ一覧の連続遷移／回転／削除、通常ページ操作／パスワードを対象とする。診断と起動時の固定ページはDEBUG＋各2フラグ限定で、製品版の領域を予約しない。保存形式・TLS・旧アーカイブを変更しないため、それらの追加往復検証は行わない。
+
+実際のiPhoneの消音スイッチ・スピーカー出力・特定の第三者サイトの受け入れは別途必要。サイト自身の停止やDRM、WebKit／他アプリの排他制御を解除する機能ではない。
+
+根拠: [Apple playback](https://developer.apple.com/documentation/avfaudio/avaudiosession/category-swift.struct/playback)、[mixWithOthers](https://developer.apple.com/documentation/avfaudio/avaudiosession/categoryoptions-swift.struct/mixwithothers)、[isElementFullscreenEnabled](https://developer.apple.com/documentation/webkit/wkpreferences/iselementfullscreenenabled)、[fullscreenState](https://developer.apple.com/documentation/webkit/wkwebview/fullscreenstate)。

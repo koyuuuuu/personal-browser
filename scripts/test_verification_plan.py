@@ -5,6 +5,14 @@ from verification_plan import AREAS, ROOT, changed_methods, plan
 
 
 class VerificationPolicyTests(unittest.TestCase):
+    def test_silent_playback_and_fullscreen_fix_keeps_both_media_paths_and_canvas_in_scope(self):
+        paths = ["App/AudioMixingController.swift", "App/AudioMixingSettingsView.swift", "App/BackgroundAudioScript.swift", "App/BrowserTab.swift", "App/BrowserViews.swift", "App/TabLiveCanvas.swift", "App/VideoOrientationController.swift", "UITests/BrowserUITests.swift"]
+        result = plan(paths, tab_changes={"createWebView"}, ui_changes={"setUpWithError", "testConcurrentAudioPreferenceAndRealPlayersAcrossTabs", "testStandardFullscreenEntersAndExitsWithoutLosingPage"})
+        expected = set(AREAS["background-audio"] + AREAS["audio-mixing"] + AREAS["video-orientation"] + AREAS["live-overview"] + AREAS["browsing-layout"])
+        self.assertEqual(set(result["ui_tests"]), expected)
+        self.assertFalse(result["compatibility"])
+        self.assertFalse(result["verify_archives"])
+
     def test_overview_motion_checks_live_layers_and_release_browsing_without_unrelated_storage(self):
         result = plan(["App/TabLiveCanvas.swift", "App/TabOverviewPresentation.swift", "App/OverviewMotionDiagnostics.swift", "App/TabGridView.swift", "App/BrowserViews.swift", "UITests/BrowserUITests.swift"],
                       ui_changes={"setUpWithError", "testOverviewKeepsLiveVideoAndMorphsCurrentTabIntoGrid", "assertSelectedOutlineAbovePage"})

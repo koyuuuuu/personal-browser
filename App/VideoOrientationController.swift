@@ -255,6 +255,10 @@ final class VideoOrientationController: ObservableObject {
         let args = ProcessInfo.processInfo.arguments
         return args.contains("--ui-testing") && args.contains("--ui-video-orientation-fixture")
     }
+    static var standardFixture: Bool {
+        let args = ProcessInfo.processInfo.arguments
+        return args.contains("--ui-testing") && args.contains("--ui-standard-fullscreen-fixture")
+    }
     func fixtureTilt(horizontal: Bool) {
         guard Self.fixture else { return }
         let start = Date()
