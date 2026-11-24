@@ -12,6 +12,16 @@
       "iconURL": "https://raw.githubusercontent.com/koyuuuuu/personal-browser-distribution/main/icon.png",
       "versions": [
         {
+          "version": "0.16.2",
+          "buildVersion": "113",
+          "date": "2026-11-24T17:59:04.692378+00:00",
+          "localizedDescription": "消音モードでも、同時再生・非排他モードの設定に関係なく動画や音声を再生するよう修正。コントロールセンターやホーム画面から戻った際の無音化を防ぎます。標準の全画面APIを有効にし、全画面への切り替え・終了中の表示サイズの干渉を修正しました。",
+          "downloadURL": "https://github.com/koyuuuuu/personal-browser-distribution/releases/download/v0.16.2-build.113/PersonalBrowser.ipa",
+          "size": 5800738,
+          "minOSVersion": "17.0",
+          "sha256": "87cd4f87a661b0758151cf8d0b2e3f4195cab76dbf34b972c891f63ea8589608"
+        },
+        {
           "version": "0.16.1",
           "buildVersion": "104",
           "date": "2026-11-23T15:12:59.491781+00:00",

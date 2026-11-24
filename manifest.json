@@ -2,6 +2,38 @@
   "releases": [
     {
       "file": "PersonalBrowser.ipa",
+      "sha256": "87cd4f87a661b0758151cf8d0b2e3f4195cab76dbf34b972c891f63ea8589608",
+      "bundle_id": "local.personalbrowser.app",
+      "version": "0.16.2",
+      "build": "113",
+      "minimum_ios": "17.0",
+      "target_ios": "18.4.1",
+      "architecture": "arm64",
+      "platform": "iOS device",
+      "embedded_profile": false,
+      "signature_resources": false,
+      "installation_verified": false,
+      "source_commit": "72b8a31450e11dc86a813dff3cecac291046c1f0",
+      "data_schema": 1,
+      "size": 5800738,
+      "date": "2026-11-24T17:59:04.692378+00:00",
+      "description": "消音モードでも、同時再生・非排他モードの設定に関係なく動画や音声を再生するよう修正。コントロールセンターやホーム画面から戻った際の無音化を防ぎます。標準の全画面APIを有効にし、全画面への切り替え・終了中の表示サイズの干渉を修正しました。",
+      "appPermissions": {
+        "entitlements": [],
+        "privacy": {
+          "NSCameraUsageDescription": "閲覧中のWebサイトでカメラを使用するために必要です。",
+          "NSFaceIDUsageDescription": "このブラウザのパスワード保管庫を安全に開くために使用します。",
+          "NSLocalNetworkUsageDescription": "自宅のネットワークにある自作アプリや動画サーバーへ接続するために使用します。",
+          "NSMicrophoneUsageDescription": "閲覧中のWebサイトでマイクを使用するために必要です。",
+          "NSMotionUsageDescription": "動画を全画面で表示する際に、端末の傾きに合わせて画面の向きを調整します。",
+          "NSPhotoLibraryAddUsageDescription": "Webページの画像を写真ライブラリに保存するために使用します。",
+          "NSPhotoLibraryUsageDescription": "Webページから選んだ画像を写真に保存するために使用します。"
+        }
+      },
+      "tag": "v0.16.2-build.113"
+    },
+    {
+      "file": "PersonalBrowser.ipa",
       "sha256": "4c4ddcd3dac20f24cd1c6388434f320b3d59e06a21e1405ae79894035c639622",
       "bundle_id": "local.personalbrowser.app",
       "version": "0.16.1",
