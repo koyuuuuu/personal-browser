@@ -554,6 +554,23 @@ final class BrowserUITests: XCTestCase {
         func closeSettings() {
             app.navigationBars["音声・バックグラウンド再生"].buttons["設定"].tap(); tapMenuControl("閉じる")
         }
+        func setAudioToggle(_ id: String, _ on: Bool) {
+            let row = app.switches[id], expected = on ? "1" : "0"
+            XCTAssertTrue(row.waitForExistence(timeout: 8))
+            if row.value as? String == expected { return }
+            let inner = row.switches.firstMatch
+            let control = inner.exists ? inner : row
+            XCTAssertTrue(control.isEnabled)
+            XCTAssertTrue(app.windows.firstMatch.frame.contains(control.frame))
+            // SwiftUI exposes both a full-width row and a native UISwitch.
+            // Drive the actual thumb, avoiding a stale outer-row hit point.
+            let from = control.coordinate(withNormalizedOffset: CGVector(dx: on ? 0.25 : 0.75, dy: 0.5))
+            let to = control.coordinate(withNormalizedOffset: CGVector(dx: on ? 0.75 : 0.25, dy: 0.5))
+            from.press(forDuration: 0.1, thenDragTo: to)
+            let applied = NSPredicate { _, _ in row.value as? String == expected }
+            XCTAssertEqual(XCTWaiter.wait(for: [XCTNSPredicateExpectation(predicate: applied, object: nil)], timeout: 10), .completed,
+                "The requested setting must actually be applied before testing playback")
+        }
         func checkPlaybackPolicyAfterControlCenter() {
             let status = app.staticTexts["playbackAudioStatus"]
             XCTAssertTrue(status.waitForExistence(timeout: 5))
@@ -579,7 +596,7 @@ final class BrowserUITests: XCTestCase {
         settings()
         let toggle = app.switches["concurrentAudioToggle"]
         XCTAssertTrue(toggle.waitForExistence(timeout: 5))
-        if toggle.value as? String != "1" { toggle.coordinate(withNormalizedOffset: CGVector(dx: 0.9, dy: 0.5)).tap() }
+        setAudioToggle("concurrentAudioToggle", true)
         XCTAssertEqual(toggle.value as? String, "1")
         app.navigationBars["音声・バックグラウンド再生"].buttons["設定"].tap()
         tapMenuControl("閉じる")
@@ -590,15 +607,14 @@ final class BrowserUITests: XCTestCase {
         page.buttons["Play second"].tap(); advance(first: true, second: true)
         for (master, nonExclusive) in [(true, true), (true, false), (false, true), (false, false)] {
             settings()
-            let masterToggle = app.switches["concurrentAudioToggle"], webToggle = app.switches["nonExclusiveWebAudioToggle"]
-            if masterToggle.value as? String != "1" { masterToggle.coordinate(withNormalizedOffset: CGVector(dx: 0.9, dy: 0.5)).tap() }
-            if webToggle.value as? String != (nonExclusive ? "1" : "0") { webToggle.coordinate(withNormalizedOffset: CGVector(dx: 0.9, dy: 0.5)).tap() }
-            if !master { masterToggle.coordinate(withNormalizedOffset: CGVector(dx: 0.9, dy: 0.5)).tap() }
+            setAudioToggle("concurrentAudioToggle", true)
+            setAudioToggle("nonExclusiveWebAudioToggle", nonExclusive)
+            if !master { setAudioToggle("concurrentAudioToggle", false) }
             closeSettings(); checkPlaybackPolicyAfterControlCenter()
         }
         settings()
-        app.switches["concurrentAudioToggle"].coordinate(withNormalizedOffset: CGVector(dx: 0.9, dy: 0.5)).tap()
-        app.switches["nonExclusiveWebAudioToggle"].coordinate(withNormalizedOffset: CGVector(dx: 0.9, dy: 0.5)).tap()
+        setAudioToggle("concurrentAudioToggle", true)
+        setAudioToggle("nonExclusiveWebAudioToggle", true)
         closeSettings()
         tapMenuControl("menuButton"); tapMenuControl("新しいタブ")
         navigate("http://127.0.0.1:18765/concurrent-audio-b")
@@ -615,7 +631,7 @@ final class BrowserUITests: XCTestCase {
         page.buttons["Pause both"].tap()
         XCUIDevice.shared.press(.home); relaunchPreservingData()
         settings(); XCTAssertEqual(toggle.value as? String, "1")
-        toggle.coordinate(withNormalizedOffset: CGVector(dx: 0.9, dy: 0.5)).tap(); XCTAssertEqual(toggle.value as? String, "0")
+        setAudioToggle("concurrentAudioToggle", false); XCTAssertEqual(toggle.value as? String, "0")
     }
 
     func testSelectedTextSearchOpensAnAdjacentNewTab() {

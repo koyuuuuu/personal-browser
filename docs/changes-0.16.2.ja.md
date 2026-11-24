@@ -22,4 +22,6 @@ iOS検証は4設定の実際のコントロールセンター往復とネイテ�
 
 検証108は、埋め込み文書の状態イベントがページ共通の背景playbackをautoへ戻し得る経路をソース確認で見つけ、配信前に中止。型の更新は上位ページだけが所有し、子フレームの再生通知はネイティブ経由で上位へ渡す。トップの所有フラグを確認してから更新するため、背景の所有権を子が解除しない。停止済み要素の合成playイベントでは音声セッションを有効化しない。ポリシー検証に子フレームの直接更新を拒否する条件を追加した。
 
+検証109はCore85件と標準全画面174.331秒を通過。実iOSで通常文書と別オリジンiframeの標準APIによる表示／終了を各2回、回転・時計進行・元動画と通常タブ操作の保持まで確認した。音声ケースは最初の設定スイッチをオンにできず、再生開始／Control Center操作より前に停止。実際の画面ではスイッチは可視だがオフのままで、原因を音声再生失敗とは扱わない。SwiftUI行ラッパーの座標タップをネイティブUISwitchのつまみ操作＋設定値の待機検証へ変更する。DEBUG診断の同値再通知も抑え、Swift6のKVO警告は新値だけをMainActorへ渡して修正。残りの8件・Release・配信は109では未完了。
+
 根拠: [Apple playback](https://developer.apple.com/documentation/avfaudio/avaudiosession/category-swift.struct/playback)、[mixWithOthers](https://developer.apple.com/documentation/avfaudio/avaudiosession/categoryoptions-swift.struct/mixwithothers)、[isElementFullscreenEnabled](https://developer.apple.com/documentation/webkit/wkpreferences/iselementfullscreenenabled)、[fullscreenState](https://developer.apple.com/documentation/webkit/wkwebview/fullscreenstate)。

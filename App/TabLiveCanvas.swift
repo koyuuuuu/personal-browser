@@ -221,8 +221,8 @@ private final class LiveTabCanvasItem: UIView {
         super.init(frame: .zero); clipsToBounds = true; isOpaque = false; autoresizesSubviews = false
         content.autoresizingMask = []; addSubview(content)
         if let view = content as? WKWebView {
-            fullscreenObservation = view.observe(\.fullscreenState, options: [.new]) { [weak self] view, change in
-                let state = change.newValue ?? view.fullscreenState
+            fullscreenObservation = view.observe(\.fullscreenState, options: [.new]) { [weak self] _, change in
+                guard let state = change.newValue else { return }
                 // WebKit moves its WebView into its own fullscreen window and
                 // restores the original placeholder itself. Never steal it.
                 Task { @MainActor in

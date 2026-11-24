@@ -105,7 +105,8 @@ final class AudioMixingController: ObservableObject {
         #if DEBUG
         if Self.fixture {
             let session = AVAudioSession.sharedInstance()
-            fixtureStatus = "Native \(session.category == .playback ? "playback" : "other"); Web \(type == "auto" ? "auto" : "other"); mix\(session.categoryOptions.contains(.mixWithOthers)); return\(fixtureReturns)"
+            let value = "Native \(session.category == .playback ? "playback" : "other"); Web \(type == "auto" ? "auto" : "other"); mix\(session.categoryOptions.contains(.mixWithOthers)); return\(fixtureReturns)"
+            if fixtureStatus != value { fixtureStatus = value }
         }
         #endif
     }
