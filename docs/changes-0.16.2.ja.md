@@ -33,3 +33,5 @@ iOS検証は4設定の実際のコントロールセンター往復とネイテ�
 根拠: [Apple playback](https://developer.apple.com/documentation/avfaudio/avaudiosession/category-swift.struct/playback)、[mixWithOthers](https://developer.apple.com/documentation/avfaudio/avaudiosession/categoryoptions-swift.struct/mixwithothers)、[isElementFullscreenEnabled](https://developer.apple.com/documentation/webkit/wkpreferences/iselementfullscreenenabled)、[fullscreenState](https://developer.apple.com/documentation/webkit/wkwebview/fullscreenstate)。
 
 利用者の最新指示「テストはもういいのでこちらでやるのでリリースしてください」に従い、通常検証113を停止し、この版に限り残りの自動テストを省略してリリースする。本体の実装は変更しない。一時的な手動ワークフローで未署名Release実機用IPAのビルド、識別子・ハッシュ検査、既存経路での配信と公開ファイル確認のみを行う。全9件通過や実機の消音スイッチ・スピーカー確認済みとは記録しない。通常の次回以降のテスト工程は維持する。
+
+0.16.2 build113を配信完了。ソース72b8a31450e11dc86a813dff3cecac291046c1f0、一時リリース実行45453824977のbuild/publish/delivery-auditが成功。追加テストは実行せず、Release実機用ビルド・IPA識別子／版／ハッシュ・公開取得を確認。IPA5800738 bytes、SHA-256 87cd4f87a661b0758151cf8d0b2e3f4195cab76dbf34b972c891f63ea8589608。公開フィード・固定タグと一致。検証用フラグ／MP4／強いSwiftWebKit依存は製品版になく、写真保存・Motion・FaceID・背景音声の宣言を保持。全UI合格とは扱わず、利用者が実機確認する。通常CIは維持し、一時ワークフローは削除する。
