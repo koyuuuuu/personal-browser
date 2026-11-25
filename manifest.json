@@ -2,6 +2,38 @@
   "releases": [
     {
       "file": "PersonalBrowser.ipa",
+      "sha256": "279d91a16ef1704cb0b0b442d52ffb15ef044f6a07313e676ebe669e1b8dad8e",
+      "bundle_id": "local.personalbrowser.app",
+      "version": "0.16.4",
+      "build": "115",
+      "minimum_ios": "17.0",
+      "target_ios": "18.4.1",
+      "architecture": "arm64",
+      "platform": "iOS device",
+      "embedded_profile": false,
+      "signature_resources": false,
+      "installation_verified": false,
+      "source_commit": "aa57ea8655b47333fbcb780133171efe51f5f6cc",
+      "data_schema": 1,
+      "size": 5816269,
+      "date": "2026-11-25T02:27:41.808017+00:00",
+      "description": "PiP中と画面ロックへの移行中は再生用の音声設定を保持し、非排他設定への復元で再生が途切れる問題を修正。全画面からPiPへ切り替えた際の後処理がPiP自体を終了させないようにしました。通常表示に戻った際は元の非排他設定を復元します。",
+      "appPermissions": {
+        "entitlements": [],
+        "privacy": {
+          "NSCameraUsageDescription": "閲覧中のWebサイトでカメラを使用するために必要です。",
+          "NSFaceIDUsageDescription": "このブラウザのパスワード保管庫を安全に開くために使用します。",
+          "NSLocalNetworkUsageDescription": "自宅のネットワークにある自作アプリや動画サーバーへ接続するために使用します。",
+          "NSMicrophoneUsageDescription": "閲覧中のWebサイトでマイクを使用するために必要です。",
+          "NSMotionUsageDescription": "動画を全画面で表示する際に、端末の傾きに合わせて画面の向きを調整します。",
+          "NSPhotoLibraryAddUsageDescription": "Webページの画像を写真ライブラリに保存するために使用します。",
+          "NSPhotoLibraryUsageDescription": "Webページから選んだ画像を写真に保存するために使用します。"
+        }
+      },
+      "tag": "v0.16.4-build.115"
+    },
+    {
+      "file": "PersonalBrowser.ipa",
       "sha256": "318d48d833d9dd745c693400796ce8605913635db2cb0fb6336080f17b0000f2",
       "bundle_id": "local.personalbrowser.app",
       "version": "0.16.3",

@@ -12,6 +12,16 @@
       "iconURL": "https://raw.githubusercontent.com/koyuuuuu/personal-browser-distribution/main/icon.png",
       "versions": [
         {
+          "version": "0.16.4",
+          "buildVersion": "115",
+          "date": "2026-11-25T02:27:41.808017+00:00",
+          "localizedDescription": "PiP中と画面ロックへの移行中は再生用の音声設定を保持し、非排他設定への復元で再生が途切れる問題を修正。全画面からPiPへ切り替えた際の後処理がPiP自体を終了させないようにしました。通常表示に戻った際は元の非排他設定を復元します。",
+          "downloadURL": "https://github.com/koyuuuuu/personal-browser-distribution/releases/download/v0.16.4-build.115/PersonalBrowser.ipa",
+          "size": 5816269,
+          "minOSVersion": "17.0",
+          "sha256": "279d91a16ef1704cb0b0b442d52ffb15ef044f6a07313e676ebe669e1b8dad8e"
+        },
+        {
           "version": "0.16.3",
           "buildVersion": "114",
           "date": "2026-11-24T18:50:29.740800+00:00",
