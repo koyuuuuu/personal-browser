@@ -1,0 +1,72 @@
+{
+  "date_utc": "2026-11-25",
+  "version": "0.16.4",
+  "build": "115",
+  "source_commit": "aa57ea8655b47333fbcb780133171efe51f5f6cc",
+  "tag": "v0.16.4-build.115",
+  "ci_run": "https://github.com/koyuuuuu/personal-browser/actions/runs/45532734603",
+  "delivery_status": "published",
+  "reported_behavior": "PiP stops after lock and leaves a PiP placeholder on return.",
+  "identified_paths": [
+    "Foreground nonexclusive ambient also applied to PiP, while ordinary BackgroundAudio intentionally excludes OS-owned PiP.",
+    "Quiet fullscreen exit/pagehide could call legacy native exit against a video already in PiP; CSS bookkeeping also needed to end independently of the continuing PiP video."
+  ],
+  "implementation": {
+    "audio": "Observe existing cross-frame BrowserTab Published PiP state; local public PiP events protect the top document immediately. Use Web playback throughout PiP and inactive/lock handoff, including temporary inline reports while hidden. Native phase is latched at willResignActive and restored on didBecomeActive; return to inline restores current saved ambient/auto. Works independently of ordinary background-audio setting. Transition category preparation does not activate/resume media.",
+    "fullscreen": "PiP transitions release only own fullscreen bookkeeping/popover wrapper. Native exit/pagehide checks actual PiP mode and never calls webkitExitFullscreen against it, including delayed event ordering. Original media identity and time retained.",
+    "preserved": "No forced play/pause/PiP exit/reload/player replacement, no extra background tasks/recovery loop. Existing recording/mute/pause/interruption/route handling and bounded non-PiP recovery unchanged."
+  },
+  "verification_policy": {
+    "preference": "Carry forward user preference to perform device testing themselves; no long native UI automation.",
+    "normal_run": "https://github.com/koyuuuuu/personal-browser/actions/runs/45532711909",
+    "normal_run_action": "cancelled",
+    "native_ui_pass_claimed": false,
+    "one_time_release": "Release device build, package inspection, publication and anonymous delivery only; remove temporary workflow after completion, keep normal ios.yml unchanged."
+  },
+  "checks": {
+    "python_tooling": 63,
+    "project_generation": "current",
+    "audio_policy": "passed in Chromium with AudioSession/PiP state mocked: both mixing inputs, active PiP, inactive/lock temporary window loss, inline restoration, cross-origin native aggregate, return while still PiP, background setting disabled/restoration, recording, pause and mute; zero play/exit calls",
+    "quiet_fullscreen": "passed: existing real Chromium top-layer sizing/media-clock/iframe/restoration checks plus native PiP mode event and delayed-event exit/pagehide protection (native APIs mocked); CSS PiP transition restores wrapper and real original video clock continues",
+    "native_release_build": "passed",
+    "ci_jobs": "build/publish/delivery-audit all success",
+    "local_ipa_inspection": "passed",
+    "anonymous_delivery_audit": "passed",
+    "local_ipa_build_info_public_feed_hash_and_size_match": true,
+    "source_tag_points_to_built_sha": true,
+    "debug_fixture_flags_in_release": false,
+    "fixture_mp4_bundled": false,
+    "strong_swift_webkit_overlay": false,
+    "previous_credential_warning_literals_in_release": false,
+    "photo_motion_faceid_audio_purposes_preserved": true,
+    "legacy_media_region_sha256": "8233d9cc7ff0b82e3aa24f9ad97543226dd5c9124dfd80ce1d73ab3de5b91edc"
+  },
+  "limits": [
+    "Actual iPhone PiP, physical lock/unlock, speaker output and supplied-site acceptance not verified here. API-state checks are not hardware proof.",
+    "PiP/lock prioritizes continuity; arbitrary other-app mixing during background/PiP remains subject to iOS/WebKit/site behavior.",
+    "No native UI or Core unit-test pass claimed for this release; the device build compiled the application and Core."
+  ],
+  "preserved": [
+    "local.personalbrowser.app, schema1, latest library/settings/vault formats",
+    "Original WebView/video identities and byte-identical build14 media region",
+    "Historical source tags and IPA assets"
+  ],
+  "source_url": "https://raw.githubusercontent.com/koyuuuuu/personal-browser-distribution/main/source.json",
+  "public_release": "https://github.com/koyuuuuu/personal-browser-distribution/releases/tag/v0.16.4-build.115",
+  "ipa": {
+    "file": "PersonalBrowser.ipa",
+    "sha256": "279d91a16ef1704cb0b0b442d52ffb15ef044f6a07313e676ebe669e1b8dad8e",
+    "bundle_id": "local.personalbrowser.app",
+    "version": "0.16.4",
+    "build": "115",
+    "minimum_ios": "17.0",
+    "target_ios": "18.4.1",
+    "architecture": "arm64",
+    "platform": "iOS device",
+    "embedded_profile": false,
+    "signature_resources": false,
+    "installation_verified": false,
+    "size": 5816269,
+    "data_schema": 1
+  }
+}
