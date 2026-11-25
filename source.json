@@ -12,6 +12,16 @@
       "iconURL": "https://raw.githubusercontent.com/koyuuuuu/personal-browser-distribution/main/icon.png",
       "versions": [
         {
+          "version": "0.16.5",
+          "buildVersion": "116",
+          "date": "2026-11-25T19:13:45.139177+00:00",
+          "localizedDescription": "PiPへの映像引き渡し中に、全画面の後処理・表示サイズ変更・追加の音声再設定が干渉する経路を修正。PiP終了後に表示を復元し、復帰時は実際の表示モードを確認して全画面の保留状態を解消します。",
+          "downloadURL": "https://github.com/koyuuuuu/personal-browser-distribution/releases/download/v0.16.5-build.116/PersonalBrowser.ipa",
+          "size": 5817496,
+          "minOSVersion": "17.0",
+          "sha256": "71bbcab142ed4353576d65ee927a3e5a35da739ac02e8ff779fecc744c2f97dc"
+        },
+        {
           "version": "0.16.4",
           "buildVersion": "115",
           "date": "2026-11-25T02:27:41.808017+00:00",

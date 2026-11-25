@@ -2,6 +2,38 @@
   "releases": [
     {
       "file": "PersonalBrowser.ipa",
+      "sha256": "71bbcab142ed4353576d65ee927a3e5a35da739ac02e8ff779fecc744c2f97dc",
+      "bundle_id": "local.personalbrowser.app",
+      "version": "0.16.5",
+      "build": "116",
+      "minimum_ios": "17.0",
+      "target_ios": "18.4.1",
+      "architecture": "arm64",
+      "platform": "iOS device",
+      "embedded_profile": false,
+      "signature_resources": false,
+      "installation_verified": false,
+      "source_commit": "dbd171e0fcec0757f9e6c3b0481faa60a5871f08",
+      "data_schema": 1,
+      "size": 5817496,
+      "date": "2026-11-25T19:13:45.139177+00:00",
+      "description": "PiPへの映像引き渡し中に、全画面の後処理・表示サイズ変更・追加の音声再設定が干渉する経路を修正。PiP終了後に表示を復元し、復帰時は実際の表示モードを確認して全画面の保留状態を解消します。",
+      "appPermissions": {
+        "entitlements": [],
+        "privacy": {
+          "NSCameraUsageDescription": "閲覧中のWebサイトでカメラを使用するために必要です。",
+          "NSFaceIDUsageDescription": "このブラウザのパスワード保管庫を安全に開くために使用します。",
+          "NSLocalNetworkUsageDescription": "自宅のネットワークにある自作アプリや動画サーバーへ接続するために使用します。",
+          "NSMicrophoneUsageDescription": "閲覧中のWebサイトでマイクを使用するために必要です。",
+          "NSMotionUsageDescription": "動画を全画面で表示する際に、端末の傾きに合わせて画面の向きを調整します。",
+          "NSPhotoLibraryAddUsageDescription": "Webページの画像を写真ライブラリに保存するために使用します。",
+          "NSPhotoLibraryUsageDescription": "Webページから選んだ画像を写真に保存するために使用します。"
+        }
+      },
+      "tag": "v0.16.5-build.116"
+    },
+    {
+      "file": "PersonalBrowser.ipa",
       "sha256": "279d91a16ef1704cb0b0b442d52ffb15ef044f6a07313e676ebe669e1b8dad8e",
       "bundle_id": "local.personalbrowser.app",
       "version": "0.16.4",
