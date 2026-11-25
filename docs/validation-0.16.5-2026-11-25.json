@@ -1,0 +1,70 @@
+{
+  "date_utc": "2026-11-25",
+  "version": "0.16.5",
+  "build": "116",
+  "source_commit": "dbd171e0fcec0757f9e6c3b0481faa60a5871f08",
+  "tag": "v0.16.5-build.116",
+  "ci_run": "https://github.com/koyuuuuu/personal-browser/actions/runs/45682269449",
+  "delivery_status": "published",
+  "user_evidence": "PiP video spins while audio continues; user then reports app restart resolved it and asks whether cache accumulation caused it.",
+  "diagnosis_boundary": "Restart rebuilds transient player/presentation state but generally retains disk cache. No evidence establishes disk-cache exhaustion or a reproduced hardware root cause. App-controlled presentation mutations during PiP handoff are concrete competing paths, addressed preventively.",
+  "implementation": {
+    "fullscreen": "Retain original DOM/style/popover/fullscreen-event state throughout PiP instead of finishing at entry. Relay hold through cross-origin ancestor iframe chain. Restore after actual inline return on next display frame; reconcile missing exit event on visibility return; preserve native-fullscreen return and reject outdated cleanup generations.",
+    "viewport": "Freeze WKWebView content bounds through PiP/inactive handoff and release only after foreground inline return on next main turn. Parent overview transforms/stroke remain unchanged.",
+    "audio_orientation": "Retain0.16.4 Web playback/lock lease. Avoid additional native audio-category writes during OS-owned PiP; automatic fullscreen-to-PiP orientation cleanup relaxes the mask without forcing immediate scene geometry back.",
+    "data": "No cache/user-data clearing, reload, forced media play/pause/PiP exit or player/source replacement. No legacy media observer flag overwrite or synthetic media-event resync."
+  },
+  "verification_policy": {
+    "preference": "Carry forward manual device-testing preference.",
+    "normal_run": "https://github.com/koyuuuuu/personal-browser/actions/runs/45682212055",
+    "normal_run_conclusion": "cancelled",
+    "native_ui_or_core_test_pass_claimed": false,
+    "release_workflow": "One-time Release device build/inspection/publish/anonymous delivery only; removed after completion; normal ios.yml unchanged."
+  },
+  "checks": {
+    "python_tooling": 63,
+    "project_generation": "current",
+    "audio_policy": "passed; saved mixing preference, PiP/lock ownership and restoration/capture/pause/mute; AudioSession and PiP are mocked, no forced play or exit",
+    "video_policy": "passed in Chromium with actual H264/AAC decoded-frame callbacks: PiP handoff preserves original DOM/style/popover and fullscreenchange count, parent iframe viewport stays expanded, frames and time advance, cleanup follows actual exit, visible inline return reconciles a missing exit event, native-fullscreen return and end-before-mode event ordering remain stable. Native/PiP APIs mocked.",
+    "native_release_build": "passed",
+    "ci_jobs": "build/publish/delivery-audit all success",
+    "local_ipa_inspection": "passed",
+    "anonymous_delivery_audit": "passed",
+    "local_ipa_build_info_public_feed_hash_and_size_match": true,
+    "source_tag_points_to_built_sha": true,
+    "debug_fixture_flags_in_release": false,
+    "fixture_mp4_bundled": false,
+    "strong_swift_webkit_overlay": false,
+    "old_credential_warning_literals_in_release": false,
+    "photo_motion_faceid_audio_purposes_preserved": true,
+    "legacy_media_region_sha256": "8233d9cc7ff0b82e3aa24f9ad97543226dd5c9124dfd80ce1d73ab3de5b91edc"
+  },
+  "limits": [
+    "The reported iPhone spinner was not reproduced here; actual native PiP video, lock/unlock, specific-site acceptance and hardware decoder/resource behavior remain unverified.",
+    "Restart recovery alone does not establish either cache accumulation or the exact cause. Local decoded-frame checks cover app DOM policy, not iOS remote presentation layers.",
+    "No universal PiP/background other-app mixing guarantee;0.16.4 continuity priority remains."
+  ],
+  "preserved": [
+    "local.personalbrowser.app, schema1, latest library/settings/vault data formats",
+    "Original WebView/video identities and unchanged build14 media script/update handler",
+    "Historical release tags and IPA assets"
+  ],
+  "source_url": "https://raw.githubusercontent.com/koyuuuuu/personal-browser-distribution/main/source.json",
+  "public_release": "https://github.com/koyuuuuu/personal-browser-distribution/releases/tag/v0.16.5-build.116",
+  "ipa": {
+    "file": "PersonalBrowser.ipa",
+    "sha256": "71bbcab142ed4353576d65ee927a3e5a35da739ac02e8ff779fecc744c2f97dc",
+    "bundle_id": "local.personalbrowser.app",
+    "version": "0.16.5",
+    "build": "116",
+    "minimum_ios": "17.0",
+    "target_ios": "18.4.1",
+    "architecture": "arm64",
+    "platform": "iOS device",
+    "embedded_profile": false,
+    "signature_resources": false,
+    "installation_verified": false,
+    "size": 5817496,
+    "data_schema": 1
+  }
+}
