@@ -164,7 +164,7 @@ final class BrowserTab: NSObject, ObservableObject, Identifiable, WKNavigationDe
         quietFullscreen = QuietFullscreenController(tab: self, view: view)
         configuration.userContentController.add(PageEditObserver(tab: self), contentWorld: .defaultClient, name: "browserPageEdited")
         configuration.userContentController.addUserScript(WKUserScript(source: PageEditObserver.source, injectionTime: .atDocumentStart, forMainFrameOnly: false, in: .defaultClient))
-        AudioMixingController.shared.attach(view) { [weak self] value in
+        AudioMixingController.shared.attach(view, pictureInPicture: $isPictureInPicture) { [weak self] value in
             if self?.hasMixingPlayback != value { self?.hasMixingPlayback = value }
         }
         AudioSourcesController.shared.attach(view, tabID: id)

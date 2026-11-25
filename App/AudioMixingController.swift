@@ -20,6 +20,8 @@ final class AudioMixingController: ObservableObject {
     private var timer: Timer?
     private var entries: [ObjectIdentifier: Entry] = [:]
     private var activeObservation: AnyCancellable?
+    private var inactiveObservation: AnyCancellable?
+    private var foreground = UIApplication.shared.applicationState == .active
     #if DEBUG
     @Published private(set) var fixtureStatus = "Audio policy waiting"
     private var fixtureReturns = 0
@@ -34,6 +36,9 @@ final class AudioMixingController: ObservableObject {
         let playback: (Bool) -> Void
         var hasPlayedAudibly = false
         var webAudioActive = false
+        var pictureInPicture = false
+        var pipPlaybackOwned = false
+        var pipObservation: AnyCancellable?
         init(_ view: WKWebView, playback: @escaping (Bool) -> Void) { self.view = view; self.playback = playback }
     }
 
@@ -43,6 +48,8 @@ final class AudioMixingController: ObservableObject {
         nonExclusiveWebAudio = defaults.object(forKey: Self.webKey) as? Bool ?? true
         activeObservation = NotificationCenter.default.publisher(for: UIApplication.didBecomeActiveNotification)
             .sink { [weak self] _ in self?.returned() }
+        inactiveObservation = NotificationCenter.default.publisher(for: UIApplication.willResignActiveNotification)
+            .sink { [weak self] _ in self?.leaving() }
     }
 
     func setEnabled(_ value: Bool) {
@@ -56,11 +63,21 @@ final class AudioMixingController: ObservableObject {
         updateViews()
     }
 
-    func attach(_ view: WKWebView, playback: @escaping (Bool) -> Void) {
-        entries[ObjectIdentifier(view)] = Entry(view, playback: playback)
+    func attach(_ view: WKWebView, pictureInPicture: Published<Bool>.Publisher, playback: @escaping (Bool) -> Void) {
+        let entry = Entry(view, playback: playback)
+        entries[ObjectIdentifier(view)] = entry
         let controller = view.configuration.userContentController
         controller.add(MixingMessageHandler(owner: self, view: view), contentWorld: .defaultClient, name: "browserAudioMixing")
         controller.addUserScript(configuredScript())
+        // The existing media observer aggregates PiP across all frames. Keep
+        // that observation separate from the immutable build14 media code.
+        entry.pipObservation = pictureInPicture.removeDuplicates().sink { [weak self, weak view] active in
+            guard let self, let view, let entry = self.entries[ObjectIdentifier(view)] else { return }
+            entry.pictureInPicture = active
+            if active { entry.pipPlaybackOwned = true; self.prepare(activate: false) }
+            else if self.foreground { entry.pipPlaybackOwned = false }
+            self.applyWebPolicy(view)
+        }
         if enabled { startTimer(); sample(view) }
     }
     func detach(_ view: WKWebView) {
@@ -90,10 +107,25 @@ final class AudioMixingController: ObservableObject {
         }
     }
     fileprivate func applyWebPolicy(_ view: WKWebView) {
-        guard entries[ObjectIdentifier(view)] != nil else { return }
-        applyAudioMixingPolicy(view, enabled: enabled && nonExclusiveWebAudio)
+        guard let entry = entries[ObjectIdentifier(view)] else { return }
+        applyAudioMixingPolicy(view, enabled: enabled && nonExclusiveWebAudio,
+            pictureInPicture: entry.pictureInPicture || entry.pipPlaybackOwned, foreground: foreground)
+    }
+    private func leaving() {
+        foreground = false
+        for entry in entries.values {
+            guard let view = entry.view else { continue }
+            if entry.pictureInPicture || entry.pipPlaybackOwned {
+                entry.pipPlaybackOwned = true
+                prepare(activate: false)
+            }
+            // Latch the phase before document.hidden / a PiP window closing
+            // for lock. No player is paused, resumed, exited or recreated.
+            applyWebPolicy(view)
+        }
     }
     private func returned() {
+        foreground = true
         // Control Center makes the app inactive without navigating. Reassert
         // playback on return, without resuming or activating stopped media.
         guard !entries.isEmpty else { return }
@@ -106,7 +138,8 @@ final class AudioMixingController: ObservableObject {
                 guard let self, let entry, let view = entry.view,
                       self.entries[ObjectIdentifier(view)] === entry,
                       UIApplication.shared.applicationState == .active else { return }
-                if state == .playing { self.prepare(activate: false) }
+                entry.pipPlaybackOwned = entry.pictureInPicture
+                if state == .playing || entry.pictureInPicture { self.prepare(activate: false) }
                 self.applyWebPolicy(view)
             }
         }
@@ -182,9 +215,15 @@ final class AudioMixingController: ObservableObject {
         (() => {
           if (globalThis.__personalBrowserSetAudioMixing) return;
           const send = value => { try { webkit.messageHandlers.browserAudioMixing.postMessage(value); } catch (_) {} };
-          let mixing = __MIXING__;
-          const apply = value => {
+          let mixing = __MIXING__, externalPiP = false, pipPlaybackOwned = false, foreground = !document.hidden;
+          const localPiP = () => !!document.pictureInPictureElement || [...document.querySelectorAll('video')].some(v=>v.webkitPresentationMode === 'picture-in-picture');
+          const apply = (value, pictureInPicture, visible) => {
             if (typeof value === 'boolean') mixing = value;
+            if (typeof pictureInPicture === 'boolean') externalPiP = pictureInPicture;
+            if (typeof visible === 'boolean') foreground = visible;
+            const pip = externalPiP || localPiP();
+            if (pip) pipPlaybackOwned = true;
+            else if (foreground) pipPlaybackOwned = false;
             // auto lets real Web media select exclusive playback, independently
             // of the UI process's AVAudioSession. Ambient is the public WebKit
             // mixable category. Native playback alone cannot impose it on WebKit.
@@ -193,7 +232,9 @@ final class AudioMixingController: ObservableObject {
             try {
               const session = navigator.audioSession;
               if (session.type === 'play-and-record') return;
-              const desired = mixing ? 'ambient' : 'auto';
+              // Ambient cannot carry PiP audio through lock. Keep playback
+              // even if iOS temporarily hides the PiP window while inactive.
+              const desired = pipPlaybackOwned ? 'playback' : mixing ? 'ambient' : 'auto';
               if (session.type !== desired) session.type = desired;
               send({type:session.type});
             } catch (_) { /* Permissions Policy / API support is site-dependent. */ }
@@ -201,7 +242,12 @@ final class AudioMixingController: ObservableObject {
           globalThis.__personalBrowserSetAudioMixing = apply;
           const ready = () => { apply(); if (window === window.top) send('ready'); };
           ready(); window.addEventListener('pageshow', ready);
-          document.addEventListener('visibilitychange', () => { if (!document.hidden) ready(); });
+          document.addEventListener('visibilitychange', () => {
+            if (document.hidden) { foreground = false; apply(); }
+            else ready(); // Native didBecomeActive supplies the foreground phase.
+          });
+          for (const event of ['webkitpresentationmodechanged','enterpictureinpicture','leavepictureinpicture'])
+            document.addEventListener(event, () => apply(), true);
           document.addEventListener('play', event => {
             apply();
             const player = event.target;

@@ -67,14 +67,11 @@ void PBApplyAppPromotionPolicy(WKWebView *view, BOOL enabled)
     [view evaluateJavaScript:script inFrame:nil inContentWorld:WKContentWorld.defaultClientWorld completionHandler:nil];
 }
 
-void PBApplyAudioMixingPolicy(WKWebView *view, BOOL enabled)
+void PBApplyAudioMixingPolicy(WKWebView *view, BOOL enabled, BOOL pictureInPicture, BOOL foreground)
 {
-    NSString *script = enabled ? @"globalThis.__personalBrowserSetAudioMixing?.(true)"
-                               : @"globalThis.__personalBrowserSetAudioMixing?.(false)";
-    [view evaluateJavaScript:script
-                    inFrame:nil
-             inContentWorld:WKContentWorld.defaultClientWorld
-          completionHandler:nil];
+    [view callAsyncJavaScript:@"globalThis.__personalBrowserSetAudioMixing?.(enabled, pictureInPicture, foreground);"
+                   arguments:@{@"enabled": @(enabled), @"pictureInPicture": @(pictureInPicture), @"foreground": @(foreground)}
+                     inFrame:nil inContentWorld:WKContentWorld.defaultClientWorld completionHandler:nil];
 }
 
 void PBRunAudioMixerCommand(WKWebView *view, WKFrameInfo *frame, NSString *json)

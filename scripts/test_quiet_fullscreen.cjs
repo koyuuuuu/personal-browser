@@ -42,6 +42,26 @@ const script=fs.readFileSync('App/QuietFullscreenController.swift','utf8').split
     assert.deepEqual(await page.evaluate(()=>events),['video-enter']);
     await page.evaluate(()=>document.exitFullscreen());
     assert.deepEqual(await page.evaluate(()=>({events,full:document.fullscreenElement,native:nativeElementCalls,same:original===document.querySelector('video')})),{events:['video-enter','video-exit'],full:null,native:0,same:true});
+    await page.reload();
+    await page.click('#go');await page.waitForFunction(()=>document.fullscreenElement===stage);
+    await page.evaluate(()=>{
+      original.webkitPresentationMode='picture-in-picture';
+      original.dispatchEvent(new Event('webkitpresentationmodechanged'));
+      dispatchEvent(new Event('pagehide'));
+    });
+    await page.evaluate(()=>document.exitFullscreen());
+    assert.deepEqual(await page.evaluate(()=>({events,mode:original.webkitPresentationMode,full:document.fullscreenElement,same:original===document.querySelector('video')})),{events:['video-enter'],mode:'picture-in-picture',full:null,same:true},'PiP transition/pagehide cleans bookkeeping without calling native video exit');
+    await page.reload();await page.click('#go');
+    await page.waitForFunction(()=>document.fullscreenElement===stage);
+    await page.evaluate(()=>{original.webkitPresentationMode='picture-in-picture';});
+    await page.evaluate(()=>document.exitFullscreen());
+    assert.deepEqual(await page.evaluate(()=>events),['video-enter'],'PiP getter also protects exit when mode notification is delayed');
+    await page.goto('https://main.test/css');await page.click('#go');
+    await page.waitForFunction(()=>original.currentTime>0.5 && document.fullscreenElement===stage);
+    const beforePiP=await page.evaluate(()=>original.currentTime);
+    await page.evaluate(()=>{original.webkitPresentationMode='picture-in-picture';original.dispatchEvent(new Event('webkitpresentationmodechanged'));});
+    assert.deepEqual(await page.evaluate(()=>[document.fullscreenElement,stage.hasAttribute('popover'),original===document.querySelector('video'),events.length]),[null,false,true,0],'CSS fullscreen also releases only its wrapper when PiP begins');
+    await page.waitForFunction(t=>original.currentTime>t+0.3,beforePiP);
     await page.goto('https://main.test/embed');
     const child=page.frameLocator('iframe');
     await child.locator('#go').click();

@@ -1,10 +1,10 @@
 {
-  "version": "0.16.3",
+  "version": "0.16.4",
   "bundle_id": "local.personalbrowser.app",
   "data_schema": 1,
   "public_repository": "koyuuuuu/personal-browser-distribution",
   "name": "Personal Browser",
   "developer_name": "Personal Browser",
   "description": "自分専用のブラウザ。タブ、履歴、ブックマーク、プライベート閲覧、UIカスタマイズに対応。",
-  "release_notes": "非排他モードの指定がWeb側に反映されず他アプリとの同時再生が止まる問題を修正。動画の全画面は標準動画プレーヤーへ、その他は元の要素をアプリ内で拡大する経路へ切り替え、WebKitの全画面通知を回避します。パスワード入力時の保管庫に関する警告表示を廃止しました。非排他モードはWebKitの仕様により消音スイッチに従う場合があります。"
+  "release_notes": "PiP中と画面ロックへの移行中は再生用の音声設定を保持し、非排他設定への復元で再生が途切れる問題を修正。全画面からPiPへ切り替えた際の後処理がPiP自体を終了させないようにしました。通常表示に戻った際は元の非排他設定を復元します。"
 }

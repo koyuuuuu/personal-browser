@@ -67,11 +67,17 @@ final class QuietFullscreenController: NSObject, WKScriptMessageHandler {
         document.dispatchEvent(new Event('webkitfullscreenchange'));
       };
       const restore = (element, name, value) => value === null ? element.removeAttribute(name) : element.setAttribute(name,value);
+      const inPiP = video => video && (video.webkitPresentationMode === 'picture-in-picture' || document.pictureInPictureElement === video);
       function finish() {
         const s = state; if (!s) return;
         state = null; clearTimeout(s.timer); s.observer?.disconnect();
         s.video?.removeEventListener('webkitbeginfullscreen',s.began);
         s.video?.removeEventListener('webkitendfullscreen',s.ended);
+        if(s.modeChanged) {
+          const owner=s.native?s.video:document;
+          owner.removeEventListener('webkitpresentationmodechanged',s.modeChanged,!s.native);
+          owner.removeEventListener('enterpictureinpicture',s.modeChanged,!s.native);
+        }
         if(s.toggled)s.element.removeEventListener('toggle',s.toggled);
         if (!s.native) {
           try { if (!s.wasOpen && s.element.matches(':popover-open')) s.element.hidePopover(); } catch (_) {}
@@ -87,6 +93,9 @@ final class QuietFullscreenController: NSObject, WKScriptMessageHandler {
       }
       function exit() {
         const s = state; if (!s) return Promise.resolve();
+        // PiP is owned by WebKit/iOS. Ending our fullscreen bookkeeping must
+        // not issue a legacy exit command against that same native player.
+        if (s.native && inPiP(s.video)) { finish(); return Promise.resolve(); }
         if (s.child) s.child.postMessage({kind:'personal-browser-fullscreen-exit'},'*');
         if (!s.native) { finish(); return Promise.resolve(); }
         if(s.exitPromise)return s.exitPromise;
@@ -121,8 +130,11 @@ final class QuietFullscreenController: NSObject, WKScriptMessageHandler {
           s.reject=reject;
           s.began=()=>{ if(state!==s || s.entered)return; s.entered=true;element.setAttribute(key,'active');clearTimeout(s.timer);notify();resolve(); };
           s.ended=()=>{ if(state===s)finish(); };
+          s.modeChanged=()=>{if(state===s && inPiP(video))finish();};
           video.addEventListener('webkitbeginfullscreen',s.began);
           video.addEventListener('webkitendfullscreen',s.ended);
+          video.addEventListener('webkitpresentationmodechanged',s.modeChanged);
+          video.addEventListener('enterpictureinpicture',s.modeChanged);
           s.timer=setTimeout(()=>{ if(state===s && !s.entered)finish(); },10000);
           try { video.webkitEnterFullscreen(); } catch(error) { finish(); reject(error); }
         });
@@ -146,6 +158,12 @@ final class QuietFullscreenController: NSObject, WKScriptMessageHandler {
           element.addEventListener('toggle',s.toggled);
           s.observer=new MutationObserver(()=>{ if(state===s && !element.isConnected)finish(); });
           s.observer.observe(document,{childList:true,subtree:true});
+          s.modeChanged=event=>{
+            if(state===s && ((element.contains(event.target) && inPiP(event.target)) ||
+              (document.pictureInPictureElement && element.contains(document.pictureInPictureElement))))finish();
+          };
+          document.addEventListener('webkitpresentationmodechanged',s.modeChanged,true);
+          document.addEventListener('enterpictureinpicture',s.modeChanged,true);
           s.entered=true;send({ready:true});send({active:true});relay(true);notify();
           return Promise.resolve();
         } catch(error) { finish(); return Promise.reject(error); }

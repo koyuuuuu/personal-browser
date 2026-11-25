@@ -24,8 +24,8 @@ void PBSetPasswordAppleHints(WKWebView *view, WKFrameInfo * _Nullable frame, BOO
 void PBApplyAppPromotionPolicy(WKWebView *view, BOOL enabled)
     NS_SWIFT_NAME(applyAppPromotionPolicy(_:enabled:));
 /// Calls the documented Objective-C API without the optional Swift overlay.
-void PBApplyAudioMixingPolicy(WKWebView *view, BOOL enabled)
-    NS_SWIFT_NAME(applyAudioMixingPolicy(_:enabled:));
+void PBApplyAudioMixingPolicy(WKWebView *view, BOOL enabled, BOOL pictureInPicture, BOOL foreground)
+    NS_SWIFT_NAME(applyAudioMixingPolicy(_:enabled:pictureInPicture:foreground:));
 /// JSON is produced by JSONSerialization, never interpolated from page text.
 void PBRunAudioMixerCommand(WKWebView *view, WKFrameInfo *frame, NSString *json)
     NS_SWIFT_NAME(runAudioMixerCommand(_:frame:json:));
