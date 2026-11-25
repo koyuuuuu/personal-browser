@@ -13,13 +13,13 @@ const script=fs.readFileSync('App/QuietFullscreenController.swift','utf8').split
       Element.prototype.requestFullscreen=function(){nativeElementCalls++;throw Error('Native Element Fullscreen must never be used');};
       window.webkit={messageHandlers:{browserQuietFullscreen:{postMessage:value=>messages.push(value)}}};
       Object.defineProperty(HTMLVideoElement.prototype,'webkitSupportsFullscreen',{get(){return location.pathname==='/native';}});
-      HTMLVideoElement.prototype.webkitEnterFullscreen=function(){events.push('video-enter');this.dispatchEvent(new Event('webkitbeginfullscreen'));};
-      HTMLVideoElement.prototype.webkitExitFullscreen=function(){events.push('video-exit');this.dispatchEvent(new Event('webkitendfullscreen'));};
+      HTMLVideoElement.prototype.webkitEnterFullscreen=function(){events.push('video-enter');this.webkitPresentationMode='fullscreen';this.dispatchEvent(new Event('webkitbeginfullscreen'));};
+      HTMLVideoElement.prototype.webkitExitFullscreen=function(){events.push('video-exit');this.webkitPresentationMode='inline';this.dispatchEvent(new Event('webkitendfullscreen'));};
     });
     await context.addInitScript(script);
     const html=`<!doctype html><meta name="viewport" content="width=device-width,initial-scale=1"><style>#stage{width:200px;height:150px}#stage:fullscreen{color:rgb(1, 2, 3)}video{width:100px;height:60px}</style>
       <button id="go">Enter</button><button id="exit">Exit</button><div id="stage" style="width:200px"><video src="/video.mp4" loop playsinline></video><button id="inside">Exit inside</button></div>
-      <script>const original=document.querySelector('video');window.original=original;window.stage=document.querySelector('#stage');window.count=0;document.addEventListener('fullscreenchange',()=>count++);go.onclick=()=>{original.play();stage.requestFullscreen().catch(e=>window.error=e.name);};exit.onclick=inside.onclick=()=>document.exitFullscreen();</script>`;
+      <script>const original=document.querySelector('video');window.original=original;window.stage=document.querySelector('#stage');window.count=0;window.videoFrames=0;if(original.requestVideoFrameCallback)original.requestVideoFrameCallback(function tick(){videoFrames++;original.requestVideoFrameCallback(tick);});document.addEventListener('fullscreenchange',()=>count++);go.onclick=()=>{original.play();stage.requestFullscreen().catch(e=>window.error=e.name);};exit.onclick=inside.onclick=()=>document.exitFullscreen();</script>`;
     await context.route('https://main.test/**',async route=>{
       if(route.request().url().endsWith('/video.mp4')) return route.fulfill({contentType:'video/mp4',body:fs.readFileSync('UITests/Fixtures/background-audio.mp4')});
       return route.fulfill({contentType:'text/html',body:route.request().url().endsWith('/embed')?'<iframe src="https://child.test/css" allow="fullscreen" style="width:250px;height:400px"></iframe>':html});
@@ -45,31 +45,53 @@ const script=fs.readFileSync('App/QuietFullscreenController.swift','utf8').split
     await page.reload();
     await page.click('#go');await page.waitForFunction(()=>document.fullscreenElement===stage);
     await page.evaluate(()=>{
+      original.dispatchEvent(new Event('webkitendfullscreen'));
       original.webkitPresentationMode='picture-in-picture';
       original.dispatchEvent(new Event('webkitpresentationmodechanged'));
       dispatchEvent(new Event('pagehide'));
     });
     await page.evaluate(()=>document.exitFullscreen());
-    assert.deepEqual(await page.evaluate(()=>({events,mode:original.webkitPresentationMode,full:document.fullscreenElement,same:original===document.querySelector('video')})),{events:['video-enter'],mode:'picture-in-picture',full:null,same:true},'PiP transition/pagehide cleans bookkeeping without calling native video exit');
+    assert.deepEqual(await page.evaluate(()=>({events,mode:original.webkitPresentationMode,full:document.fullscreenElement===stage,count,same:original===document.querySelector('video')})),{events:['video-enter'],mode:'picture-in-picture',full:true,count:1,same:true},'PiP must not emit fullscreen-exit/rebuild or alter the source presentation');
+    await page.evaluate(()=>{original.webkitPresentationMode='inline';document.dispatchEvent(new Event('visibilitychange'));});
+    await page.waitForFunction(()=>document.fullscreenElement===null && count===2);
     await page.reload();await page.click('#go');
     await page.waitForFunction(()=>document.fullscreenElement===stage);
     await page.evaluate(()=>{original.webkitPresentationMode='picture-in-picture';});
     await page.evaluate(()=>document.exitFullscreen());
     assert.deepEqual(await page.evaluate(()=>events),['video-enter'],'PiP getter also protects exit when mode notification is delayed');
+    await page.evaluate(()=>{original.webkitPresentationMode='fullscreen';original.dispatchEvent(new Event('webkitpresentationmodechanged'));});
+    assert.equal(await page.evaluate(()=>document.fullscreenElement===stage && count===1),true,'Return from PiP to native fullscreen keeps the existing presentation');
+    await page.evaluate(()=>document.exitFullscreen());
+    await page.waitForFunction(()=>document.fullscreenElement===null && count===2);
     await page.goto('https://main.test/css');await page.click('#go');
     await page.waitForFunction(()=>original.currentTime>0.5 && document.fullscreenElement===stage);
-    const beforePiP=await page.evaluate(()=>original.currentTime);
+    const beforePiP=await page.evaluate(()=>({time:original.currentTime,frames:videoFrames,style:stage.getAttribute('style')}));
     await page.evaluate(()=>{original.webkitPresentationMode='picture-in-picture';original.dispatchEvent(new Event('webkitpresentationmodechanged'));});
-    assert.deepEqual(await page.evaluate(()=>[document.fullscreenElement,stage.hasAttribute('popover'),original===document.querySelector('video'),events.length]),[null,false,true,0],'CSS fullscreen also releases only its wrapper when PiP begins');
-    await page.waitForFunction(t=>original.currentTime>t+0.3,beforePiP);
+    assert.deepEqual(await page.evaluate(()=>[document.fullscreenElement===stage,stage.hasAttribute('popover'),original===document.querySelector('video'),events.length,count]),[true,true,true,0,1],'CSS/DOM viewport and fullscreen events must remain unchanged throughout PiP');
+    await page.waitForFunction(before=>original.currentTime>before.time+0.3 && videoFrames>before.frames+2,beforePiP);
+    assert.equal(await page.evaluate(()=>stage.getAttribute('style')),beforePiP.style);
+    await page.evaluate(()=>{original.webkitPresentationMode='inline';original.dispatchEvent(new Event('leavepictureinpicture'));});
+    await page.waitForFunction(()=>document.fullscreenElement===null && count===2);
+    assert.equal(await page.evaluate(()=>stage.hasAttribute('popover')),false);
+    await page.evaluate(()=>original.pause());
+    assert.equal(await page.evaluate(()=>original.paused),true,'PiP cleanup must never resume a paused player');
     await page.goto('https://main.test/embed');
     const child=page.frameLocator('iframe');
     await child.locator('#go').click();
     await page.waitForFunction(()=>document.fullscreenElement===document.querySelector('iframe'));
     assert.deepEqual(await page.evaluate(()=>[document.querySelector('iframe').getBoundingClientRect().width,document.querySelector('iframe').getBoundingClientRect().height,nativeElementCalls]),[420,840,0]);
-    await child.locator('#inside').click();
+    await child.locator('#stage').evaluate(e=>{
+      const v=e.querySelector('video');v.webkitPresentationMode='picture-in-picture';v.dispatchEvent(new Event('webkitpresentationmodechanged'));
+    });
+    await page.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));
+    await page.evaluate(()=>document.exitFullscreen());
+    assert.equal(await page.evaluate(()=>document.fullscreenElement===document.querySelector('iframe')),true,'Parent iframe must keep its viewport during child PiP');
+    assert.equal(await child.locator('#stage').evaluate(e=>e.matches(':popover-open')),true);
+    await child.locator('#stage').evaluate(e=>{
+      const v=e.querySelector('video');v.webkitPresentationMode='inline';v.dispatchEvent(new Event('leavepictureinpicture'));
+    });
     await page.waitForFunction(()=>document.fullscreenElement===null);
     assert.equal(await child.locator('#stage').evaluate(e=>e.hasAttribute('popover')),false);
-    console.log('Quiet fullscreen passed: original media/time retained, real top-layer sizing/style restoration, repeated entry/exit, cross-origin iframe chain, native-video routing; zero Element Fullscreen calls.');
+    console.log('Quiet fullscreen passed: decoded video frames continue; PiP preserves DOM/styles/fullscreen events and parent iframe viewport, cleanup deferred until exit; foreground reconciles deferred fullscreen state without reloading. Native PiP is mocked.');
   } finally {await browser.close();}
 })().catch(e=>{console.error(e);process.exitCode=1;});

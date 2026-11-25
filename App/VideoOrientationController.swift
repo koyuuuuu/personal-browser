@@ -157,7 +157,7 @@ final class VideoOrientationController: ObservableObject {
         #if DEBUG
         fixtureFull = "none"
         #endif
-        if original != nil { restore() }
+        if original != nil { restore(requestGeometry: !all.contains(where: { $0.2["pip"] as? Bool == true })) }
         trace("inline")
         guard tilt != .portrait, !attempted else { return }
         // Embedded players must already be playing. IntersectionObserver in
@@ -236,13 +236,13 @@ final class VideoOrientationController: ObservableObject {
             if let root = window.rootViewController { update(root) }
         }
     }
-    private func restore() {
+    private func restore(requestGeometry: Bool = true) {
         orientationGeneration += 1
         geometryPending = false; requestPolicy.reset()
         mask = .allButUpsideDown
         if let scene = orientedScene {
             updateControllers(scene)
-            if foreground, let original {
+            if foreground, requestGeometry, let original {
                 let target: UIInterfaceOrientationMask = original == .landscapeLeft ? .landscapeLeft : original == .landscapeRight ? .landscapeRight : .portrait
                 scene.requestGeometryUpdate(.iOS(interfaceOrientations: target)) { _ in }
             }

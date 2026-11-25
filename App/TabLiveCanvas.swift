@@ -1,5 +1,6 @@
 import UIKit
 import WebKit
+import Combine
 
 /// The document viewport stays fixed during a transition. Only its clipping
 /// container moves/scales; retained WebViews never leave their window.
@@ -10,6 +11,7 @@ final class WebSurfaceView: UIView {
     private var items: [UUID: LiveTabCanvasItem] = [:]
     private let outline = TabSelectionOutlineView()
     private var animating = false
+    private var foregroundObservation: AnyCancellable?
     #if DEBUG
     private var motionProbe: OverviewMotionProbe?
     #endif
@@ -20,6 +22,8 @@ final class WebSurfaceView: UIView {
         chromeRecovery.install(on: self)
         outline.isUserInteractionEnabled = false; outline.accessibilityElementsHidden = true
         outline.alpha = 0; addSubview(outline)
+        foregroundObservation = NotificationCenter.default.publisher(for: UIApplication.didBecomeActiveNotification)
+            .sink { [weak self] _ in self?.setNeedsLayout() }
     }
     required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }
 
@@ -38,6 +42,7 @@ final class WebSurfaceView: UIView {
                 let item = LiveTabCanvasItem(content: webView, homeSnapshot: false)
                 items[tab.id] = item; addSubview(item); item.setViewport(bounds.size)
             }
+            items[tab.id]?.updatePictureInPicture(tab.isPictureInPicture)
             let interactive = !store.overviewPresented && tab.id == store.selectedID && tab.hasContent
             let hidden = store.overviewPresented || tab.id != store.selectedID
             if webView.isUserInteractionEnabled != interactive { webView.isUserInteractionEnabled = interactive }
@@ -71,6 +76,7 @@ final class WebSurfaceView: UIView {
         guard let store else { return }
         for (id, item) in items {
             if item.homeSnapshot { item.removeFromSuperview(); items.removeValue(forKey: id); continue }
+            item.updatePictureInPicture(store.tabs.first(where: { $0.id == id })?.isPictureInPicture == true)
             let selected = id == store.selectedID && store.selectedTab?.hasContent == true
             let capturing = store.tabs.first(where: { $0.id == id })?.isCapturingPreview == true
             if selected || capturing {
@@ -214,6 +220,9 @@ private final class LiveTabCanvasItem: UIView {
     private var viewport = CGSize.zero
     private var restoreViewport = false
     private var fullscreenObservation: NSKeyValueObservation?
+    private var reportedPiP = false
+    private var protectsPiPViewport = false
+    private var pipReleaseScheduled = false
     private let cropLayer = CAShapeLayer()
     private(set) var isFullyMasked = false
     init(content: UIView, homeSnapshot: Bool) {
@@ -234,7 +243,22 @@ private final class LiveTabCanvasItem: UIView {
         }
     }
     required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }
+    func updatePictureInPicture(_ active: Bool) {
+        reportedPiP = active
+        if active { protectsPiPViewport = true }
+        else if protectsPiPViewport, !pipReleaseScheduled, UIApplication.shared.applicationState == .active {
+            pipReleaseScheduled = true
+            DispatchQueue.main.async { [weak self] in
+                guard let self else { return }
+                self.pipReleaseScheduled = false
+                guard !self.reportedPiP, UIApplication.shared.applicationState == .active else { return }
+                self.protectsPiPViewport = false
+                self.superview?.setNeedsLayout()
+            }
+        }
+    }
     func setViewport(_ size: CGSize) {
+        guard !protectsPiPViewport else { return }
         guard size.width > 0, size.height > 0 else { return }
         guard ownsLayout else { restoreViewport = true; return }
         guard viewport != size || restoreViewport else { return }

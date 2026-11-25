@@ -74,7 +74,7 @@ final class AudioMixingController: ObservableObject {
         entry.pipObservation = pictureInPicture.removeDuplicates().sink { [weak self, weak view] active in
             guard let self, let view, let entry = self.entries[ObjectIdentifier(view)] else { return }
             entry.pictureInPicture = active
-            if active { entry.pipPlaybackOwned = true; self.prepare(activate: false) }
+            if active { entry.pipPlaybackOwned = true }
             else if self.foreground { entry.pipPlaybackOwned = false }
             self.applyWebPolicy(view)
         }
@@ -101,7 +101,7 @@ final class AudioMixingController: ObservableObject {
             view.requestMediaPlaybackState { [weak self, weak entry] state in
                 guard let self, let entry, let view = entry.view,
                       self.entries[ObjectIdentifier(view)] === entry else { return }
-                if state == .playing { self.prepare(activate: false) }
+                if state == .playing && !entry.pictureInPicture && !entry.pipPlaybackOwned { self.prepare(activate: false) }
             }
             if enabled { sample(view) } else { entry.playback(false) }
         }
@@ -117,7 +117,6 @@ final class AudioMixingController: ObservableObject {
             guard let view = entry.view else { continue }
             if entry.pictureInPicture || entry.pipPlaybackOwned {
                 entry.pipPlaybackOwned = true
-                prepare(activate: false)
             }
             // Latch the phase before document.hidden / a PiP window closing
             // for lock. No player is paused, resumed, exited or recreated.
@@ -139,16 +138,16 @@ final class AudioMixingController: ObservableObject {
                       self.entries[ObjectIdentifier(view)] === entry,
                       UIApplication.shared.applicationState == .active else { return }
                 entry.pipPlaybackOwned = entry.pictureInPicture
-                if state == .playing || entry.pictureInPicture { self.prepare(activate: false) }
+                if state == .playing && !entry.pictureInPicture { self.prepare(activate: false) }
                 self.applyWebPolicy(view)
             }
         }
     }
     fileprivate func mediaEvent(_ view: WKWebView, audible: Bool) {
-        guard entries[ObjectIdentifier(view)] != nil else { return }
+        guard let entry = entries[ObjectIdentifier(view)] else { return }
         if audible {
             entries[ObjectIdentifier(view)]?.hasPlayedAudibly = true
-            prepare(activate: true)
+            if !entry.pictureInPicture && !entry.pipPlaybackOwned { prepare(activate: true) }
         }
         // Frame play events request the top page's policy via the native
         // bridge; a child must not undo the page's owned background override.
@@ -161,7 +160,7 @@ final class AudioMixingController: ObservableObject {
             entry.webAudioActive = active
             // Web Audio has no HTMLMediaElement play event. Configure only
             // once it is actually active, never while opening an idle page.
-            if active, UIApplication.shared.applicationState == .active { prepare(activate: false) }
+            if active, type != "playback", !entry.pictureInPicture, !entry.pipPlaybackOwned, UIApplication.shared.applicationState == .active { prepare(activate: false) }
         }
         #if DEBUG
         if Self.fixture, entries.values.contains(where: { $0.hasPlayedAudibly }) {
