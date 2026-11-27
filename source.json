@@ -12,6 +12,16 @@
       "iconURL": "https://raw.githubusercontent.com/koyuuuuu/personal-browser-distribution/main/icon.png",
       "versions": [
         {
+          "version": "0.16.6",
+          "buildVersion": "117",
+          "date": "2026-11-27T13:44:52.065031+00:00",
+          "localizedDescription": "全画面開始の標準注意書きが残る経路を修正。通知を出すWebKitのElement Fullscreenを設定でも無効にし、動画全画面／アプリ内全画面に統一。全画面ボタン・終了操作・iframeの権限確認とPiP中の表示保持を維持します。",
+          "downloadURL": "https://github.com/koyuuuuu/personal-browser-distribution/releases/download/v0.16.6-build.117/PersonalBrowser.ipa",
+          "size": 5819063,
+          "minOSVersion": "17.0",
+          "sha256": "ff916ec329395a1847c5437c38b5a9d00d7e450fb5d5d742a8ab7b0e375ad4c3"
+        },
+        {
           "version": "0.16.5",
           "buildVersion": "116",
           "date": "2026-11-25T19:13:45.139177+00:00",

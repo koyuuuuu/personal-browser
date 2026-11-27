@@ -2,6 +2,38 @@
   "releases": [
     {
       "file": "PersonalBrowser.ipa",
+      "sha256": "ff916ec329395a1847c5437c38b5a9d00d7e450fb5d5d742a8ab7b0e375ad4c3",
+      "bundle_id": "local.personalbrowser.app",
+      "version": "0.16.6",
+      "build": "117",
+      "minimum_ios": "17.0",
+      "target_ios": "18.4.1",
+      "architecture": "arm64",
+      "platform": "iOS device",
+      "embedded_profile": false,
+      "signature_resources": false,
+      "installation_verified": false,
+      "source_commit": "8e3fb580bb9c263f95c35a54fc1e5c13ea9af38b",
+      "data_schema": 1,
+      "size": 5819063,
+      "date": "2026-11-27T13:44:52.065031+00:00",
+      "description": "全画面開始の標準注意書きが残る経路を修正。通知を出すWebKitのElement Fullscreenを設定でも無効にし、動画全画面／アプリ内全画面に統一。全画面ボタン・終了操作・iframeの権限確認とPiP中の表示保持を維持します。",
+      "appPermissions": {
+        "entitlements": [],
+        "privacy": {
+          "NSCameraUsageDescription": "閲覧中のWebサイトでカメラを使用するために必要です。",
+          "NSFaceIDUsageDescription": "このブラウザのパスワード保管庫を安全に開くために使用します。",
+          "NSLocalNetworkUsageDescription": "自宅のネットワークにある自作アプリや動画サーバーへ接続するために使用します。",
+          "NSMicrophoneUsageDescription": "閲覧中のWebサイトでマイクを使用するために必要です。",
+          "NSMotionUsageDescription": "動画を全画面で表示する際に、端末の傾きに合わせて画面の向きを調整します。",
+          "NSPhotoLibraryAddUsageDescription": "Webページの画像を写真ライブラリに保存するために使用します。",
+          "NSPhotoLibraryUsageDescription": "Webページから選んだ画像を写真に保存するために使用します。"
+        }
+      },
+      "tag": "v0.16.6-build.117"
+    },
+    {
+      "file": "PersonalBrowser.ipa",
       "sha256": "71bbcab142ed4353576d65ee927a3e5a35da739ac02e8ff779fecc744c2f97dc",
       "bundle_id": "local.personalbrowser.app",
       "version": "0.16.5",
