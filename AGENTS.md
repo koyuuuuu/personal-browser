@@ -1,5 +1,11 @@
 # Personal Browser: development and GitHub operations
 
+## 0.16.6 fullscreen notice hard gate (2026-11-27)
+
+User still sees fullscreen-entry notice. Previous JS adapter left isElementFullscreenEnabled=true, allowing unwrapped/native calls to reach WebKit's stock banner. Set the public preference false at creation, including supplied popup configurations; never mutate/recreate existing players. Quiet adapter supplies missing enabled/element/exit/event-handler members, intercepts own prefixed prototypes, uses original legacy video or same-node app-window/popover fallback. Never invoke native Element Fullscreen/private APIs. Keep real Permissions Policy checks, frame-owner permission handshake before gesture, no denied child expanding native app chrome. Preserve0.16.5 PiP hold/viewport/audio behavior and build14 bytes. No forced play/pause/PiP exit/reload/source replacement, data or credential changes.
+
+Carry user's manual-device testing preference: focused tooling/project/Chromium policy/media checks, unsigned Release build/inspection/publish/delivery audit. No iPhone banner/native-video acceptance claimed. Normal ios.yml unchanged; cancel own automatic117 and use temporary release-0.16.6-build117 workflow, then remove after delivery. Preserve schema/BID/latest data/vault and all historical tags/assets. See docs/changes-0.16.6.ja.md.
+
 ## 0.16.5 PiP video handoff stability (2026-11-25)
 
 Completed0.16.5 build116, sourcedbd171e0fcec0757f9e6c3b0481faa60a5871f08, release45682269449 build/publish/delivery-audit allSUCCESS. Normal116(45682212055) cancelled under carried manual-testing preference; no native UI/Core/PiP hardware success claimed. Python63/project/audio policy and actual Chromium decoded-frame/DOM/iframe handoff tests passed, with PiP/native APIs mocked. IPA5817496bytes SHA71bbcab142ed4353576d65ee927a3e5a35da739ac02e8ff779fecc744c2f97dc; local inspection/build-info/feed/hash/fixed source tag matched. DEBUG flags/MP4/strongSwiftWebKit overlay/old input-warning literals absent; photo/Motion/FaceID/audio preserved. User restart evidence does not prove cache exhaustion or exact hardware cause. Physical PiP/site acceptance remains unverified. Original identities/schema/BID/latest data/build14 bytes/history tags+IPAs preserved. Remove one-time workflow; no CI for completion docs. See docs/validation-0.16.5-2026-11-25.json.

@@ -1,10 +1,10 @@
 {
-  "version": "0.16.5",
+  "version": "0.16.6",
   "bundle_id": "local.personalbrowser.app",
   "data_schema": 1,
   "public_repository": "koyuuuuu/personal-browser-distribution",
   "name": "Personal Browser",
   "developer_name": "Personal Browser",
   "description": "自分専用のブラウザ。タブ、履歴、ブックマーク、プライベート閲覧、UIカスタマイズに対応。",
-  "release_notes": "PiPへの映像引き渡し中に、全画面の後処理・表示サイズ変更・追加の音声再設定が干渉する経路を修正。PiP終了後に表示を復元し、復帰時は実際の表示モードを確認して全画面の保留状態を解消します。"
+  "release_notes": "全画面開始の標準注意書きが残る経路を修正。通知を出すWebKitのElement Fullscreenを設定でも無効にし、動画全画面／アプリ内全画面に統一。全画面ボタン・終了操作・iframeの権限確認とPiP中の表示保持を維持します。"
 }

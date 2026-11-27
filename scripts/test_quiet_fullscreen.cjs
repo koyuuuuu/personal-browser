@@ -11,9 +11,15 @@ const script=fs.readFileSync('App/QuietFullscreenController.swift','utf8').split
     await context.addInitScript(()=>{
       window.nativeElementCalls=0;window.events=[];window.messages=[];
       Element.prototype.requestFullscreen=function(){nativeElementCalls++;throw Error('Native Element Fullscreen must never be used');};
+      HTMLElement.prototype.webkitRequestFullscreen=Element.prototype.requestFullscreen;
+      if(location.pathname==='/disabled') {
+        for(const name of ['fullscreenEnabled','fullscreenElement','exitFullscreen','onfullscreenchange'])delete Document.prototype[name];
+        delete Element.prototype.requestFullscreen;
+        delete Element.prototype.onfullscreenchange;
+      }
       window.webkit={messageHandlers:{browserQuietFullscreen:{postMessage:value=>messages.push(value)}}};
-      Object.defineProperty(HTMLVideoElement.prototype,'webkitSupportsFullscreen',{get(){return location.pathname==='/native';}});
-      HTMLVideoElement.prototype.webkitEnterFullscreen=function(){events.push('video-enter');this.webkitPresentationMode='fullscreen';this.dispatchEvent(new Event('webkitbeginfullscreen'));};
+      Object.defineProperty(HTMLVideoElement.prototype,'webkitSupportsFullscreen',{get(){return ['/native','/native-fails'].includes(location.pathname);}});
+      HTMLVideoElement.prototype.webkitEnterFullscreen=function(){events.push('video-enter');if(location.pathname==='/native-fails')throw Error('Native video unavailable');this.webkitPresentationMode='fullscreen';this.dispatchEvent(new Event('webkitbeginfullscreen'));};
       HTMLVideoElement.prototype.webkitExitFullscreen=function(){events.push('video-exit');this.webkitPresentationMode='inline';this.dispatchEvent(new Event('webkitendfullscreen'));};
     });
     await context.addInitScript(script);
@@ -22,10 +28,37 @@ const script=fs.readFileSync('App/QuietFullscreenController.swift','utf8').split
       <script>const original=document.querySelector('video');window.original=original;window.stage=document.querySelector('#stage');window.count=0;window.videoFrames=0;if(original.requestVideoFrameCallback)original.requestVideoFrameCallback(function tick(){videoFrames++;original.requestVideoFrameCallback(tick);});document.addEventListener('fullscreenchange',()=>count++);go.onclick=()=>{original.play();stage.requestFullscreen().catch(e=>window.error=e.name);};exit.onclick=inside.onclick=()=>document.exitFullscreen();</script>`;
     await context.route('https://main.test/**',async route=>{
       if(route.request().url().endsWith('/video.mp4')) return route.fulfill({contentType:'video/mp4',body:fs.readFileSync('UITests/Fixtures/background-audio.mp4')});
-      return route.fulfill({contentType:'text/html',body:route.request().url().endsWith('/embed')?'<iframe src="https://child.test/css" allow="fullscreen" style="width:250px;height:400px"></iframe>':html});
+      const path=new URL(route.request().url()).pathname;
+      const embeds={'/embed':'fullscreen','/embed-denied':"fullscreen 'none'",'/embed-ungranted':''};
+      return route.fulfill({contentType:'text/html',headers:path==='/policy-denied'?{'Permissions-Policy':'fullscreen=()'}:{},body:path in embeds?`<iframe src="https://child.test/css" allow="${embeds[path]}" style="width:250px;height:400px"></iframe>`:html});
     });
     await context.route('https://child.test/**',route=>route.fulfill({contentType:route.request().url().endsWith('/video.mp4')?'video/mp4':'text/html',body:route.request().url().endsWith('/video.mp4')?fs.readFileSync('UITests/Fixtures/background-audio.mp4'):html}));
     const page=await context.newPage();
+    for(const path of ['/disabled','/own-prototype','/native-fails']) {
+      await page.goto('https://main.test'+path);
+      await page.evaluate(()=>{
+        window.handlerCount=0;window.elementCount=0;
+        document.onfullscreenchange=()=>handlerCount++;
+        stage.onfullscreenchange=()=>elementCount++;
+        go.onclick=()=>{original.play();stage.webkitRequestFullscreen().catch(e=>window.error=e.name);};
+      });
+      assert.equal(await page.evaluate(()=>document.fullscreenEnabled && document.webkitFullscreenEnabled),true);
+      await page.click('#go');await page.waitForFunction(()=>document.fullscreenElement===stage);
+      assert.deepEqual(await page.evaluate(()=>[nativeElementCalls,stage.matches(':popover-open'),handlerCount,elementCount]),[0,true,1,1]);
+      await page.click('#inside');
+      await page.waitForFunction(()=>document.fullscreenElement===null && handlerCount===2 && elementCount===2);
+    }
+    await page.goto('https://main.test/policy-denied');
+    await page.click('#go');
+    await page.waitForFunction(()=>window.error==='NotAllowedError');
+    assert.equal(await page.evaluate(()=>document.fullscreenEnabled),false);
+    for(const path of ['/embed-denied','/embed-ungranted']) {
+      await page.goto('https://main.test'+path);
+      const denied=page.frameLocator('iframe');await denied.locator('#go').click();
+      await denied.locator('#stage').evaluate(()=>new Promise(resolve=>setTimeout(resolve,100)));
+      assert.deepEqual(await denied.locator('#stage').evaluate(()=>[document.fullscreenEnabled,document.fullscreenElement,window.error]),[false,null,'NotAllowedError']);
+      assert.equal(await page.evaluate(()=>document.fullscreenElement),null);
+    }
     await page.goto('https://main.test/css');
     for(let i=0;i<2;i++){
       await page.click('#go');
@@ -92,6 +125,7 @@ const script=fs.readFileSync('App/QuietFullscreenController.swift','utf8').split
     });
     await page.waitForFunction(()=>document.fullscreenElement===null);
     assert.equal(await child.locator('#stage').evaluate(e=>e.hasAttribute('popover')),false);
-    console.log('Quiet fullscreen passed: decoded video frames continue; PiP preserves DOM/styles/fullscreen events and parent iframe viewport, cleanup deferred until exit; foreground reconciles deferred fullscreen state without reloading. Native PiP is mocked.');
+    assert.match(fs.readFileSync('App/BrowserTab.swift','utf8'),/isElementFullscreenEnabled = false/);
+    console.log('Quiet fullscreen passed: disabled-native API capabilities/events, own prefixed prototypes, native-video fallback, policy/iframe denial, decoded video and retained PiP/iframe handoff. Native video/PiP APIs are mocked; physical WebKit banner acceptance is not claimed.');
   } finally {await browser.close();}
 })().catch(e=>{console.error(e);process.exitCode=1;});

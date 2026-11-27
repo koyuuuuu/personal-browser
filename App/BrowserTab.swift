@@ -146,9 +146,10 @@ final class BrowserTab: NSObject, ObservableObject, Identifiable, WKNavigationDe
         let os = ProcessInfo.processInfo.operatingSystemVersion
         configuration.applicationNameForUserAgent = "Version/\(os.majorVersion).\(os.minorVersion) Mobile/15E148 Safari/604.1"
         configuration.allowsInlineMediaPlayback = true
-        // Container-based players use requestFullscreen/exitFullscreen rather
-        // than the video-only legacy WebKit API. Public WK default is false.
-        configuration.preferences.isElementFullscreenEnabled = true
+        // Hard-disable the banner-producing native Element Fullscreen path,
+        // including calls from unpatched/new realms. The quiet adapter supplies
+        // page capabilities and routes to video/app-window presentation.
+        configuration.preferences.isElementFullscreenEnabled = false
         configuration.allowsPictureInPictureMediaPlayback = preferences.enablePictureInPicture
         configuration.mediaTypesRequiringUserActionForPlayback = [.audio, .video]
         // A popup may share the parent's controller. Give each tab its own
